@@ -1,35 +1,102 @@
 "use client"
 
+import { useState } from "react"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle2, Circle, Clock, Zap } from "lucide-react"
+import { CheckCircle2, Circle, Clock, Zap, ChevronLeft, ChevronRight, Calendar } from "lucide-react"
+import WeekProgress from "./week-progress"
 
 interface HabitTrackerProps {
   tasks: any[]
-  onCompleteTask: (taskId: number) => void
+  onCompleteTask: (taskId: string | number) => void
+  onDeleteTask?: (taskId: string | number) => void
+  onAddTask?: (title: string, description: string) => void
   streak: number
   xp: number
+  currentDay?: number
+  onDayChange?: (day: number) => void
+  user?: any
+  weekStats?: { total: number; done: number; goals: string[] }[]
+  onTaskUpdate?: () => void
 }
 
-export default function HabitTracker({ tasks, onCompleteTask, streak, xp }: HabitTrackerProps) {
+const getWeekFocus = (day: number) => {
+  const week = Math.ceil(day / 7)
+  switch (week) {
+    case 1: return "Find Your First 10 Users"
+    case 2: return "Content Cadence"
+    case 3: return "Launch Amplify"
+    case 4: return "Retention & Referral"
+    default: return "Marketing Growth"
+  }
+}
+
+export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAddTask, streak, xp, currentDay = 1, onDayChange, user, weekStats = [], onTaskUpdate }: HabitTrackerProps) {
+  const [newTitle, setNewTitle] = useState("")
+  const [newDesc, setNewDesc] = useState("")
   const completedTasks = tasks.filter((task) => task.completed).length
+  const currentWeek = Math.ceil(currentDay / 7)
+  const weekGoals = weekStats[currentWeek - 1]?.goals || []
   const totalTasks = tasks.length
   const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0
 
+  const handleCompleteTask = (taskId: string | number) => {
+    onCompleteTask(taskId)
+    onTaskUpdate?.()
+  }
+
+  const handleDeleteTask = (taskId: string | number) => {
+    onDeleteTask?.(taskId)
+    onTaskUpdate?.()
+  }
+
+  const handleAddTask = () => {
+    if (newTitle.trim()) {
+      onAddTask?.(newTitle.trim(), newDesc.trim())
+      setNewTitle("")
+      setNewDesc("")
+      onTaskUpdate?.()
+    }
+  }
+
   return (
     <div className="space-y-6">
-      {/* Today's Progress */}
+      {/* Day Navigation */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>Today's Marketing Habits</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onDayChange && onDayChange(Math.max(1, currentDay - 1))}
+                disabled={currentDay <= 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <div className="flex items-center space-x-2">
+                <Calendar className="h-4 w-4 text-gray-500" />
+                <span className="font-medium">Day {currentDay}</span>
+                <span className="text-sm text-gray-500">of 30</span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onDayChange && onDayChange(Math.min(30, currentDay + 1))}
+                disabled={currentDay >= 30}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
             <Badge variant={completedTasks === totalTasks ? "default" : "secondary"}>
               {completedTasks}/{totalTasks} Complete
             </Badge>
-          </CardTitle>
+          </div>
           <CardDescription>
-            Complete all 3 micro-tasks to maintain your streak! Each task takes ≤ 15 minutes.
+            {currentDay === 1 ? "Today's" : `Day ${currentDay}`} marketing tasks. Each task takes ≤ 15 minutes.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -44,7 +111,7 @@ export default function HabitTracker({ tasks, onCompleteTask, streak, xp }: Habi
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => !task.completed && onCompleteTask(task.id)}
+                  onClick={() => !task.completed && handleCompleteTask(task.id)}
                   className="p-0 h-auto"
                   disabled={task.completed}
                 >
@@ -74,10 +141,46 @@ export default function HabitTracker({ tasks, onCompleteTask, streak, xp }: Habi
                   <p className={`text-sm mt-1 ${task.completed ? "text-green-700" : "text-gray-600"}`}>
                     {task.description}
                   </p>
+                  {onDeleteTask && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-500 hover:text-red-700 mt-1"
+                      onClick={() => onDeleteTask(task.id)}
+                    >
+                      Delete
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
           </div>
+
+          {onAddTask && (
+            <div className="mt-6 space-y-2">
+              <h4 className="font-medium text-gray-900">Add Custom Task</h4>
+              <div className="flex flex-col md:flex-row md:items-center gap-2">
+                <Input
+                  placeholder="Title"
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  className="flex-1"
+                />
+                <Input
+                  placeholder="Description (optional)"
+                  value={newDesc}
+                  onChange={(e) => setNewDesc(e.target.value)}
+                  className="flex-1"
+                />
+                <Button
+                  size="sm"
+                  onClick={handleAddTask}
+                >
+                  Add
+                </Button>
+              </div>
+            </div>
+          )}
 
           {completedTasks === totalTasks && (
             <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
@@ -96,35 +199,12 @@ export default function HabitTracker({ tasks, onCompleteTask, streak, xp }: Habi
       {/* Weekly Overview */}
       <Card>
         <CardHeader>
-          <CardTitle>This Week's Focus: Find Your First 10 Users</CardTitle>
-          <CardDescription>Week 1 of your 30-day marketing journey</CardDescription>
+          <CardTitle className="mb-2">Your 4-Week Journey</CardTitle>
+          <CardDescription className="text-sm text-gray-600 mb-4">
+            Click on any week to see its goals and track your progress through your 30-day marketing plan.
+          </CardDescription>
+          <WeekProgress stats={weekStats} currentWeek={Math.ceil(currentDay / 7)} />
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-7 gap-2">
-            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, index) => (
-              <div key={day} className="text-center">
-                <div className="text-xs text-gray-600 mb-1">{day}</div>
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
-                    index === 0 ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-400"
-                  }`}
-                >
-                  {index === 0 ? "3/3" : "0/3"}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-4 space-y-2">
-            <h4 className="font-medium text-gray-900">This Week's Goals:</h4>
-            <ul className="text-sm text-gray-600 space-y-1">
-              <li>• Post value-first content in 3 relevant subreddits</li>
-              <li>• Connect with 10 potential users via DM</li>
-              <li>• Share your build-in-public journey</li>
-              <li>• Collect first batch of user feedback</li>
-            </ul>
-          </div>
-        </CardContent>
       </Card>
     </div>
   )

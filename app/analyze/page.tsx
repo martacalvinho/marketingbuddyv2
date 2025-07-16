@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -28,6 +29,7 @@ import {
 import Link from "next/link"
 
 export default function AnalyzePage() {
+  const router = useRouter();
   const [website, setWebsite] = useState("")
   const [analyzing, setAnalyzing] = useState(false)
   const [analysis, setAnalysis] = useState(null)
@@ -478,12 +480,54 @@ export default function AnalyzePage() {
                 <p className="text-indigo-100 mb-6">
                   Start your 30-day marketing journey with personalized daily tasks based on this analysis.
                 </p>
-                <Link href="/">
-                  <Button size="lg" variant="secondary" className="px-8 py-3">
-                    Start Your 30-Day Journey
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </Link>
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  className="px-8 py-3"
+                  onClick={async () => {
+                    if (typeof window !== "undefined") {
+                      localStorage.setItem("marketing-buddy-visited", "true")
+                    }
+                    // Retrieve existing user data
+                    let userData = {}
+                    if (typeof window !== "undefined") {
+                      const stored = localStorage.getItem("marketing-buddy-user")
+                      if (stored) {
+                        try {
+                          userData = JSON.parse(stored)
+                        } catch {
+                          userData = {}
+                        }
+                      }
+                    }
+
+                    // Attach website analysis so dashboard can render it
+                    const payload = { ...userData, websiteAnalysis: analysis }
+
+                    try {
+                      const res = await fetch("/api/generate-plan", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload),
+                      })
+                      if (res.ok) {
+                        const data = await res.json()
+                        payload["plan"] = data.plan || "Plan generation in progress..."
+                      }
+                    } catch (e) {
+                      console.error("Plan generation failed", e)
+                    }
+
+                    if (typeof window !== "undefined") {
+                      localStorage.setItem("marketing-buddy-user", JSON.stringify(payload))
+                      localStorage.setItem("marketing-buddy-visited", "true")
+                    }
+                    router.push("/")
+                  }}
+                >
+                  Start Your 30-Day Journey
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
               </CardContent>
             </Card>
           </div>

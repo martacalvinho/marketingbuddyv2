@@ -5,10 +5,12 @@ import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Flame, Target, Calendar, BookOpen, MessageCircle, CheckCircle2, Zap, TrendingUp } from "lucide-react"
 import HabitTracker from "@/components/habit-tracker"
-import ContentCalendar from "@/components/content-calendar"
+import ContentGenerator from "@/components/content-generator"
+import ContentLibrary from "@/components/content-library"
 import ChatInterface from "@/components/chat-interface"
 import WebsiteAnalysis from "@/components/website-analysis"
 import LearnSection from "@/components/learn-section"
+import MarketingBuddy from "@/components/marketing-buddy"
 
 interface DashboardViewProps {
   user: any
@@ -16,58 +18,151 @@ interface DashboardViewProps {
 
 export default function DashboardView({ user }: DashboardViewProps) {
   const [activeTab, setActiveTab] = useState("habits")
-  const [todaysTasks, setTodaysTasks] = useState([])
+  const [tasksByDay, setTasksByDay] = useState<Record<number, any[]>>({})
+  const [todaysTasks, setTodaysTasks] = useState<any[]>([])
+  const [currentDay, setCurrentDay] = useState(1)
   const [streak, setStreak] = useState(user.streak || 0)
   const [xp, setXp] = useState(user.xp || 0)
 
   useEffect(() => {
-    loadTodaysTasks()
-  }, [])
+    loadTasksForDay(currentDay)
+  }, [currentDay])
 
-  const loadTodaysTasks = async () => {
-    // In production, this would fetch from your database
-    const today = new Date().toDateString()
-    const tasks = [
-      {
-        id: 1,
-        title: "Write 1-sentence value prop",
-        description: "Post in 3 relevant subreddits asking for feedback",
-        xp: 10,
-        completed: false,
-        estimatedTime: "15 min",
-      },
-      {
-        id: 2,
-        title: "DM 5 Twitter followers",
-        description: "Reach out to people who liked similar tools",
-        xp: 15,
-        completed: false,
-        estimatedTime: "10 min",
-      },
-      {
-        id: 3,
-        title: "Build in Public tweet",
-        description: "Share your journey using our template",
-        xp: 10,
-        completed: false,
-        estimatedTime: "5 min",
-      },
-    ]
-    setTodaysTasks(tasks)
+  const loadTasksForDay = (day: number) => {
+    if (user.plan) {
+      // Parse markdown format: ### Day X followed by - **Task X:** content
+      const nextDay = day + 1
+      const dayRegex = new RegExp(`###\\s*Day\\s*${day}[^\\n]*\\n([\\s\\S]*?)(?=###\\s*Day\\s*${nextDay}|$)`, 'i')
+      const dayMatch = user.plan.match(dayRegex)
+      
+      if (dayMatch) {
+        const taskLines = dayMatch[1]
+          .split('\n')
+          .filter((line: string) => line.trim().startsWith('- **Task'))
+          .slice(0, 3)
+
+        const parsed = taskLines.map((line: string, idx: number) => {
+          // Extract task from "- **Task X:** content" format
+          const taskMatch = line.match(/- \*\*Task \d+:\*\*\s*(.+)/)
+          let taskContent = taskMatch ? taskMatch[1].trim() : line.replace(/^[-*\s]+/, '').trim()
+          
+          // Remove asterisks and clean up formatting
+          taskContent = taskContent.replace(/\*\*/g, '').replace(/\*/g, '')
+          
+          // Split on first colon to separate title from description
+          const colonIndex = taskContent.indexOf(':')
+          let title = taskContent
+          let description = taskContent
+          
+          if (colonIndex > 0 && colonIndex < 60) {
+            title = taskContent.substring(0, colonIndex).trim()
+            description = taskContent.substring(colonIndex + 1).trim()
+          }
+          
+          return {
+            id: `${day}-${idx + 1}`,
+            title: title,
+            description: description,
+            xp: 10,
+            completed: false,
+            estimatedTime: "15 min",
+            day: day
+          }
+        })
+        
+        if (parsed.length > 0) {
+          setTasksByDay((prev) => ({ ...prev, [day]: parsed }))
+          setTodaysTasks(parsed)
+          return
+        }
+      }
+    }
+
+    // fallback empty
+    setTasksByDay((prev) => ({ ...prev, [day]: [] }))
+    setTodaysTasks([])
   }
 
-  const completeTask = (taskId: number) => {
-    setTodaysTasks((prev) => prev.map((task) => (task.id === taskId ? { ...task, completed: true } : task)))
+  const addTask = (title: string, description: string) => {
+    const newTask = {
+      id: `${currentDay}-${Date.now()}`,
+      title,
+      description,
+      xp: 10,
+      completed: false,
+      estimatedTime: "15 min",
+      day: currentDay,
+      custom: true,
+    }
+    setTodaysTasks((prev: any[]) => [...prev, newTask])
+    setTasksByDay((prev) => ({ ...prev, [currentDay]: [...(prev[currentDay] || []), newTask] }))
+  }
 
-    const task = todaysTasks.find((t) => t.id === taskId)
+  const deleteTask = (taskId: string | number) => {
+    setTodaysTasks((prev: any[]) => prev.filter((t) => t.id !== taskId))
+    setTasksByDay((prev) => ({ ...prev, [currentDay]: (prev[currentDay] || []).filter((t: any) => t.id !== taskId) }))
+  }
+
+  interface WeekInfo { total: number; done: number; goals: string[] }
+
+  const getWeekStats = (): WeekInfo[] => {
+    const stats: WeekInfo[] = []
+    for (let w = 0; w < 4; w++) {
+      const start = w * 7 + 1
+      const days = Array.from({ length: 7 }, (_, i) => start + i)
+      let total = 0
+      let done = 0
+      const goalsSet = new Set<string>()
+      days.forEach((d) => {
+        const tasks = tasksByDay[d] || []
+        total += tasks.length
+        done += tasks.filter((t: any) => t.completed).length
+        tasks.forEach((t: any) => goalsSet.add(t.title))
+      })
+      stats.push({ total, done, goals: Array.from(goalsSet) })
+    }
+    return stats
+  }
+
+  const completeTask = (taskId: string | number) => {
+    setTodaysTasks((prev: any[]) => prev.map((task: any) => (task.id === taskId ? { ...task, completed: true } : task)))
+    setTasksByDay((prev) => ({
+      ...prev,
+      [currentDay]: (prev[currentDay] || []).map((t: any) => t.id === taskId ? { ...t, completed: true } : t)
+    }))
+
+    const task = todaysTasks.find((t: any) => t.id === taskId)
     if (task) {
-      setXp((prev) => prev + task.xp)
+      setXp((prev: any) => prev + task.xp)
 
       // Check if all tasks completed for streak
-      const completedCount = todaysTasks.filter((t) => t.completed || t.id === taskId).length
+      const completedCount = todaysTasks.filter((t: any) => t.completed || t.id === taskId).length
       if (completedCount === todaysTasks.length) {
-        setStreak((prev) => prev + 1)
+        setStreak((prev: any) => prev + 1)
       }
+    }
+  }
+
+  const handleReAnalyze = async (websiteUrl: string) => {
+    try {
+      const response = await fetch('/api/analyze-website', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ websiteUrl }),
+      })
+      
+      if (response.ok) {
+        const analysisData = await response.json()
+        // Update user data with new analysis
+        // This would typically update the user state or trigger a refresh
+        window.location.reload() // Simple refresh for now
+      } else {
+        console.error('Failed to re-analyze website')
+      }
+    } catch (error) {
+      console.error('Error re-analyzing website:', error)
     }
   }
 
@@ -121,7 +216,7 @@ export default function DashboardView({ user }: DashboardViewProps) {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="habits" className="flex items-center space-x-2">
               <CheckCircle2 className="h-4 w-4" />
               <span>Daily Habits</span>
@@ -142,14 +237,33 @@ export default function DashboardView({ user }: DashboardViewProps) {
               <MessageCircle className="h-4 w-4" />
               <span>Chat</span>
             </TabsTrigger>
+            <TabsTrigger value="buddy" className="flex items-center space-x-2">
+              <Target className="h-4 w-4" />
+              <span>Buddy</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="habits">
-            <HabitTracker tasks={todaysTasks} onCompleteTask={completeTask} streak={streak} xp={xp} />
+            <HabitTracker 
+              tasks={todaysTasks} 
+              onCompleteTask={completeTask} 
+              onDeleteTask={deleteTask}
+              onAddTask={addTask}
+              streak={streak} 
+              xp={xp} 
+              currentDay={currentDay}
+              onDayChange={setCurrentDay}
+              user={user}
+              weekStats={getWeekStats()}
+              onTaskUpdate={() => {/* Force re-render for live updates */}}
+            />
           </TabsContent>
 
           <TabsContent value="content">
-            <ContentCalendar user={user} />
+            <div className="space-y-6">
+              <ContentGenerator user={user} />
+              <ContentLibrary user={user} />
+            </div>
           </TabsContent>
 
           <TabsContent value="learn">
@@ -157,11 +271,19 @@ export default function DashboardView({ user }: DashboardViewProps) {
           </TabsContent>
 
           <TabsContent value="analysis">
-            <WebsiteAnalysis analysis={user.websiteAnalysis} />
+            <WebsiteAnalysis 
+              analysis={user.websiteAnalysis} 
+              websiteUrl={user.websiteUrl}
+              onReAnalyze={handleReAnalyze}
+            />
           </TabsContent>
 
           <TabsContent value="chat">
             <ChatInterface user={user} />
+          </TabsContent>
+
+          <TabsContent value="buddy">
+            <MarketingBuddy user={user} />
           </TabsContent>
         </Tabs>
       </div>

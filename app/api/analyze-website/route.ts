@@ -1,3 +1,5 @@
+export const runtime = "nodejs"
+
 export async function POST(request: Request) {
   try {
     const { website } = await request.json()
@@ -96,11 +98,14 @@ IMPORTANT: Return ONLY valid JSON in this exact format (no markdown, no extra te
   ]
 }`
 
+    // Debug: log whether API key is loaded
+    console.log("OpenRouter API Key Loaded:", process.env.OPENROUTER_API_KEY ? "YES" : "NO")
+
     console.log("Sending content to OpenRouter for analysis...")
     const aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: "Bearer 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",
+        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
         "HTTP-Referer": "https://marketing-buddy.vercel.app",
         "X-Title": "Marketing Buddy Website Analysis",

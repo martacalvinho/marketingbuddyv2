@@ -15,7 +15,7 @@ Business Context:
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: "Bearer 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",
+        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
         "HTTP-Referer": "https://marketing-buddy.vercel.app",
         "X-Title": "Marketing Buddy Lesson Application",

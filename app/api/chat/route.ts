@@ -16,10 +16,15 @@ Website Analysis Context:
 `
       : "No website analysis available yet."
 
+    if (!process.env.OPENROUTER_API_KEY) {
+      console.error('OpenRouter API key not found')
+      return Response.json({ error: 'API configuration error' }, { status: 500 })
+    }
+
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: "Bearer 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",
+        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
         "HTTP-Referer": "https://marketing-buddy.vercel.app",
         "X-Title": "Marketing Buddy Chat",
@@ -55,22 +60,34 @@ Focus on: TEACH, TRACK, and MOTIVATE daily marketing habits based on their real 
             content: message,
           },
         ],
-        max_tokens: 300,
-        temperature: 0.7,
+                temperature: 0.7,
       }),
     })
 
     console.log("OpenRouter response status:", response.status)
 
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error("OpenRouter error:", errorText)
-      throw new Error(`OpenRouter API error: ${response.status}`)
+      console.error('OpenRouter API error:', response.status, response.statusText)
+      const errorData = await response.text()
+      console.error('Error details:', errorData)
+      return Response.json({ 
+        reply: "I'm having trouble connecting right now. Please try asking again in a moment!",
+        error: `API Error: ${response.status} - ${response.statusText}`,
+        details: errorData 
+      }, { status: 500 })
     }
 
     const data = await response.json()
     console.log("OpenRouter response:", data)
-
+    
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.error('Invalid response structure:', data)
+      return Response.json({ 
+        reply: "I'm having trouble responding right now. Try asking again!",
+        error: 'Invalid API response structure' 
+      }, { status: 500 })
+    }
+    
     const reply = data.choices?.[0]?.message?.content || "I'm having trouble responding right now. Try asking again!"
 
     // Generate suggested task based on real analysis

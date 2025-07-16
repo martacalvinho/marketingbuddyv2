@@ -1,7 +1,9 @@
 "use client"
 
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   TrendingUp,
   Target,
@@ -12,13 +14,33 @@ import {
   Building,
   Users,
   Zap,
+  RefreshCw,
 } from "lucide-react"
 
 interface WebsiteAnalysisProps {
   analysis: any
+  websiteUrl?: string
+  onReAnalyze?: (url: string) => Promise<void>
 }
 
-export default function WebsiteAnalysis({ analysis }: WebsiteAnalysisProps) {
+export default function WebsiteAnalysis({ analysis, websiteUrl, onReAnalyze }: WebsiteAnalysisProps) {
+  const [isReAnalyzing, setIsReAnalyzing] = useState(false)
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle")
+
+  const handleReAnalyze = async () => {
+    if (!websiteUrl || !onReAnalyze) return
+    setIsReAnalyzing(true)
+    setStatus("idle")
+    try {
+      await onReAnalyze(websiteUrl)
+      setStatus("success")
+    } catch {
+      setStatus("error")
+    } finally {
+      setIsReAnalyzing(false)
+    }
+  }
+
   if (!analysis) {
     return (
       <Card>
@@ -52,6 +74,31 @@ export default function WebsiteAnalysis({ analysis }: WebsiteAnalysisProps) {
 
   return (
     <div className="space-y-6">
+      {/* 🔁 Re-analysis bar */}
+      <Card className="bg-gray-50">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">Current Analysis</CardTitle>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={isReAnalyzing}
+              onClick={handleReAnalyze}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${isReAnalyzing ? "animate-spin" : ""}`} />
+              {isReAnalyzing ? "Re-analyzing…" : "Re-run analysis"}
+            </Button>
+          </div>
+          {status === "success" && (
+            <p className="text-sm text-green-600 mt-1">✅ Analysis updated.</p>
+          )}
+          {status === "error" && (
+            <p className="text-sm text-red-600 mt-1">⚠️ Could not re-analyze.</p>
+          )}
+        </CardHeader>
+      </Card>
+
       {/* Business Overview */}
       <Card>
         <CardHeader>
@@ -114,10 +161,12 @@ export default function WebsiteAnalysis({ analysis }: WebsiteAnalysisProps) {
       {/* Marketing Opportunities */}
       <Card>
         <CardHeader>
-          <Lightbulb className="h-5 w-5" />
-          <span>Marketing Opportunities</span>
+          <CardTitle className="flex items-center space-x-2">
+            <Lightbulb className="h-5 w-5" />
+            <span>Marketing Opportunities</span>
+          </CardTitle>
+          <CardDescription>Specific opportunities identified for your business</CardDescription>
         </CardHeader>
-        <CardDescription>Specific opportunities identified for your business</CardDescription>
         <CardContent>
           <div className="space-y-4">
             {(analysis.marketingOpportunities || []).map((opportunity: any, index: number) => (
@@ -228,10 +277,12 @@ export default function WebsiteAnalysis({ analysis }: WebsiteAnalysisProps) {
       {/* Competitive Positioning */}
       <Card>
         <CardHeader>
-          <TrendingUp className="h-5 w-5" />
-          <span>Competitive Positioning</span>
+          <CardTitle className="flex items-center space-x-2">
+            <TrendingUp className="h-5 w-5" />
+            <span>Competitive Positioning</span>
+          </CardTitle>
+          <CardDescription>How you stack up in the market</CardDescription>
         </CardHeader>
-        <CardDescription>How you stack up in the market</CardDescription>
         <CardContent>
           <div className="space-y-4">
             <div>
@@ -273,10 +324,12 @@ export default function WebsiteAnalysis({ analysis }: WebsiteAnalysisProps) {
       {/* Actionable Recommendations */}
       <Card>
         <CardHeader>
-          <Target className="h-5 w-5" />
-          <span>Actionable Recommendations</span>
+          <CardTitle className="flex items-center space-x-2">
+            <Target className="h-5 w-5" />
+            <span>Actionable Recommendations</span>
+          </CardTitle>
+          <CardDescription>Specific steps you can take based on your website analysis</CardDescription>
         </CardHeader>
-        <CardDescription>Specific steps you can take based on your website analysis</CardDescription>
         <CardContent>
           <div className="space-y-4">
             {(analysis.actionableRecommendations || []).map((rec: any, index: number) => (

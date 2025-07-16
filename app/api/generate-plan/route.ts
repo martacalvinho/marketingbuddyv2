@@ -6,7 +6,7 @@ export async function POST(request: Request) {
     const planResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: "Bearer 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",
+        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -14,29 +14,50 @@ export async function POST(request: Request) {
         messages: [
           {
             role: "system",
-            content: `Generate a 30-day marketing plan for an indie hacker. Create specific, actionable daily tasks that take ≤15 minutes each.
+            content: `You are a marketing expert creating a personalized 30-day marketing plan. Generate a structured markdown document with the following format:
 
-User Info:
-- Product: ${userData.productName}
-- Value Prop: ${userData.valueProp}
-- Goal: ${userData.northStarGoal}
-- Channel: ${userData.preferredChannel}
-- Audience Size: ${userData.audienceSize}
+# 30-Day Marketing Plan
 
-Structure the plan as 4 weeks:
-Week 1: "Find Your First 10 Users"
-Week 2: "Content Cadence" 
-Week 3: "Launch Amplify"
-Week 4: "Retention & Referral"
+## Business Analysis Summary
+${userData.websiteAnalysis ? `
+Based on website analysis:
+- Business: ${userData.websiteAnalysis.businessOverview?.summary || 'Not analyzed'}
+- Industry: ${userData.websiteAnalysis.businessOverview?.industry || 'Not specified'}
+- Target Audience: ${userData.websiteAnalysis.businessOverview?.targetAudience?.join(', ') || 'Not specified'}
+- Key Opportunities: ${userData.websiteAnalysis.marketingOpportunities?.slice(0,3).map((op: any) => op.title).join(', ') || 'None identified'}
+` : ''}
 
-For each day, provide 3 micro-tasks with exact copy templates and specific instructions.`,
+User Profile:
+- Product: ${userData.productName || 'Not specified'}
+- Value Proposition: ${userData.valueProp || 'Not specified'}
+- Goal: ${userData.northStarGoal || 'Not specified'}
+- Preferred Channel: ${userData.preferredChannel || 'Not specified'}
+- Current Audience: ${userData.audienceSize || 'Not specified'}
+
+## 4-Week Structure
+
+### Week 1: Find Your First 10 Users
+### Week 2: Content Cadence
+### Week 3: Launch Amplify  
+### Week 4: Retention & Referral
+
+## Daily Tasks
+
+For each day, provide exactly 3 actionable micro-tasks (≤15 minutes each). Use this exact format:
+
+### Day 1
+- **Task 1:** [Specific action with clear instructions]
+- **Task 2:** [Specific action with clear instructions]  
+- **Task 3:** [Specific action with clear instructions]
+
+Continue this pattern for all 30 days. Make tasks specific to the user's product, industry, and goals. Include exact copy templates, specific platforms, and measurable outcomes where possible.`,
           },
           {
             role: "user",
-            content: "Generate my personalized 30-day marketing plan",
+            content: "Generate my complete 30-day marketing plan in the specified markdown format.",
           },
         ],
-        max_tokens: 2000,
+        max_tokens: 4000,
         temperature: 0.7,
       }),
     })
