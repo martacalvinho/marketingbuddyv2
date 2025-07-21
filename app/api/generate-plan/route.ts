@@ -2,7 +2,7 @@ export async function POST(request: Request) {
   try {
     const userData = await request.json()
 
-    // Generate a 30-day marketing plan based on user data
+    // Generate a 6+ month adaptive marketing plan based on user data
     const planResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -14,13 +14,24 @@ export async function POST(request: Request) {
         messages: [
           {
             role: "system",
-            content: `You are a marketing expert creating a personalized 30-day marketing plan. Generate a structured markdown document with the following format:
+            content: `You are an expert marketing strategist creating a personalized 6+ month multi-platform adaptive marketing plan. 
 
-# 30-Day Marketing Plan
+IMPORTANT: Analyze the business and recommend the BEST platforms and content strategies based on:
+1. Target audience behavior and demographics
+2. Business type and industry
+3. Content format strengths
+4. Platform-specific opportunities
+5. Resource requirements and ROI potential
 
-## Business Analysis Summary
+Do NOT limit to one platform. Recommend 2-4 optimal platforms with specific strategies for each.
+
+Generate a structured markdown document with this format:
+
+# Multi-Platform Adaptive Marketing Strategy
+
+## Business & Platform Analysis
 ${userData.websiteAnalysis ? `
-Based on website analysis:
+Website Analysis:
 - Business: ${userData.websiteAnalysis.businessOverview?.summary || 'Not analyzed'}
 - Industry: ${userData.websiteAnalysis.businessOverview?.industry || 'Not specified'}
 - Target Audience: ${userData.websiteAnalysis.businessOverview?.targetAudience?.join(', ') || 'Not specified'}
@@ -34,16 +45,48 @@ User Profile:
 - Preferred Channel: ${userData.preferredChannel || 'Not specified'}
 - Current Audience: ${userData.audienceSize || 'Not specified'}
 
-## 4-Week Structure
+## Recommended Platform Strategy
+Based on analysis, recommend optimal platforms with reasoning:
+- Primary Platform: [Platform] - [Why it's best for this business]
+- Secondary Platform: [Platform] - [Complementary strategy]
+- Content Distribution: [Additional platforms for amplification]
+- Platform-Specific Content Types: [What works best where]
 
-### Week 1: Find Your First 10 Users
-### Week 2: Content Cadence
-### Week 3: Launch Amplify  
-### Week 4: Retention & Referral
+## 6-Month Multi-Platform Strategy
 
-## Daily Tasks
+### Month 1: Foundation & Platform Setup (0-50 users)
+- Week 1-2: Platform Optimization & Content Pillars
+- Week 3-4: Initial User Acquisition
 
-For each day, provide exactly 3 actionable micro-tasks (≤15 minutes each). Use this exact format:
+### Month 2: Content & Community (10-50 users)
+- Week 5-6: Content Strategy Development
+- Week 7-8: Community Building
+
+### Month 3: Growth Acceleration (50-200 users)
+- Week 9-10: Channel Optimization
+- Week 11-12: Referral Systems
+
+### Month 4: Scale & Systems (200-500 users)
+- Week 13-14: Process Automation
+- Week 15-16: Advanced Analytics
+
+### Month 5: Revenue Focus (500-1000 users)
+- Week 17-18: Conversion Optimization
+- Week 19-20: Pricing Strategy
+
+### Month 6: Sustainable Growth (1000+ users, $1k+ MRR)
+- Week 21-22: Retention & LTV
+- Week 23-24: Market Expansion
+
+## Adaptive Daily Tasks
+
+The plan adapts based on your progress. For each day, you'll get 3 actionable micro-tasks (≤15 minutes each) that adjust based on:
+- Your current user count
+- Revenue milestones achieved
+- Which strategies are working
+- Market feedback and results
+
+Use this exact format for the first month:
 
 ### Day 1
 - **Task 1:** [Specific action with clear instructions]

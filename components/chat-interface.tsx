@@ -19,9 +19,13 @@ interface Message {
 
 interface ChatInterfaceProps {
   user: any
+  dailyTasks?: any[]
+  currentDay?: number
+  streak?: number
+  xp?: number
 }
 
-export default function ChatInterface({ user }: ChatInterfaceProps) {
+export default function ChatInterface({ user, dailyTasks = [], currentDay = 1, streak = 0, xp = 0 }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
@@ -76,10 +80,14 @@ export default function ChatInterface({ user }: ChatInterfaceProps) {
             productName: user.productName,
             valueProp: user.valueProp,
             goal: user.northStarGoal,
-            streak: user.streak,
-            xp: user.xp,
+            streak: streak,
+            xp: xp,
             websiteAnalysis: user.websiteAnalysis,
-            dailyTasks: user.plan?.tasks || {},
+            dailyTasks: dailyTasks,
+            currentDay: currentDay,
+            completedTasks: dailyTasks.filter(task => task.completed).length,
+            totalTasks: dailyTasks.length,
+            adaptiveStrategy: true, // Indicates this is using 6+ month adaptive strategies
           },
         }),
       })

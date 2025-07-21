@@ -7,11 +7,13 @@ import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Twitter, Linkedin, MessageSquare, Instagram, Video, FileText, Zap, Copy, Check, Loader2 } from "lucide-react"
+import { Twitter, Linkedin, MessageSquare, Instagram, Video, FileText, Zap, Copy, Check, Loader2, CheckCircle2, Circle } from "lucide-react"
 import InstagramImageDisplay from "@/components/instagram-image-display"
 
 interface ContentGeneratorProps {
   user: any
+  dailyTasks?: any[]
+  onTaskUpdate?: () => void
 }
 
 const contentTypes = [
@@ -73,7 +75,7 @@ const contentTypes = [
   },
 ]
 
-export default function ContentGenerator({ user }: ContentGeneratorProps) {
+export default function ContentGenerator({ user, dailyTasks = [], onTaskUpdate }: ContentGeneratorProps) {
   const [selectedType, setSelectedType] = useState<any>(null)
   const [generating, setGenerating] = useState(false)
   const [generatedContent, setGeneratedContent] = useState("")
@@ -92,6 +94,26 @@ export default function ContentGenerator({ user }: ContentGeneratorProps) {
   const [contentMode, setContentMode] = useState<'freestyle' | 'daily-habit'>('freestyle')
   const [selectedDailyTask, setSelectedDailyTask] = useState<any>(null)
   const [showTaskSelection, setShowTaskSelection] = useState(false)
+  const [usedContent, setUsedContent] = useState<any[]>([])
+  const [contentFilter, setContentFilter] = useState<string>('all')
+
+  const saveToContentLibrary = () => {
+    if (generatedContent && selectedType) {
+      const newContent = {
+        id: Date.now(),
+        type: selectedType.name,
+        platform: selectedType.id,
+        content: generatedContent,
+        image: generatedImage,
+        marketingStyle: marketingStyle,
+        createdAt: new Date().toISOString(),
+        characterCount: generatedContent.length
+      }
+      setUsedContent(prev => [newContent, ...prev])
+      setContentSaved(true)
+      setTimeout(() => setContentSaved(false), 2000)
+    }
+  }
 
   const generateSEOKeywords = async () => {
     setLoadingKeywords(true)
@@ -254,37 +276,7 @@ export default function ContentGenerator({ user }: ContentGeneratorProps) {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const saveToContentLibrary = () => {
-    const contentItem = {
-      id: Date.now().toString(),
-      type: selectedType?.name || "Content",
-      platform: selectedType?.id || "general",
-      content: generatedContent,
-      marketingStyle: marketingStyle,
-      imageUrl: generatedImage,
-      imagePrompt: imagePrompt,
-      status: "draft",
-      createdAt: new Date().toISOString(),
-      analytics: {
-        views: 0,
-        comments: 0,
-        followers: 0,
-        acquisitions: 0
-      }
-    }
 
-    // Get existing content from localStorage
-    const existingContent = JSON.parse(localStorage.getItem('contentLibrary') || '[]')
-    
-    // Add new content
-    existingContent.push(contentItem)
-    
-    // Save back to localStorage
-    localStorage.setItem('contentLibrary', JSON.stringify(existingContent))
-    
-    setContentSaved(true)
-    setTimeout(() => setContentSaved(false), 3000)
-  }
 
   // Get today's tasks from user's plan - same logic as dashboard
   const getTodaysTasks = () => {
@@ -304,49 +296,7 @@ export default function ContentGenerator({ user }: ContentGeneratorProps) {
 
   return (
     <div className="space-y-6">
-      {/* Content Mode Selection */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Content Creation Mode</CardTitle>
-          <CardDescription>
-            Choose how you want to create content today
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex space-x-4">
-            <Button
-              variant={contentMode === 'freestyle' ? 'default' : 'outline'}
-              onClick={() => setContentMode('freestyle')}
-              className="flex-1"
-            >
-              🎨 Freestyle Content
-            </Button>
-            <Button
-              variant={contentMode === 'daily-habit' ? 'default' : 'outline'}
-              onClick={() => {
-                setContentMode('daily-habit')
-                if (todaysTasks.length > 0) {
-                  setShowTaskSelection(true)
-                }
-              }}
-              className="flex-1"
-              disabled={todaysTasks.length === 0}
-            >
-              📋 Daily Habit Content
-              {todaysTasks.length > 0 && (
-                <Badge variant="secondary" className="ml-2">
-                  {todaysTasks.length}
-                </Badge>
-              )}
-            </Button>
-          </div>
-          {todaysTasks.length === 0 && (
-            <p className="text-sm text-gray-500 mt-2">
-              No daily tasks available. Complete your 30-day plan setup to unlock daily habit content.
-            </p>
-          )}
-        </CardContent>
-      </Card>
+
 
       {/* Daily Task Selection Modal */}
       {showTaskSelection && contentMode === 'daily-habit' && (
@@ -400,20 +350,101 @@ export default function ContentGenerator({ user }: ContentGeneratorProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {contentTypes.map((type) => (
-              <Card
-                key={type.id}
-                className="cursor-pointer hover:shadow-md transition-shadow border-2 hover:border-indigo-200"
-                onClick={() => generateContent(type)}
+          <div className="mb-6">
+            <Label className="text-sm font-medium mb-3 block">Content Mode</Label>
+            <div className="flex space-x-2">
+              <Button
+                variant={contentMode === 'freestyle' ? 'default' : 'outline'}
+                onClick={() => {
+                  setContentMode('freestyle')
+                  setSelectedDailyTask(null)
+                }}
+                className="flex-1"
               >
-                <CardContent className="p-4 text-center">
-                  <type.icon className={`h-8 w-8 mx-auto mb-2 ${type.color}`} />
-                  <h3 className="font-medium text-sm mb-1">{type.name}</h3>
-                  <p className="text-xs text-gray-500">{type.description}</p>
-                </CardContent>
-              </Card>
-            ))}
+                Freestyle Content
+              </Button>
+              <Button
+                variant={contentMode === 'daily-habit' ? 'default' : 'outline'}
+                onClick={() => setContentMode('daily-habit')}
+                className="flex-1"
+                disabled={dailyTasks.length === 0}
+              >
+                Daily Habit Content ({dailyTasks.length})
+              </Button>
+            </div>
+            
+            {contentMode === 'daily-habit' && dailyTasks.length > 0 && (
+              <div className="mt-4">
+                <Label className="text-sm font-medium mb-2 block">Select Daily Task</Label>
+                <div className="grid gap-2 max-h-40 overflow-y-auto">
+                  {dailyTasks.map((task, index) => (
+                    <div
+                      key={task.id || index}
+                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                        selectedDailyTask?.id === task.id
+                          ? 'border-indigo-500 bg-indigo-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                      onClick={() => setSelectedDailyTask(task)}
+                    >
+                      <div className="flex items-center space-x-2">
+                        {task.completed ? (
+                          <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <Circle className="h-4 w-4 text-gray-400" />
+                        )}
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{task.title}</p>
+                          {task.description && (
+                            <p className="text-xs text-gray-500">{task.description}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {!selectedDailyTask && (
+                  <p className="text-sm text-gray-500 mt-2">
+                    Select a daily task to generate content that aligns with your marketing goals
+                  </p>
+                )}
+              </div>
+            )}
+            
+            {contentMode === 'daily-habit' && dailyTasks.length === 0 && (
+              <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-800">
+                  No daily tasks available. Switch to the Daily Habits tab to create tasks first.
+                </p>
+              </div>
+            )}
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {contentTypes.map((type) => {
+              const isDisabled = contentMode === 'daily-habit' && !selectedDailyTask
+              return (
+                <Card
+                  key={type.id}
+                  className={`cursor-pointer transition-shadow border-2 ${
+                    isDisabled 
+                      ? 'opacity-50 cursor-not-allowed border-gray-200' 
+                      : 'hover:shadow-md hover:border-indigo-200'
+                  }`}
+                  onClick={() => !isDisabled && generateContent(type)}
+                >
+                  <CardContent className="p-4 text-center">
+                    <type.icon className={`h-8 w-8 mx-auto mb-2 ${isDisabled ? 'text-gray-400' : type.color}`} />
+                    <h3 className="font-medium text-sm mb-1">{type.name}</h3>
+                    <p className="text-xs text-gray-500">{type.description}</p>
+                    {contentMode === 'daily-habit' && selectedDailyTask && (
+                      <Badge className="mt-2 text-xs" variant="secondary">
+                        For: {selectedDailyTask.title.substring(0, 20)}...
+                      </Badge>
+                    )}
+                  </CardContent>
+                </Card>
+              )
+            })}
           </div>
         </CardContent>
       </Card>
@@ -590,6 +621,72 @@ export default function ContentGenerator({ user }: ContentGeneratorProps) {
                 </div>
               </div>
             )}
+          </CardContent>
+        </Card>
+      )}
+      
+      {/* Content Used Section */}
+      {usedContent.length > 0 && (
+        <Card className="mt-8">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">📚 Content Used</CardTitle>
+              <div className="flex items-center space-x-2">
+                <select 
+                  value={contentFilter} 
+                  onChange={(e) => setContentFilter(e.target.value)}
+                  className="px-3 py-1 text-sm border rounded-md bg-white"
+                >
+                  <option value="all">All Platforms</option>
+                  <option value="twitter-thread">Twitter</option>
+                  <option value="linkedin-post">LinkedIn</option>
+                  <option value="instagram-post">Instagram</option>
+                  <option value="reddit-post">Reddit</option>
+                  <option value="seo-blog">SEO Blog</option>
+                </select>
+                <Badge variant="outline">{usedContent.length} items</Badge>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4 max-h-96 overflow-y-auto">
+              {usedContent
+                .filter(item => contentFilter === 'all' || item.platform === contentFilter)
+                .map((item) => (
+                <div key={item.id} className="p-4 border rounded-lg bg-gray-50">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <Badge variant="secondary">{item.type}</Badge>
+                      {item.marketingStyle && (
+                        <Badge variant="outline" className="text-xs">{item.marketingStyle}</Badge>
+                      )}
+                    </div>
+                    <span className="text-xs text-gray-500">
+                      {new Date(item.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-700 line-clamp-3">
+                    {item.content.substring(0, 150)}...
+                  </p>
+                  <div className="flex items-center justify-between mt-3">
+                    <Badge variant="outline" className="text-xs">
+                      {item.characterCount} chars
+                    </Badge>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => {
+                        navigator.clipboard.writeText(item.content)
+                        alert('Content copied to clipboard!')
+                      }}
+                    >
+                      <Copy className="h-3 w-3 mr-1" />
+                      Copy
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}

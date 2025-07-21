@@ -77,14 +77,14 @@ export default function LandingPage() {
             </h1>
 
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
-              Your no-BS accountability partner for daily marketing habits. Get AI-powered insights, personalized
-              content, and the motivation you need to find your first 1000 users.
+              Your AI-powered marketing accountability partner. Get personalized daily habits, content generation,
+              analytics insights, and the motivation you need to reach your first 1000 users and $1k MRR.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
               <Link href="/">
                 <Button size="lg" className="px-8 py-3 text-lg">
-                  Start Your 30-Day Journey
+                  Start Your Marketing Journey
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
@@ -122,23 +122,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Social Proof */}
-      <section className="py-12 bg-gray-50 border-y border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8">
-            <p className="text-gray-600 font-medium">Trusted by indie hackers who've shipped successful products</p>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 items-center opacity-60">
-            {["Product Hunt", "Indie Hackers", "Hacker News", "Y Combinator"].map((company) => (
-              <div key={company} className="text-center">
-                <div className="h-12 bg-gray-300 rounded flex items-center justify-center">
-                  <span className="font-semibold text-gray-600">{company}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+
 
       {/* Problem Section */}
       <section className="py-20">
@@ -356,17 +340,17 @@ export default function LandingPage() {
 
             <Card className="p-6 hover:shadow-lg transition-shadow">
               <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-                <Calendar className="h-6 w-6 text-purple-600" />
+                <Zap className="h-6 w-6 text-purple-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Content Calendar</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">AI Content Generator</h3>
               <p className="text-gray-600 text-sm mb-4">
-                AI-generated content ideas tailored to your business, with a Kanban-style workflow.
+                Generate platform-specific content that aligns with your daily marketing tasks and business goals.
               </p>
               <ul className="text-sm text-gray-500 space-y-1">
-                <li>• Platform-specific content</li>
-                <li>• Ideas → Draft → Posted pipeline</li>
-                <li>• Performance tracking</li>
-                <li>• Content templates</li>
+                <li>• Twitter threads & LinkedIn posts</li>
+                <li>• Instagram posts with AI images</li>
+                <li>• Reddit & blog content</li>
+                <li>• Daily habit-aligned content</li>
               </ul>
             </Card>
 
@@ -406,14 +390,14 @@ export default function LandingPage() {
               <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
                 <TrendingUp className="h-6 w-6 text-red-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Progress Analytics</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Marketing Analytics</h3>
               <p className="text-gray-600 text-sm mb-4">
-                Track your marketing activities and see how consistency compounds over time.
+                Overlay marketing strategies with website views and sales data to see what's actually working.
               </p>
               <ul className="text-sm text-gray-500 space-y-1">
-                <li>• Streak visualization</li>
-                <li>• XP progress tracking</li>
-                <li>• Weekly reports</li>
+                <li>• Strategy performance tracking</li>
+                <li>• Sales correlation analysis</li>
+                <li>• Stripe integration for revenue</li>
                 <li>• Goal achievement</li>
               </ul>
             </Card>
@@ -504,17 +488,19 @@ export default function LandingPage() {
             <p className="text-xl text-gray-600">Start free, upgrade when you're ready to scale</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             <Card className="p-8 border-2 border-gray-200">
               <div className="text-center">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Starter</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Free</h3>
                 <div className="mb-4">
-                  <span className="text-4xl font-bold text-gray-900">Free</span>
+                  <span className="text-4xl font-bold text-gray-900">$0</span>
                 </div>
                 <p className="text-gray-600 mb-6">Perfect for getting started</p>
-                <Button variant="outline" className="w-full mb-6 bg-transparent">
-                  Get Started
-                </Button>
+                <Link href="/">
+                  <Button variant="outline" className="w-full mb-6 bg-transparent">
+                    Get Started Free
+                  </Button>
+                </Link>
                 <ul className="text-left space-y-3 text-sm">
                   <li className="flex items-center">
                     <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
@@ -522,14 +508,19 @@ export default function LandingPage() {
                   </li>
                   <li className="flex items-center">
                     <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    7-day habit tracker
+                    Daily habit tracker
                   </li>
                   <li className="flex items-center">
                     <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    Basic AI chat
+                    AI marketing chat
                   </li>
                   <li className="flex items-center">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />5 content ideas/week
+                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                    Basic content generation
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                    Marketing lessons
                   </li>
                 </ul>
               </div>
@@ -537,28 +528,22 @@ export default function LandingPage() {
 
             <Card className="p-8 border-2 border-indigo-500 relative">
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <Badge className="bg-indigo-500 text-white">Most Popular</Badge>
+                <Badge className="bg-indigo-500 text-white">Recommended</Badge>
               </div>
               <div className="text-center">
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">Pro</h3>
                 <div className="mb-4">
-                  <span className="text-4xl font-bold text-gray-900">$29</span>
+                  <span className="text-4xl font-bold text-gray-900">$15</span>
                   <span className="text-gray-600">/month</span>
                 </div>
                 <p className="text-gray-600 mb-6">For serious growth</p>
-                <Button className="w-full mb-6">Start Free Trial</Button>
+                <Link href="/">
+                  <Button className="w-full mb-6">Start Pro</Button>
+                </Link>
                 <ul className="text-left space-y-3 text-sm">
                   <li className="flex items-center">
                     <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    Everything in Starter
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    Unlimited habit tracking
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    Advanced AI coaching
+                    Everything in Free
                   </li>
                   <li className="flex items-center">
                     <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
@@ -566,46 +551,23 @@ export default function LandingPage() {
                   </li>
                   <li className="flex items-center">
                     <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    Weekly swipe files
+                    AI image generation
                   </li>
                   <li className="flex items-center">
                     <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    Progress analytics
-                  </li>
-                </ul>
-              </div>
-            </Card>
-
-            <Card className="p-8 border-2 border-gray-200">
-              <div className="text-center">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">Agency</h3>
-                <div className="mb-4">
-                  <span className="text-4xl font-bold text-gray-900">$99</span>
-                  <span className="text-gray-600">/month</span>
-                </div>
-                <p className="text-gray-600 mb-6">For teams and agencies</p>
-                <Button variant="outline" className="w-full mb-6 bg-transparent">
-                  Contact Sales
-                </Button>
-                <ul className="text-left space-y-3 text-sm">
-                  <li className="flex items-center">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    Everything in Pro
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />5 team members
+                    Marketing analytics dashboard
                   </li>
                   <li className="flex items-center">
                     <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    White-label reports
+                    Stripe sales integration
                   </li>
                   <li className="flex items-center">
                     <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    Priority support
+                    6+ month adaptive strategies
                   </li>
                   <li className="flex items-center">
                     <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    Custom integrations
+                    Gamification rewards
                   </li>
                 </ul>
               </div>
