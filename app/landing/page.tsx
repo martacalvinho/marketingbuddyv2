@@ -162,145 +162,47 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Features Section - Will continue in next chunk */}
-      <section id="features" className="py-20 bg-gradient-to-b from-white to-blue-50">
-        <div className="max-w-7xl mx-auto px-6 sm:px-12">
-          <div className="text-center max-w-3xl mx-auto mb-20">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Everything You Need To <span className="text-blue-600">Market Successfully</span></h2>
-            <p className="text-xl text-gray-700">Our AI understands your business and creates a complete marketing strategy personalized for your goals</p>
+      {/* You Built It Section */}
+      <section className="py-20 bg-gradient-to-br from-indigo-50 to-blue-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+              You built it. Now what?
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              The hardest part isn't building your product—it's getting people to discover it.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-            <Card className="rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow border border-blue-100">
-              <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
-                <PieChart className="h-8 w-8 text-blue-500" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            <Card className="p-6 text-center bg-white shadow-lg hover:shadow-xl transition-shadow">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Target className="h-8 w-8 text-red-600" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">Website Analysis Audit</h3>
-              <p className="text-gray-700 mb-4">Get instant actionable feedback on your website's marketing effectiveness with prioritized improvement areas.</p>
-              <ul className="space-y-3">
-                <li className="flex items-start">
-                  <CheckCircle className="text-green-500 mt-1 mr-2 h-4 w-4" />
-                  <span>SEO performance review</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="text-green-500 mt-1 mr-2 h-4 w-4" />
-                  <span>Conversion rate optimization</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="text-green-500 mt-1 mr-2 h-4 w-4" />
-                  <span>User experience evaluation</span>
-                </li>
-              </ul>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Marketing Overwhelm</h3>
+              <p className="text-gray-600">
+                Endless tactics, conflicting advice, and no clear path forward. You're stuck in analysis paralysis.
+              </p>
             </Card>
 
-            <Card className="rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow border border-purple-100">
-              <div className="w-16 h-16 bg-purple-100 rounded-lg flex items-center justify-center mb-6">
-                <Map className="h-8 w-8 text-purple-500" />
+            <Card className="p-6 text-center bg-white shadow-lg hover:shadow-xl transition-shadow">
+              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Map className="h-8 w-8 text-orange-600" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">Long-Term Strategy Roadmap</h3>
-              <p className="text-gray-700 mb-4">A complete 6-12 month marketing plan broken into manageable phases with clear milestones and KPIs.</p>
-              <ul className="space-y-3">
-                <li className="flex items-start">
-                  <CheckCircle className="text-green-500 mt-1 mr-2 h-4 w-4" />
-                  <span>Customized for your industry</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="text-green-500 mt-1 mr-2 h-4 w-4" />
-                  <span>Budget-aware recommendations</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="text-green-500 mt-1 mr-2 h-4 w-4" />
-                  <span>Channel-specific tactics</span>
-                </li>
-              </ul>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Lack of Strategy</h3>
+              <p className="text-gray-600">
+                Random posts here and there won't cut it. You need a systematic approach that builds momentum.
+              </p>
             </Card>
 
-            <Card className="rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow border border-cyan-100">
-              <div className="w-16 h-16 bg-cyan-100 rounded-lg flex items-center justify-center mb-6">
-                <ListChecks className="h-8 w-8 text-cyan-500" />
+            <Card className="p-6 text-center bg-white shadow-lg hover:shadow-xl transition-shadow">
+              <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FileText className="h-8 w-8 text-yellow-600" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">Daily Actionable Tasks</h3>
-              <p className="text-gray-700 mb-4">Never feel overwhelmed again. Get 1-3 clear marketing tasks each day with detailed instructions.</p>
-              <ul className="space-y-3">
-                <li className="flex items-start">
-                  <CheckCircle className="text-green-500 mt-1 mr-2 h-4 w-4" />
-                  <span>Prioritized by impact</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="text-green-500 mt-1 mr-2 h-4 w-4" />
-                  <span>Time estimates provided</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="text-green-500 mt-1 mr-2 h-4 w-4" />
-                  <span>Integrated with your calendar</span>
-                </li>
-              </ul>
-            </Card>
-
-            <Card className="rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow border border-yellow-100">
-              <div className="w-16 h-16 bg-yellow-100 rounded-lg flex items-center justify-center mb-6">
-                <FileText className="h-8 w-8 text-yellow-500" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">Tailored Content Creation</h3>
-              <p className="text-gray-700 mb-4">Generate platform-specific content that aligns with your brand voice and marketing objectives.</p>
-              <ul className="space-y-3">
-                <li className="flex items-start">
-                  <CheckCircle className="text-green-500 mt-1 mr-2 h-4 w-4" />
-                  <span>Social media posts</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="text-green-500 mt-1 mr-2 h-4 w-4" />
-                  <span>Email campaigns</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="text-green-500 mt-1 mr-2 h-4 w-4" />
-                  <span>Blog articles</span>
-                </li>
-              </ul>
-            </Card>
-
-            <Card className="rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow border border-indigo-100">
-              <div className="w-16 h-16 bg-indigo-100 rounded-lg flex items-center justify-center mb-6">
-                <Bot className="h-8 w-8 text-indigo-500" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">AI Marketing Assistant</h3>
-              <p className="text-gray-700 mb-4">Get real-time guidance, answers, and recommendations based on your specific marketing context.</p>
-              <ul className="space-y-3">
-                <li className="flex items-start">
-                  <CheckCircle className="text-green-500 mt-1 mr-2 h-4 w-4" />
-                  <span>24/7 support</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="text-green-500 mt-1 mr-2 h-4 w-4" />
-                  <span>Strategy adjustments</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="text-green-500 mt-1 mr-2 h-4 w-4" />
-                  <span>Competitor insights</span>
-                </li>
-              </ul>
-            </Card>
-
-            <Card className="rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow border border-green-100">
-              <div className="w-16 h-16 bg-green-100 rounded-lg flex items-center justify-center mb-6">
-                <BarChart3 className="h-8 w-8 text-green-500" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">Performance Analytics</h3>
-              <p className="text-gray-700 mb-4">Track your marketing progress with clear visuals showing what's working and where to improve.</p>
-              <ul className="space-y-3">
-                <li className="flex items-start">
-                  <CheckCircle className="text-green-500 mt-1 mr-2 h-4 w-4" />
-                  <span>ROI measurement</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="text-green-500 mt-1 mr-2 h-4 w-4" />
-                  <span>Traffic sources</span>
-                </li>
-                <li className="flex items-start">
-                  <CheckCircle className="text-green-500 mt-1 mr-2 h-4 w-4" />
-                  <span>Conversion tracking</span>
-                </li>
-              </ul>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Content Overload</h3>
+              <p className="text-gray-600">
+                Stuck staring at a blank screen? We generate platform-specific content in seconds.
+              </p>
             </Card>
           </div>
         </div>
@@ -365,33 +267,57 @@ export default function LandingPage() {
             <div className="lg:w-1/2">
               <Card className="rounded-3xl p-8 max-w-xl mx-auto shadow-2xl">
                 <div className="text-center mb-8">
-                  <h3 className="text-2xl font-bold text-gray-900">Daily Task Example</h3>
-                  <p className="text-gray-600">Your personalized action for today</p>
+                  <h3 className="text-2xl font-bold text-gray-900">Your Marketing Dashboard</h3>
+                  <p className="text-gray-600">Track your progress and manage all your marketing in one place</p>
                 </div>
-                <div className="bg-blue-50 rounded-xl p-6 mb-6">
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0">
-                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-4">
-                        <Twitter className="h-5 w-5 text-blue-500" />
-                      </div>
+                {/* Progress Bar */}
+                <div className="mb-6">
+                  <div className="flex justify-between mb-1">
+                    <span className="text-sm font-medium text-gray-700">Task Completion</span>
+                    <span className="text-sm font-medium text-gray-700">75%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-200">
+                    <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-2.5 rounded-full" style={{ width: '75%' }}></div>
+                  </div>
+                </div>
+                {/* Today's Tasks */}
+                <div className="mb-6">
+                  <h4 className="font-bold text-lg text-gray-900 mb-4">Today's Tasks</h4>
+                  <div className="space-y-4">
+                    <div className="flex items-center bg-blue-50 rounded-xl px-4 py-3">
+                      <span className="mr-3 text-blue-500">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-circle-check"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>
+                      </span>
+                      <span className="text-gray-900">Write blog post about industry trends</span>
                     </div>
-                    <div>
-                      <h4 className="font-bold text-lg text-gray-900 mb-2">Create Twitter Thread</h4>
-                      <p className="text-gray-700 mb-4">
-                        Create a 5-tweet thread about your latest feature update. Focus on the problem it solves and include a clear CTA.
-                      </p>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Clock className="mr-2 h-4 w-4" />
-                        <span>Estimated time: 20-30 minutes</span>
-                      </div>
+                    <div className="flex items-center bg-blue-50 rounded-xl px-4 py-3">
+                      <span className="mr-3 text-blue-500">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-circle-check"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>
+                      </span>
+                      <span className="text-gray-900">Schedule social media posts</span>
+                    </div>
+                    <div className="flex items-center bg-blue-50 rounded-xl px-4 py-3 opacity-60">
+                      <span className="mr-3 text-gray-400">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-circle"><circle cx="12" cy="12" r="10"/></svg>
+                      </span>
+                      <span className="text-gray-900">Update website CTAs</span>
                     </div>
                   </div>
                 </div>
-                <div className="text-center">
-                  <Button className="mx-auto">
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Generate Content With AI
-                  </Button>
+                {/* Stats */}
+                <div className="flex justify-between items-center border-t pt-4 mt-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-gray-900">24</div>
+                    <div className="text-xs text-gray-600">Tasks Completed</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-gray-900">8</div>
+                    <div className="text-xs text-gray-600">In Progress</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-gray-900">15</div>
+                    <div className="text-xs text-gray-600">Upcoming</div>
+                  </div>
                 </div>
               </Card>
             </div>
@@ -399,48 +325,166 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* You Built It Section */}
-      <section className="py-20 bg-gradient-to-br from-indigo-50 to-blue-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-              You built it. Now what?
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              The hardest part isn't building your product—it's getting people to discover it.
-            </p>
+      {/* Features Section - Dashboard Previews */}
+      <section id="features" className="py-20 bg-gradient-to-b from-white to-blue-50">
+        <div className="max-w-7xl mx-auto px-6 sm:px-12">
+          <div className="text-center max-w-4xl mx-auto mb-20">
+            <div className="inline-block bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full mb-4">DASHBOARD PREVIEW</div>
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">Real dashboard, real AI workflows, real results</h2>
+            <p className="text-xl text-gray-600 leading-relaxed">Not sure where to start with marketing? These features handle real work, right now. And you can too.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            <Card className="p-6 text-center bg-white shadow-lg hover:shadow-xl transition-shadow">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Target className="h-8 w-8 text-red-600" />
+          {/* Website Analysis Feature */}
+          <div className="mb-32">
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
+              <div>
+                <div className="inline-block bg-blue-50 text-blue-700 text-sm font-medium px-3 py-1 rounded-full mb-4">WEBSITE ANALYSIS</div>
+                <h3 className="text-3xl font-bold text-gray-900 mb-6">Get instant feedback on your marketing effectiveness</h3>
+                <p className="text-lg text-gray-600 mb-8">Your website gets analyzed automatically with prioritized improvement areas. See exactly what's working and what needs attention.</p>
+                <div className="text-sm text-gray-500 mb-4">Marketing Buddy's 3-person analysis team resolves 85% of website issues automatically with AI.</div>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Marketing Overwhelm</h3>
-              <p className="text-gray-600">
-                Endless tactics, conflicting advice, and no clear path forward. You're stuck in analysis paralysis.
-              </p>
-            </Card>
+              <div className="relative">
+                <div className="bg-gradient-to-br from-blue-100 to-indigo-200 rounded-3xl p-8 shadow-2xl">
+                  <div className="bg-white rounded-2xl p-8 shadow-lg">
+                    <div className="flex items-center justify-between mb-6">
+                      <h4 className="text-xl font-bold text-gray-900">Website Analysis Dashboard</h4>
+                      <PieChart className="h-8 w-8 text-blue-500" />
+                    </div>
+                    <div className="space-y-6">
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-gray-700 font-medium">SEO Performance</span>
+                          <span className="text-green-600 font-bold text-lg">85%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-3">
+                          <div className="bg-gradient-to-r from-green-400 to-green-500 h-3 rounded-full" style={{ width: '85%' }}></div>
+                        </div>
+                        <div className="text-sm text-gray-500 mt-1">↑ 12% from last month</div>
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-gray-700 font-medium">Conversion Rate</span>
+                          <span className="text-yellow-600 font-bold text-lg">2.4%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-3">
+                          <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 h-3 rounded-full" style={{ width: '60%' }}></div>
+                        </div>
+                        <div className="text-sm text-gray-500 mt-1">Needs improvement</div>
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-gray-700 font-medium">Page Speed</span>
+                          <span className="text-red-600 font-bold text-lg">1.8s</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-3">
+                          <div className="bg-gradient-to-r from-red-400 to-red-500 h-3 rounded-full" style={{ width: '40%' }}></div>
+                        </div>
+                        <div className="text-sm text-gray-500 mt-1">Priority fix needed</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-            <Card className="p-6 text-center bg-white shadow-lg hover:shadow-xl transition-shadow">
-              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Map className="h-8 w-8 text-orange-600" />
+          {/* Strategy Roadmap Feature */}
+          <div className="mb-32">
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
+              <div className="lg:order-2">
+                <div className="inline-block bg-purple-50 text-purple-700 text-sm font-medium px-3 py-1 rounded-full mb-4">STRATEGY ROADMAP</div>
+                <h3 className="text-3xl font-bold text-gray-900 mb-6">Let AI create your 6-month marketing plan</h3>
+                <p className="text-lg text-gray-600 mb-8">A complete marketing strategy broken into manageable phases with clear milestones, KPIs, and budget considerations.</p>
+                <div className="text-sm text-gray-500 mb-4">Customized for your industry and business goals with quarterly reviews.</div>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Lack of Strategy</h3>
-              <p className="text-gray-600">
-                Random posts here and there won't cut it. You need a systematic approach that builds momentum.
-              </p>
-            </Card>
+              <div className="lg:order-1 relative">
+                <div className="bg-gradient-to-br from-purple-100 to-indigo-200 rounded-3xl p-8 shadow-2xl">
+                  <div className="bg-white rounded-2xl p-8 shadow-lg">
+                    <div className="flex items-center justify-between mb-6">
+                      <h4 className="text-xl font-bold text-gray-900">6-Month Marketing Roadmap</h4>
+                      <Map className="h-8 w-8 text-purple-500" />
+                    </div>
+                    <div className="space-y-6">
+                      <div className="flex items-center bg-green-50 rounded-lg p-4">
+                        <div className="w-4 h-4 bg-green-500 rounded-full mr-4"></div>
+                        <div className="flex-1">
+                          <div className="font-semibold text-gray-900">Month 1-2: SEO Foundation</div>
+                          <div className="text-sm text-gray-600">Keyword research, on-page optimization, technical SEO</div>
+                          <div className="text-xs text-green-600 font-medium mt-1">✓ Completed</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center bg-blue-50 rounded-lg p-4">
+                        <div className="w-4 h-4 bg-blue-500 rounded-full mr-4"></div>
+                        <div className="flex-1">
+                          <div className="font-semibold text-gray-900">Month 3-4: Content Strategy</div>
+                          <div className="text-sm text-gray-600">Blog content, social media, email campaigns</div>
+                          <div className="text-xs text-blue-600 font-medium mt-1">🔄 In Progress (60%)</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center bg-gray-50 rounded-lg p-4">
+                        <div className="w-4 h-4 bg-gray-300 rounded-full mr-4"></div>
+                        <div className="flex-1">
+                          <div className="font-semibold text-gray-500">Month 5-6: Paid Campaigns</div>
+                          <div className="text-sm text-gray-500">Google Ads, Facebook Ads, retargeting</div>
+                          <div className="text-xs text-gray-500 font-medium mt-1">⏳ Upcoming</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-            <Card className="p-6 text-center bg-white shadow-lg hover:shadow-xl transition-shadow">
-              <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FileText className="h-8 w-8 text-yellow-600" />
+          {/* Daily Tasks Feature */}
+          <div className="mb-20">
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
+              <div>
+                <div className="inline-block bg-cyan-50 text-cyan-700 text-sm font-medium px-3 py-1 rounded-full mb-4">DAILY TASKS</div>
+                <h3 className="text-3xl font-bold text-gray-900 mb-6">Never feel overwhelmed with daily actionable tasks</h3>
+                <p className="text-lg text-gray-600 mb-8">Get 1-3 clear marketing tasks each day with detailed instructions, time estimates, and priority levels. No more guessing what to do next.</p>
+                <div className="text-sm text-gray-500 mb-4">Tasks are prioritized by impact and automatically scheduled around your availability.</div>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Content Overload</h3>
-              <p className="text-gray-600">
-                Stuck staring at a blank screen? We generate platform-specific content in seconds.
-              </p>
-            </Card>
+              <div className="relative">
+                <div className="bg-gradient-to-br from-cyan-100 to-blue-200 rounded-3xl p-8 shadow-2xl">
+                  <div className="bg-white rounded-2xl p-8 shadow-lg">
+                    <div className="flex items-center justify-between mb-6">
+                      <h4 className="text-xl font-bold text-gray-900">Today's Marketing Tasks</h4>
+                      <ListChecks className="h-8 w-8 text-cyan-500" />
+                    </div>
+                    <div className="space-y-4">
+                      <div className="flex items-center bg-green-50 rounded-lg p-4 border border-green-200">
+                        <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+                        <div className="flex-1">
+                          <div className="font-semibold text-gray-900">Write blog post: "10 SEO Tips"</div>
+                          <div className="text-sm text-gray-600">Est. 45 minutes • High impact</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center bg-blue-50 rounded-lg p-4 border border-blue-200">
+                        <Clock className="h-5 w-5 text-blue-500 mr-3" />
+                        <div className="flex-1">
+                          <div className="font-semibold text-gray-900">Schedule 5 social media posts</div>
+                          <div className="text-sm text-gray-600">Est. 20 minutes • Medium impact</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <div className="h-5 w-5 border-2 border-gray-300 rounded-full mr-3"></div>
+                        <div className="flex-1">
+                          <div className="font-semibold text-gray-700">Update website CTAs</div>
+                          <div className="text-sm text-gray-500">Est. 30 minutes • Low impact</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-6 pt-4 border-t border-gray-200">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Progress today:</span>
+                        <span className="font-semibold text-gray-900">1 of 3 completed</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>

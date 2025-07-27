@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Twitter, Linkedin, MessageSquare, Instagram, Video, FileText, Zap, Copy, Check, Loader2, CheckCircle2, Circle, Target, ChevronRight, ChevronLeft, Calendar, Clock } from "lucide-react"
+import { Twitter, Linkedin, MessageSquare, Instagram, Video, FileText, Zap, Copy, Check, Loader2, CheckCircle2, Circle, Target, ChevronRight, ChevronLeft, Calendar, Clock, Lightbulb } from "lucide-react"
 import WeekProgress from "./week-progress"
 
 interface HabitTrackerProps {
@@ -14,6 +14,9 @@ interface HabitTrackerProps {
   onCompleteTask: (taskId: string | number) => void
   onDeleteTask?: (taskId: string | number) => void
   onAddTask?: (title: string, description: string) => void
+  onUpdateTask?: (taskId: string | number, updates: Partial<any>) => void
+  onReorderTasks?: (newOrder: any[]) => void
+  onAddTaskNote?: (taskId: string | number, note: string) => void
   streak: number
   xp: number
   currentDay?: number
@@ -21,6 +24,19 @@ interface HabitTrackerProps {
   user?: any
   weekStats?: { total: number; done: number; goals: string[] }[]
   onTaskUpdate?: () => void
+}
+
+interface Task {
+  id: string | number
+  title: string
+  description: string
+  completed: boolean
+  estimatedTime?: string
+  xp?: number
+  category?: 'content' | 'analytics' | 'community' | 'strategy' | 'engagement'
+  impact?: string
+  tips?: string[]
+  note?: string
 }
 
 const getWeekFocus = (day: number) => {
@@ -58,15 +74,36 @@ const getWeekFocus = (day: number) => {
   }
 }
 
-export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAddTask, streak, xp, currentDay = 1, onDayChange, user, weekStats = [], onTaskUpdate }: HabitTrackerProps) {
+const getCategoryColor = (category: string) => {
+  switch (category) {
+    case 'content': return 'bg-blue-100 text-blue-800 border-blue-200'
+    case 'analytics': return 'bg-purple-100 text-purple-800 border-purple-200'
+    case 'community': return 'bg-green-100 text-green-800 border-green-200'
+    case 'strategy': return 'bg-orange-100 text-orange-800 border-orange-200'
+    case 'engagement': return 'bg-pink-100 text-pink-800 border-pink-200'
+    default: return 'bg-gray-100 text-gray-800 border-gray-200'
+  }
+}
+
+
+
+export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAddTask, onUpdateTask, onReorderTasks, onAddTaskNote, streak, xp, currentDay = 1, onDayChange, user, weekStats = [], onTaskUpdate }: HabitTrackerProps) {
   const [newTitle, setNewTitle] = useState("")
   const [newDesc, setNewDesc] = useState("")
   const [isJourneyCollapsed, setIsJourneyCollapsed] = useState(false)
   const [showEditGoal, setShowEditGoal] = useState(false)
+  const [editingTask, setEditingTask] = useState<string | null>(null)
+  const [editValue, setEditValue] = useState("")
   const [userGoal, setUserGoal] = useState(1000)
   const [revenueGoal, setRevenueGoal] = useState(1000)
   const [currentUsers, setCurrentUsers] = useState(Math.min(Math.ceil(currentDay * 5.5), 1000))
   const [currentRevenue, setCurrentRevenue] = useState(Math.min(Math.ceil(currentDay * 15), 1000))
+  const [editingTaskId, setEditingTaskId] = useState<string | number | null>(null)
+  const [editingTaskTitle, setEditingTaskTitle] = useState("")
+  const [editingTaskDescription, setEditingTaskDescription] = useState("")
+  const [noteEditingTaskId, setNoteEditingTaskId] = useState<string | number | null>(null)
+  const [taskNote, setTaskNote] = useState("")
+  const [draggedTask, setDraggedTask] = useState<any | null>(null)
   const completedTasks = tasks.filter((task) => task.completed).length
   const currentWeek = Math.ceil(currentDay / 7)
   const weekGoals = weekStats[currentWeek - 1]?.goals || []
@@ -91,6 +128,94 @@ export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAd
       onTaskUpdate?.()
     }
   }
+
+  const startEditTask = (taskId: string, currentTitle: string) => {
+    setEditingTask(taskId)
+    setEditValue(currentTitle)
+  }
+
+  const commitTaskEdit = () => {
+    // Note: This would need to be implemented in the parent component
+    // For now, we'll just cancel the edit
+    setEditingTask(null)
+    setEditValue("")
+  }
+
+  const startEditTaskDetails = (task: Task) => {
+    setEditingTaskId(task.id)
+    setEditingTaskTitle(task.title)
+    setEditingTaskDescription(task.description)
+  }
+
+  const saveTaskEdits = () => {
+    if (editingTaskId && onUpdateTask) {
+      onUpdateTask(editingTaskId, {
+        title: editingTaskTitle,
+        description: editingTaskDescription
+      })
+    }
+    setEditingTaskId(null)
+    setEditingTaskTitle("")
+    setEditingTaskDescription("")
+  }
+
+  const cancelTaskEdits = () => {
+    setEditingTaskId(null)
+    setEditingTaskTitle("")
+    setEditingTaskDescription("")
+  }
+
+  const startAddNote = (task: Task) => {
+    setNoteEditingTaskId(task.id)
+    setTaskNote(task.note || "")
+  }
+
+  const saveTaskNote = () => {
+    if (noteEditingTaskId && onAddTaskNote) {
+      onAddTaskNote(noteEditingTaskId, taskNote)
+    }
+    setNoteEditingTaskId(null)
+    setTaskNote("")
+  }
+
+  const cancelAddNote = () => {
+    setNoteEditingTaskId(null)
+    setTaskNote("")
+  }
+
+  const handleDragStart = (e: React.DragEvent, task: any) => {
+    setDraggedTask(task)
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+  }
+
+  const handleDrop = (e: React.DragEvent, targetTask: any) => {
+    e.preventDefault()
+    if (draggedTask && onReorderTasks && draggedTask.id !== targetTask.id) {
+      const newOrder = [...tasks]
+      const draggedIndex = newOrder.findIndex(t => t.id === draggedTask.id)
+      const targetIndex = newOrder.findIndex(t => t.id === targetTask.id)
+      
+      // Remove dragged task from its current position
+      const [removed] = newOrder.splice(draggedIndex, 1)
+      // Insert dragged task at target position
+      newOrder.splice(targetIndex, 0, removed)
+      
+      onReorderTasks(newOrder)
+    }
+    setDraggedTask(null)
+  }
+
+  const cancelTaskEdit = () => {
+    setEditingTask(null)
+    setEditValue("")
+  }
+
+
 
   return (
     <div className="space-y-6">
@@ -130,60 +255,225 @@ export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAd
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {tasks.map((task) => (
-              <div
-                key={task.id}
-                className={`flex items-start space-x-4 p-4 rounded-lg border ${
-                  task.completed ? "bg-green-50 border-green-200" : "bg-white border-gray-200 hover:border-gray-300"
-                }`}
-              >
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => !task.completed && handleCompleteTask(task.id)}
-                  className="p-0 h-auto"
-                  disabled={task.completed}
-                >
-                  {task.completed ? (
-                    <CheckCircle2 className="h-6 w-6 text-green-600" />
-                  ) : (
-                    <Circle className="h-6 w-6 text-gray-400 hover:text-gray-600" />
-                  )}
-                </Button>
+          {/* Progress Overview */}
+          <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+              <div className="flex items-center space-x-2">
+                <Target className="h-5 w-5 text-blue-600" />
+                <span className="font-medium text-blue-900">Today's Progress</span>
+              </div>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-1">
+                  <Zap className="h-4 w-4 text-yellow-500" />
+                  <span className="text-sm font-medium text-blue-700">{xp} XP</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <span className="text-sm font-medium text-blue-700">{streak} day streak</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="w-full bg-blue-200 rounded-full h-2 mb-2">
+              <div 
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out" 
+                style={{ width: `${completionRate}%` }}
+              ></div>
+            </div>
+            
+            <div className="flex justify-between text-xs text-blue-600 mb-2">
+              <span>{completedTasks} of {totalTasks} tasks completed</span>
+              <span>{Math.round(completionRate)}% complete</span>
+            </div>
+            
+            <div className="text-xs text-blue-600">
+              Week Focus: {getWeekFocus(currentDay)}
+            </div>
+            
+            {/* Achievement Indicators */}
+            {streak >= 7 && (
+              <div className="mt-3 flex items-center space-x-2 text-yellow-700 bg-yellow-50 p-2 rounded-lg border border-yellow-200">
+                <span className="text-lg">🔥</span>
+                <span className="text-xs font-medium">{streak >= 30 ? '🔥 Master Marketer!' : streak >= 14 ? '🚀 Consistent Creator!' : '🔥 7-Day Streak!'}</span>
+              </div>
+            )}
+          </div>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <h3 className={`font-medium ${task.completed ? "text-green-800 line-through" : "text-gray-900"}`}>
-                      {task.title}
-                    </h3>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant="outline" className="text-xs">
-                        <Clock className="h-3 w-3 mr-1" />
-                        {task.estimatedTime}
-                      </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        <Zap className="h-3 w-3 mr-1" />
-                        {task.xp} XP
-                      </Badge>
-                    </div>
+          {/* Enhanced Task List */}
+          <div className="space-y-3">
+            {tasks.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Calendar className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                <p className="font-medium">No tasks for today yet</p>
+                <p className="text-sm">AI-powered tasks will be generated based on your marketing strategy</p>
+              </div>
+            ) : (
+              tasks.map((task, index) => (
+                <div
+                  key={task.id}
+                  className={`group relative transition-all duration-200 ${
+                    task.completed 
+                      ? "bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200" 
+                      : "bg-white border border-gray-200 hover:border-blue-300 hover:shadow-sm"
+                  } rounded-xl p-4 cursor-move`}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, task)}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, task)}
+                >
+                  {/* Task Number Badge */}
+                  <div className={`absolute -left-2 -top-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                    task.completed ? "bg-green-500 text-white" : "bg-blue-500 text-white"
+                  }`}>
+                    {index + 1}
                   </div>
-                  <p className={`text-sm mt-1 ${task.completed ? "text-green-700" : "text-gray-600"}`}>
-                    {task.description}
-                  </p>
-                  {onDeleteTask && (
+
+                  <div className="flex items-start space-x-4">
+                    {/* Enhanced Completion Button */}
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-red-500 hover:text-red-700 mt-1"
-                      onClick={() => onDeleteTask(task.id)}
+                      onClick={() => !task.completed && handleCompleteTask(task.id)}
+                      className={`p-2 h-auto transition-all duration-200 ${
+                        task.completed 
+                          ? "bg-green-100 hover:bg-green-200" 
+                          : "hover:bg-blue-50 hover:scale-110"
+                      }`}
+                      disabled={task.completed}
                     >
-                      Delete
+                      {task.completed ? (
+                        <CheckCircle2 className="h-6 w-6 text-green-600" />
+                      ) : (
+                        <Circle className="h-6 w-6 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                      )}
                     </Button>
-                  )}
+
+                    <div className="flex-1 min-w-0">
+                      {/* Task Header with Category and Priority */}
+                      <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                        <div className="flex-1 min-w-0">
+                          {editingTaskId === task.id ? (
+                            <div className="space-y-2">
+                              <Input
+                                value={editingTaskTitle}
+                                onChange={(e) => setEditingTaskTitle(e.target.value)}
+                                className="text-sm font-medium"
+                                placeholder="Task title"
+                                autoFocus
+                              />
+                              <Input
+                                value={editingTaskDescription}
+                                onChange={(e) => setEditingTaskDescription(e.target.value)}
+                                className="text-sm"
+                                placeholder="Task description"
+                              />
+                              <div className="flex space-x-2">
+                                <Button size="sm" onClick={saveTaskEdits}>
+                                  Save
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={cancelTaskEdits}>
+                                  Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div>
+                              <h3 
+                                className={`font-medium cursor-pointer transition-colors ${
+                                  task.completed 
+                                    ? "text-green-800 line-through" 
+                                    : "text-gray-900 hover:text-blue-700"
+                                }`}
+                                onClick={() => !task.completed && startEditTaskDetails(task)}
+                              >
+                                {task.title}
+                              </h3>
+                              <p className={`text-sm leading-relaxed ${
+                                task.completed ? "text-green-700" : "text-gray-600"
+                              }`}>
+                                {task.description}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center space-x-2 ml-2">
+                          <Badge variant="secondary" className="text-xs">
+                            {task.estimatedTime || "15 min"}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs flex items-center space-x-1">
+                            <Zap className="h-3 w-3" />
+                            <span>+{task.xp || 10} XP</span>
+                          </Badge>
+                          {onDeleteTask && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => onDeleteTask(task.id)}
+                            >
+                              Delete
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Edit/Save/Cancel Buttons */}
+                      {editingTaskId !== task.id && (
+                        <div className="flex space-x-2 mt-2">
+                          <Button size="sm" variant="outline" onClick={() => startEditTaskDetails(task)}>
+                            Edit
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => startAddNote(task)}>
+                            {task.note ? 'Edit Note' : 'Add Note'}
+                          </Button>
+                        </div>
+                      )}
+                      
+                      {/* Task Note */}
+                      {noteEditingTaskId === task.id ? (
+                        <div className="mt-3">
+                          <textarea
+                            value={taskNote}
+                            onChange={(e) => setTaskNote(e.target.value)}
+                            className="w-full p-2 border border-gray-300 rounded text-sm"
+                            rows={3}
+                            placeholder="Add a note to this task..."
+                          />
+                          <div className="flex space-x-2 mt-2">
+                            <Button size="sm" onClick={saveTaskNote}>
+                              Save Note
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={cancelAddNote}>
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : task.note ? (
+                        <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                          <p className="text-sm text-blue-800">
+                            <span className="font-medium">Note:</span> {task.note}
+                          </p>
+                        </div>
+                      ) : null}
+                      
+                      {/* Category Badge */}
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {task.category && (
+                          <Badge 
+                            className={`text-xs ${getCategoryColor(task.category)}`}
+                          >
+                            {task.category.charAt(0).toUpperCase() + task.category.slice(1)}
+                          </Badge>
+                        )}
+                      </div>
+                      
+
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
           {onAddTask && (

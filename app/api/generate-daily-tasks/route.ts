@@ -36,12 +36,22 @@ TASK REQUIREMENTS:
 - Focus on measurable outcomes that build toward 1000 users
 - Consider the user's industry and target audience
 
+TASK METADATA REQUIREMENTS:
+- For each task, include a category (content, analytics, community, strategy, engagement)
+- For each task, include an impact statement (1 sentence describing the expected effect)
+
 FORMAT YOUR RESPONSE EXACTLY AS:
 ### Day ${currentDay}
 
 - **Task 1:** [Specific actionable task with clear outcome]
-- **Task 2:** [Specific actionable task with clear outcome] 
+  - Category: [content|analytics|community|strategy|engagement]
+  - Impact: [1 sentence describing expected effect]
+- **Task 2:** [Specific actionable task with clear outcome]
+  - Category: [content|analytics|community|strategy|engagement]
+  - Impact: [1 sentence describing expected effect]
 - **Task 3:** [Specific actionable task with clear outcome]
+  - Category: [content|analytics|community|strategy|engagement]
+  - Impact: [1 sentence describing expected effect]
 
 EXAMPLE TASKS (adapt to user's business):
 - **Task 1:** Create and optimize LinkedIn Company Page profile with company description, services, and upload 3-4 high-quality graphics related to [business focus].

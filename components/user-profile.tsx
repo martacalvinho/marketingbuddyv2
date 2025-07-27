@@ -91,6 +91,28 @@ export default function UserProfile({ user, onSignOut, onUpdateProfile }: UserPr
     }
   }
 
+  // Clean monthly content to remove markdown formatting
+  const cleanMonthlyContent = (content: string, isMonth6: boolean = false) => {
+    let cleanedContent = content
+    
+    // For Month 6, only show content up to "## Adaptive Daily Tasks" and remove it
+    if (isMonth6) {
+      const adaptiveTasksIndex = content.indexOf('## Adaptive Daily Tasks')
+      cleanedContent = adaptiveTasksIndex !== -1 
+        ? content.substring(0, adaptiveTasksIndex).trim()
+        : content
+    }
+    
+    // Remove markdown formatting (*, **, and #)
+    cleanedContent = cleanedContent
+      .replace(/\*\*/g, '')  // Remove bold markers
+      .replace(/\*/g, '')     // Remove single asterisks
+      .replace(/#/g, '')      // Remove hash symbols
+      .replace(/^\s*\n/gm, '') // Remove empty lines
+      
+    return cleanedContent
+  }
+
   // Parse monthly strategy from plan text
   const parseMonthlyStrategy = (plan: string) => {
     if (!plan) return []
@@ -497,7 +519,7 @@ export default function UserProfile({ user, onSignOut, onUpdateProfile }: UserPr
                       ) : (
                         <div className="prose prose-sm max-w-none">
                           <pre className="whitespace-pre-wrap text-sm text-gray-700 bg-white p-3 rounded border">
-                            {month.content}
+                            {cleanMonthlyContent(month.content, index === 5)}
                           </pre>
                         </div>
                       )}

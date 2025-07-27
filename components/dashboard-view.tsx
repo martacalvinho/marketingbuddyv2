@@ -90,6 +90,7 @@ export default function DashboardView({ user }: DashboardViewProps) {
   const parseTasks = (content: string, day: number, limit: number = 3) => {
     // Extract tasks from various formats
     const taskPatterns = [
+      /- \*\*Task \d+:\*\*\s*([\s\S]+?)(?=\n- \*\*Task|###|$)/g,  // - **Task X:** format with metadata
       /- \*\*Task \d+:\*\*\s*(.+)/g,  // - **Task X:** format
       /- (.+?)(?=\n|$)/g,              // Simple bullet points
       /\*\*Task \d+:\*\*\s*(.+)/g,    // **Task X:** format
@@ -117,6 +118,111 @@ export default function DashboardView({ user }: DashboardViewProps) {
             description = taskContent.substring(colonIndex + 1).trim()
           }
           
+          // Extract metadata from task content
+          let category: 'content' | 'analytics' | 'community' | 'strategy' | 'engagement' = 'strategy'
+          let impact = 'Builds foundational marketing skills'
+          let tips: string[] = []
+          
+          // Extract category
+          const categoryMatch = taskContent.match(/-\s*Category:\s*(\w+)/i)
+          if (categoryMatch) {
+            const categoryValue = categoryMatch[1].toLowerCase()
+            if (['content', 'analytics', 'community', 'strategy', 'engagement'].includes(categoryValue)) {
+              category = categoryValue as 'content' | 'analytics' | 'community' | 'strategy' | 'engagement'
+            }
+          }
+          
+          // Extract impact
+          const impactMatch = taskContent.match(/-\s*Impact:\s*(.+?)(?=\n|$)/i)
+          if (impactMatch) {
+            impact = impactMatch[1].trim()
+          }
+          
+          // Extract tips
+          const tipsMatch = taskContent.match(/-\s*Tips:\s*(.+?)(?=\n|$)/i)
+          if (tipsMatch) {
+            tips = tipsMatch[1].split(',').map(tip => tip.trim()).filter(tip => tip.length > 0)
+          }
+          
+          // Fallback: Determine category based on task content if not provided
+          if (category === 'strategy') {
+            const lowerTitle = title.toLowerCase()
+            const lowerDescription = description.toLowerCase()
+            const contentText = lowerTitle + ' ' + lowerDescription
+            
+            if (contentText.includes('post') || contentText.includes('content') || contentText.includes('create') || contentText.includes('write') || contentText.includes('publish')) {
+              category = 'content'
+            } else if (contentText.includes('analyze') || contentText.includes('track') || contentText.includes('metric') || contentText.includes('data') || contentText.includes('insight')) {
+              category = 'analytics'
+            } else if (contentText.includes('engage') || contentText.includes('comment') || contentText.includes('respond') || contentText.includes('community') || contentText.includes('follower')) {
+              category = 'community'
+            } else if (contentText.includes('optimize') || contentText.includes('improve') || contentText.includes('strategy') || contentText.includes('plan')) {
+              category = 'strategy'
+            } else if (contentText.includes('share') || contentText.includes('like') || contentText.includes('follow') || contentText.includes('interact')) {
+              category = 'engagement'
+            }
+          }
+          
+
+          
+          // Fallback: Determine impact based on task content if not provided
+          if (impact === 'Builds foundational marketing skills') {
+            const lowerTitle = title.toLowerCase()
+            const lowerDescription = description.toLowerCase()
+            const contentText = lowerTitle + ' ' + lowerDescription
+            
+            if (contentText.includes('growth') || contentText.includes('increase') || contentText.includes('boost')) {
+              impact = 'Drives user growth and engagement'
+            } else if (contentText.includes('brand') || contentText.includes('awareness')) {
+              impact = 'Increases brand visibility and recognition'
+            } else if (contentText.includes('conversion') || contentText.includes('revenue')) {
+              impact = 'Improves conversion rates and revenue'
+            } else if (contentText.includes('retention') || contentText.includes('loyalty')) {
+              impact = 'Enhances user retention and loyalty'
+            }
+          }
+          
+          // Fallback: Generate tips based on category if not provided
+          if (tips.length === 0) {
+            switch (category) {
+              case 'content':
+                tips = [
+                  'Focus on providing value to your audience',
+                  'Use relevant hashtags to increase discoverability',
+                  'Include a clear call-to-action to drive engagement'
+                ]
+                break
+              case 'analytics':
+                tips = [
+                  'Look for patterns in your data, not just numbers',
+                  'Compare metrics to previous periods for context',
+                  'Use insights to inform your next content strategy'
+                ]
+                break
+              case 'community':
+                tips = [
+                  'Be authentic and genuine in your interactions',
+                  'Ask questions to encourage responses',
+                  'Show appreciation for community contributions'
+                ]
+                break
+              case 'strategy':
+                tips = [
+                  'Align tasks with your long-term business goals',
+                  'Document your learnings for future reference',
+                  'Be flexible and adapt based on results'
+                ]
+                break
+              case 'engagement':
+                tips = [
+                  'Respond promptly to comments and messages',
+                  'Personalize your interactions when possible',
+                  'Share content that sparks conversation'
+                ]
+                break
+            }
+          }
+          
           return {
             id: `${day}-${idx + 1}`,
             title: title,
@@ -126,7 +232,10 @@ export default function DashboardView({ user }: DashboardViewProps) {
             estimatedTime: "15 min",
             day: day,
             month: Math.ceil(day / 30),
-            week: Math.ceil(((day - 1) % 30 + 1) / 7)
+            week: Math.ceil(((day - 1) % 30 + 1) / 7),
+            category,
+            impact,
+            tips
           }
         })
         break // Use first successful pattern
@@ -196,6 +305,23 @@ export default function DashboardView({ user }: DashboardViewProps) {
   const deleteTask = (taskId: string | number) => {
     setTodaysTasks((prev: any[]) => prev.filter((t) => t.id !== taskId))
     setTasksByDay((prev) => ({ ...prev, [currentDay]: (prev[currentDay] || []).filter((t: any) => t.id !== taskId) }))
+  }
+
+  const updateTask = (taskId: string | number, updates: Partial<any>) => {
+    setTodaysTasks((prev: any[]) => prev.map((task: any) => task.id === taskId ? { ...task, ...updates } : task))
+    setTasksByDay((prev) => ({
+      ...prev,
+      [currentDay]: (prev[currentDay] || []).map((t: any) => t.id === taskId ? { ...t, ...updates } : t)
+    }))
+  }
+
+  const reorderTasks = (newOrder: any[]) => {
+    setTodaysTasks(newOrder)
+    setTasksByDay((prev) => ({ ...prev, [currentDay]: newOrder }))
+  }
+
+  const addTaskNote = (taskId: string | number, note: string) => {
+    updateTask(taskId, { note })
   }
 
   interface WeekInfo { total: number; done: number; goals: string[] }
@@ -348,6 +474,9 @@ export default function DashboardView({ user }: DashboardViewProps) {
                 onCompleteTask={completeTask} 
                 onDeleteTask={deleteTask}
                 onAddTask={addTask}
+                onUpdateTask={updateTask}
+                onReorderTasks={reorderTasks}
+                onAddTaskNote={addTaskNote}
                 streak={streak} 
                 xp={xp} 
                 currentDay={currentDay}
@@ -357,10 +486,7 @@ export default function DashboardView({ user }: DashboardViewProps) {
                 onTaskUpdate={() => {/* Force re-render for live updates */}}
               />
               
-              {/* Quick analytics preview */}
-              <div className="mt-8">
-                <MarketingAnalytics user={user} compact={true} />
-              </div>
+
             </div>
           </TabsContent>
 
@@ -406,16 +532,11 @@ export default function DashboardView({ user }: DashboardViewProps) {
               <ChatInterface 
                 user={user}
                 dailyTasks={todaysTasks}
-                completedTasks={todaysTasks.filter((t: any) => t.completed).length}
-                totalTasks={todaysTasks.length}
                 streak={streak}
                 xp={xp}
               />
               
-              {/* Quick access to website analysis */}
-              <div className="mt-8">
-                <WebsiteAnalysis user={user} compact={true} />
-              </div>
+
             </div>
           </TabsContent>
         </Tabs>

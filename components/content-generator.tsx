@@ -1,13 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Twitter, Linkedin, MessageSquare, Instagram, Video, FileText, Zap, Copy, Check, Loader2, CheckCircle2, Circle } from "lucide-react"
+import { Twitter, Linkedin, MessageSquare, Instagram, Video, FileText, Zap, Copy, Check, Loader2, CheckCircle2, Circle, BookOpen, Trash2, Edit3, Eye, Heart, BarChart3, ThumbsUp } from "lucide-react"
 import InstagramImageDisplay from "@/components/instagram-image-display"
 
 interface ContentGeneratorProps {
@@ -96,6 +96,72 @@ export default function ContentGenerator({ user, dailyTasks = [], onTaskUpdate }
   const [showTaskSelection, setShowTaskSelection] = useState(false)
   const [usedContent, setUsedContent] = useState<any[]>([])
   const [contentFilter, setContentFilter] = useState<string>('all')
+  const [sortBy, setSortBy] = useState<'recent' | 'views' | 'likes'>('recent')
+  const [lengthFilter, setLengthFilter] = useState<string>('all') // all, short, long
+  const [dateFilter, setDateFilter] = useState<string>('all') // all, today, week, month
+  const [editingAnalytics, setEditingAnalytics] = useState<string | null>(null)
+  const [analyticsForm, setAnalyticsForm] = useState({
+    views24h: 0,
+    likes24h: 0,
+    viewsAllTime: 0,
+    likesAllTime: 0
+  })
+  const [expandedContent, setExpandedContent] = useState<Record<string, boolean>>({})
+
+  // Function to detect platform from task title/description
+  const detectPlatformFromTask = (task: any): string[] => {
+    if (!task) return []
+    
+    const text = `${task.title} ${task.description || ''}`.toLowerCase()
+    
+    // Platform detection patterns - ordered by specificity (most specific first)
+    const platformPatterns = {
+      'linkedin': ['linkedin'],
+      'twitter': ['twitter', 'tweet', 'x.com'],
+      'instagram': ['instagram', 'ig story', 'ig post', 'insta'],
+      'reddit': ['reddit', 'subreddit'],
+      'tiktok': ['tiktok', 'tik tok'],
+      'blog': ['blog post', 'article', 'seo content', 'website content']
+    }
+    
+    // Find the most specific platform match (return only the first match to avoid conflicts)
+    for (const [platform, patterns] of Object.entries(platformPatterns)) {
+      if (patterns.some(pattern => text.includes(pattern))) {
+        return [platform] // Return only the first detected platform
+      }
+    }
+    
+    return [] // No platform detected
+  }
+  
+  // Get relevant content types based on detected platforms
+  const getRelevantContentTypes = () => {
+    if (contentMode !== 'daily-habit' || !selectedDailyTask) {
+      return contentTypes // Show all types for freestyle mode
+    }
+    
+    const detectedPlatforms = detectPlatformFromTask(selectedDailyTask)
+    
+    if (detectedPlatforms.length === 0) {
+      return contentTypes // Show all if no platform detected
+    }
+    
+    // Map detected platforms to content type IDs
+    const platformToContentTypes: { [key: string]: string[] } = {
+      'linkedin': ['linkedin-post'],
+      'twitter': ['twitter-thread'],
+      'instagram': ['instagram-post', 'instagram-story'],
+      'reddit': ['reddit-post'],
+      'tiktok': ['tiktok-script'],
+      'blog': ['seo-blog-post', 'build-in-public']
+    }
+    
+    const relevantTypeIds = detectedPlatforms.flatMap(platform => 
+      platformToContentTypes[platform] || []
+    )
+    
+    return contentTypes.filter(type => relevantTypeIds.includes(type.id))
+  }
 
   const saveToContentLibrary = () => {
     if (generatedContent && selectedType) {
@@ -107,11 +173,105 @@ export default function ContentGenerator({ user, dailyTasks = [], onTaskUpdate }
         image: generatedImage,
         marketingStyle: marketingStyle,
         createdAt: new Date().toISOString(),
-        characterCount: generatedContent.length
+        characterCount: generatedContent.length,
+        analytics: {
+          views24h: 0,
+          likes24h: 0,
+          viewsAllTime: 0,
+          likesAllTime: 0
+        }
       }
       setUsedContent(prev => [newContent, ...prev])
       setContentSaved(true)
       setTimeout(() => setContentSaved(false), 2000)
+    }
+  }
+
+  const startEditingAnalytics = (contentId: string, currentAnalytics: any) => {
+    setEditingAnalytics(contentId)
+    setAnalyticsForm({
+      views24h: currentAnalytics.views24h || 0,
+      likes24h: currentAnalytics.likes24h || 0,
+      viewsAllTime: currentAnalytics.viewsAllTime || 0,
+      likesAllTime: currentAnalytics.likesAllTime || 0
+    })
+  }
+
+  const saveAnalytics = (contentId: string) => {
+    setUsedContent(prev => prev.map(content => 
+      content.id === contentId 
+        ? { ...content, analytics: { ...analyticsForm } }
+        : content
+    ))
+    setEditingAnalytics(null)
+  }
+
+  const cancelEditingAnalytics = () => {
+    setEditingAnalytics(null)
+    setAnalyticsForm({ views24h: 0, likes24h: 0, viewsAllTime: 0, likesAllTime: 0 })
+  }
+
+  const deleteUsedContent = (contentId: string) => {
+    setUsedContent(prev => prev.filter(content => content.id !== contentId))
+  }
+
+  const getFilteredAndSortedContent = () => {
+    // Create a copy of the array to avoid mutating the original
+    let filtered = [...usedContent]
+    
+    // Filter by platform
+    if (contentFilter !== 'all') {
+      filtered = filtered.filter(content => content.platform === contentFilter)
+    }
+    
+    // Filter by content length (short: < 200 chars, long: >= 200 chars)
+    if (lengthFilter !== 'all') {
+      filtered = filtered.filter(content => {
+        const length = content.characterCount || content.content?.length || 0
+        if (lengthFilter === 'short') return length < 200
+        if (lengthFilter === 'long') return length >= 200
+        return true
+      })
+    }
+    
+    // Filter by date
+    if (dateFilter !== 'all') {
+      const now = new Date()
+      filtered = filtered.filter(content => {
+        const contentDate = new Date(content.createdAt)
+        switch (dateFilter) {
+          case 'today':
+            return contentDate.toDateString() === now.toDateString()
+          case 'week':
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+            return contentDate >= weekAgo
+          case 'month':
+            const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+            return contentDate >= monthAgo
+          default:
+            return true
+        }
+      })
+    }
+    
+    // Sort content
+    switch (sortBy) {
+      case 'recent':
+        return [...filtered].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      case 'views':
+        return [...filtered].sort((a, b) => {
+          const aViews = (a.analytics?.viewsAllTime || 0)
+          const bViews = (b.analytics?.viewsAllTime || 0)
+          return bViews - aViews
+        })
+      case 'likes':
+        return [...filtered].sort((a, b) => {
+          const aLikes = (a.analytics?.likesAllTime || 0)
+          const bLikes = (b.analytics?.likesAllTime || 0)
+          return bLikes - aLikes
+        })
+      default:
+        return filtered
     }
   }
 
@@ -422,23 +582,61 @@ export default function ContentGenerator({ user, dailyTasks = [], onTaskUpdate }
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {contentTypes.map((type) => {
               const isDisabled = contentMode === 'daily-habit' && !selectedDailyTask
+              const relevantTypes = getRelevantContentTypes()
+              const isRelevant = relevantTypes.some(t => t.id === type.id)
+              const isHighlighted = contentMode === 'daily-habit' && selectedDailyTask && isRelevant
+              const isDimmed = contentMode === 'daily-habit' && selectedDailyTask && !isRelevant
+              
               return (
                 <Card
                   key={type.id}
-                  className={`cursor-pointer transition-shadow border-2 ${
+                  className={`cursor-pointer transition-all duration-200 border-2 ${
                     isDisabled 
                       ? 'opacity-50 cursor-not-allowed border-gray-200' 
-                      : 'hover:shadow-md hover:border-indigo-200'
+                      : isHighlighted
+                        ? 'border-indigo-500 bg-indigo-50 shadow-md scale-105 ring-2 ring-indigo-200'
+                        : isDimmed
+                          ? 'opacity-40 border-gray-200'
+                          : 'hover:shadow-md hover:border-indigo-200'
                   }`}
                   onClick={() => !isDisabled && generateContent(type)}
                 >
                   <CardContent className="p-4 text-center">
-                    <type.icon className={`h-8 w-8 mx-auto mb-2 ${isDisabled ? 'text-gray-400' : type.color}`} />
-                    <h3 className="font-medium text-sm mb-1">{type.name}</h3>
-                    <p className="text-xs text-gray-500">{type.description}</p>
+                    {isHighlighted && (
+                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center">
+                        <Zap className="h-3 w-3 text-white" />
+                      </div>
+                    )}
+                    <type.icon className={`h-8 w-8 mx-auto mb-2 ${
+                      isDisabled 
+                        ? 'text-gray-400' 
+                        : isHighlighted 
+                          ? 'text-indigo-600' 
+                          : isDimmed 
+                            ? 'text-gray-300'
+                            : type.color
+                    }`} />
+                    <h3 className={`font-medium text-sm mb-1 ${
+                      isHighlighted 
+                        ? 'text-indigo-900' 
+                        : isDimmed 
+                          ? 'text-gray-400'
+                          : 'text-gray-900'
+                    }`}>{type.name}</h3>
+                    <p className={`text-xs ${
+                      isHighlighted 
+                        ? 'text-indigo-700' 
+                        : isDimmed 
+                          ? 'text-gray-400'
+                          : 'text-gray-500'
+                    }`}>{type.description}</p>
                     {contentMode === 'daily-habit' && selectedDailyTask && (
-                      <Badge className="mt-2 text-xs" variant="secondary">
-                        For: {selectedDailyTask.title.substring(0, 20)}...
+                      <Badge className={`mt-2 text-xs ${
+                        isHighlighted 
+                          ? 'bg-indigo-100 text-indigo-800 border-indigo-200' 
+                          : 'bg-gray-100 text-gray-600'
+                      }`} variant="secondary">
+                        {isHighlighted ? '✨ Recommended' : `For: ${selectedDailyTask.title.substring(0, 15)}...`}
                       </Badge>
                     )}
                   </CardContent>
@@ -625,50 +823,242 @@ export default function ContentGenerator({ user, dailyTasks = [], onTaskUpdate }
         </Card>
       )}
       
-      {/* Content Used Section */}
+      {/* Used Content Library */}
       {usedContent.length > 0 && (
-        <Card className="mt-8">
+        <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">📚 Content Used</CardTitle>
-              <div className="flex items-center space-x-2">
-                <select 
-                  value={contentFilter} 
-                  onChange={(e) => setContentFilter(e.target.value)}
-                  className="px-3 py-1 text-sm border rounded-md bg-white"
-                >
-                  <option value="all">All Platforms</option>
-                  <option value="twitter-thread">Twitter</option>
-                  <option value="linkedin-post">LinkedIn</option>
-                  <option value="instagram-post">Instagram</option>
-                  <option value="reddit-post">Reddit</option>
-                  <option value="seo-blog">SEO Blog</option>
-                </select>
-                <Badge variant="outline">{usedContent.length} items</Badge>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <CardTitle className="flex items-center space-x-2">
+                <BookOpen className="h-5 w-5" />
+                <span>Used Content Library</span>
+              </CardTitle>
+              <div className="flex flex-wrap items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <Label className="text-sm font-medium text-gray-700 whitespace-nowrap">Filters:</Label>
+                  <select 
+                    value={contentFilter} 
+                    onChange={(e) => setContentFilter(e.target.value)}
+                    className="px-3 py-2 border rounded-md text-sm bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="all">All Platforms</option>
+                    <option value="twitter-thread">Twitter</option>
+                    <option value="linkedin-post">LinkedIn</option>
+                    <option value="instagram-post">Instagram</option>
+                    <option value="instagram-story">Instagram Story</option>
+                    <option value="reddit-post">Reddit</option>
+                    <option value="tiktok-script">TikTok</option>
+                    <option value="seo-blog-post">SEO Blog</option>
+                    <option value="build-in-public">Build in Public</option>
+                  </select>
+                </div>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <Label className="text-sm font-medium text-gray-700 whitespace-nowrap">Length:</Label>
+                  <select 
+                    value={lengthFilter} 
+                    onChange={(e) => setLengthFilter(e.target.value)}
+                    className="px-3 py-2 border rounded-md text-sm bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="all">All Lengths</option>
+                    <option value="short">Short (&lt;200 chars)</option>
+                    <option value="long">Long (200+ chars)</option>
+                  </select>
+                </div>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <Label className="text-sm font-medium text-gray-700 whitespace-nowrap">Date:</Label>
+                  <select 
+                    value={dateFilter} 
+                    onChange={(e) => setDateFilter(e.target.value)}
+                    className="px-3 py-2 border rounded-md text-sm bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="all">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                  </select>
+                </div>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <Label className="text-sm font-medium text-gray-700 whitespace-nowrap">Sort by:</Label>
+                  <select 
+                    value={sortBy} 
+                    onChange={(e) => setSortBy(e.target.value as 'recent' | 'views' | 'likes')}
+                    className="px-3 py-2 border rounded-md text-sm bg-white shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="recent">Most Recent</option>
+                    <option value="views">Most Views</option>
+                    <option value="likes">Most Likes</option>
+                  </select>
+                </div>
+                <Badge variant="secondary" className="ml-2">{getFilteredAndSortedContent().length} items</Badge>
               </div>
             </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-4 max-h-96 overflow-y-auto">
-              {usedContent
-                .filter(item => contentFilter === 'all' || item.platform === contentFilter)
-                .map((item) => (
-                <div key={item.id} className="p-4 border rounded-lg bg-gray-50">
-                  <div className="flex items-center justify-between mb-2">
+              {getFilteredAndSortedContent().map((item) => (
+                <div key={item.id} className="p-4 border rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-2">
                       <Badge variant="secondary">{item.type}</Badge>
                       {item.marketingStyle && (
                         <Badge variant="outline" className="text-xs">{item.marketingStyle}</Badge>
                       )}
                     </div>
-                    <span className="text-xs text-gray-500">
-                      {new Date(item.createdAt).toLocaleDateString()}
-                    </span>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs text-gray-500">
+                        {new Date(item.createdAt).toLocaleDateString()}
+                      </span>
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={() => deleteUsedContent(item.id)}
+                        className="h-6 w-6 p-0 text-gray-400 hover:text-red-500"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
-                  <p className="text-sm text-gray-700 line-clamp-3">
-                    {item.content.substring(0, 150)}...
-                  </p>
-                  <div className="flex items-center justify-between mt-3">
+                  
+                  <div className="mb-3">
+                    <div className={`text-sm text-gray-700 ${expandedContent[item.id] ? '' : 'line-clamp-2'}`}>
+                      {expandedContent[item.id] 
+                        ? item.content.split('\n').map((paragraph: string, index: number) => (
+                            <p key={index} className="mb-2 last:mb-0">{paragraph}</p>
+                          ))
+                        : item.content.length > 120 
+                          ? item.content.substring(0, 120) + '...'
+                          : item.content}
+                    </div>
+                    {item.content.length > 120 && (
+                      <Button 
+                        variant="link" 
+                        size="sm" 
+                        className="p-0 h-auto text-indigo-600 hover:text-indigo-800 text-xs mt-1"
+                        onClick={() => setExpandedContent(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                      >
+                        {expandedContent[item.id] ? 'See Less' : 'See More'}
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {/* Analytics Section */}
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 mb-3 border border-gray-200 shadow-sm">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-semibold text-gray-800 flex items-center">
+                        <div className="w-2 h-2 bg-indigo-500 rounded-full mr-2"></div>
+                        Performance Analytics
+                      </h4>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => startEditingAnalytics(item.id, item.analytics)}
+                        className="h-7 px-3 text-xs bg-white hover:bg-gray-50 border-indigo-200 text-indigo-700 hover:text-indigo-800 hover:border-indigo-300"
+                      >
+                        <Edit3 className="h-3 w-3 mr-1" />
+                        Edit Metrics
+                      </Button>
+                    </div>
+                    
+                    {editingAnalytics === item.id ? (
+                      <div className="space-y-4 bg-white p-4 rounded-lg border border-gray-200">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700 flex items-center">
+                              <Eye className="h-4 w-4 mr-2 text-blue-500" />
+                              24h Views
+                            </Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={analyticsForm.views24h}
+                              onChange={(e) => setAnalyticsForm(prev => ({ ...prev, views24h: parseInt(e.target.value) || 0 }))}
+                              className="h-10 text-sm border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              placeholder="Enter views"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700 flex items-center">
+                              <Heart className="h-4 w-4 mr-2 text-red-500" />
+                              24h Likes
+                            </Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={analyticsForm.likes24h}
+                              onChange={(e) => setAnalyticsForm(prev => ({ ...prev, likes24h: parseInt(e.target.value) || 0 }))}
+                              className="h-10 text-sm border-gray-300 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                              placeholder="Enter likes"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700 flex items-center">
+                              <BarChart3 className="h-4 w-4 mr-2 text-blue-700" />
+                              All Time Views
+                            </Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={analyticsForm.viewsAllTime}
+                              onChange={(e) => setAnalyticsForm(prev => ({ ...prev, viewsAllTime: parseInt(e.target.value) || 0 }))}
+                              className="h-10 text-sm border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              placeholder="Enter total views"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-700 flex items-center">
+                              <ThumbsUp className="h-4 w-4 mr-2 text-red-700" />
+                              All Time Likes
+                            </Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={analyticsForm.likesAllTime}
+                              onChange={(e) => setAnalyticsForm(prev => ({ ...prev, likesAllTime: parseInt(e.target.value) || 0 }))}
+                              className="h-10 text-sm border-gray-300 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                              placeholder="Enter total likes"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex justify-end space-x-3 pt-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={cancelEditingAnalytics}
+                            className="h-9 px-4 text-sm border-gray-300 text-gray-700 hover:bg-gray-50"
+                          >
+                            Cancel
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            onClick={() => saveAnalytics(item.id)}
+                            className="h-9 px-4 text-sm bg-indigo-600 hover:bg-indigo-700 text-white"
+                          >
+                            Save Metrics
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                        <div className="bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
+                          <div className="text-2xl font-bold text-blue-600">{item.analytics?.views24h || 0}</div>
+                          <div className="text-xs text-gray-500 mt-1">24h Views</div>
+                        </div>
+                        <div className="bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
+                          <div className="text-2xl font-bold text-red-600">{item.analytics?.likes24h || 0}</div>
+                          <div className="text-xs text-gray-500 mt-1">24h Likes</div>
+                        </div>
+                        <div className="bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
+                          <div className="text-2xl font-bold text-blue-800">{item.analytics?.viewsAllTime || 0}</div>
+                          <div className="text-xs text-gray-500 mt-1">Total Views</div>
+                        </div>
+                        <div className="bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
+                          <div className="text-2xl font-bold text-red-800">{item.analytics?.likesAllTime || 0}</div>
+                          <div className="text-xs text-gray-500 mt-1">Total Likes</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
                     <Badge variant="outline" className="text-xs">
                       {item.characterCount} chars
                     </Badge>
@@ -686,6 +1076,14 @@ export default function ContentGenerator({ user, dailyTasks = [], onTaskUpdate }
                   </div>
                 </div>
               ))}
+              
+              {getFilteredAndSortedContent().length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>No content found matching your filters.</p>
+                  <p className="text-sm">Try adjusting your platform or sort preferences.</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
