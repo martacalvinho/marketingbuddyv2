@@ -2,12 +2,16 @@
 
 import { useState, useEffect } from "react"
 import { Progress } from "@/components/ui/progress"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Flame, Target, Calendar, BookOpen, MessageCircle, CheckCircle2, Zap, TrendingUp, BarChart3, X } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Flame, Target, Calendar, BookOpen, MessageCircle, CheckCircle2, Zap, TrendingUp, BarChart3, X, Users, Trophy, Heart } from "lucide-react"
 import HabitTracker from "@/components/habit-tracker"
 import ContentGenerator from "@/components/content-generator"
 import ContentLibrary from "@/components/content-library"
-import ChatInterface from "@/components/chat-interface"
+import BuddySystem from "@/components/buddy-system"
 import WebsiteAnalysis from "@/components/website-analysis"
 import LearnSection from "@/components/learn-section"
 import MarketingBuddy from "@/components/marketing-buddy"
@@ -26,6 +30,7 @@ export default function DashboardView({ user }: DashboardViewProps) {
   const [streak, setStreak] = useState(user.streak || 0)
   const [xp, setXp] = useState(user.xp || 0)
   const [showProfileModal, setShowProfileModal] = useState(false)
+  const [showLeaderboardModal, setShowLeaderboardModal] = useState(false)
 
   useEffect(() => {
     loadTasksForDay(currentDay)
@@ -99,6 +104,7 @@ export default function DashboardView({ user }: DashboardViewProps) {
     
     let tasks: any[] = []
     
+    // Try each pattern in order, but only use the first one that matches
     for (const pattern of taskPatterns) {
       const matches = Array.from(content.matchAll(pattern))
       if (matches.length > 0) {
@@ -111,11 +117,15 @@ export default function DashboardView({ user }: DashboardViewProps) {
           // Split on first colon to separate title from description
           const colonIndex = taskContent.indexOf(':')
           let title = taskContent
-          let description = taskContent
+          let description = ''
           
           if (colonIndex > 0 && colonIndex < 80) {
             title = taskContent.substring(0, colonIndex).trim()
             description = taskContent.substring(colonIndex + 1).trim()
+          } else {
+            // If no colon found, use the content as title and leave description empty
+            title = taskContent
+            description = ''
           }
           
           // Extract metadata from task content
@@ -238,45 +248,74 @@ export default function DashboardView({ user }: DashboardViewProps) {
             tips
           }
         })
-        break // Use first successful pattern
+        // Break after first successful pattern to avoid duplicates
+        break
       }
     }
     
-    return tasks
+    // Deduplicate tasks by title to prevent any possible duplicates
+    const uniqueTasks = tasks.filter((task, index, self) => 
+      index === self.findIndex(t => t.title === task.title && t.description === task.description)
+    )
+    
+    return uniqueTasks
   }
 
   const generateDailyTasksForMonth = async (day: number, month: number, weekInMonth: number) => {
     try {
       // Extract month strategy from user plan
-      const monthRegex = new RegExp(`###\\s*Month\\s*${month}[^\\n]*\\n([\\s\\S]*?)(?=###\\s*Month\\s*${month + 1}|$)`, 'i')
+      const monthRegex = new RegExp(`###\\s*Month\\s*${month}[^\n]*\n([\\s\\S]*?)(?=###\\s*Month\\s*${month + 1}|$)`, 'i')
       const monthMatch = user.plan?.match(monthRegex)
       const monthStrategy = monthMatch ? monthMatch[1].substring(0, 1000) : ''
       
-      const response = await fetch('/api/generate-daily-tasks', {
+      // Use enhanced task generation if user has onboarding data
+      const apiEndpoint = user.focusArea ? '/api/generate-enhanced-daily-tasks' : '/api/generate-daily-tasks'
+      
+      const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user,
+          day,
           month,
           weekInMonth,
-          currentDay: day,
-          monthStrategy
+          monthStrategy,
+          focusArea: user.focusArea || 'growth',
+          dailyTaskCount: user.dailyTaskCount || '3',
+          websiteAnalysis: user.websiteAnalysis
         })
       })
       
       const data = await response.json()
       
       if (data.success && data.tasks) {
-        // Parse the generated tasks and update state
-        const generatedTasks = parseTasks(data.tasks, day)
+        let generatedTasks = data.tasks
+        
+        // If using enhanced generation, tasks are already formatted
+        if (!user.focusArea) {
+          generatedTasks = parseTasks(data.tasks, day)
+        }
+        
         if (generatedTasks.length > 0) {
           setTasksByDay((prev) => ({ ...prev, [day]: generatedTasks }))
           setTodaysTasks(generatedTasks)
           
-          // Update user plan with the new daily tasks
-          const updatedPlan = user.plan + '\n\n' + data.tasks
-          const updatedUser = { ...user, plan: updatedPlan }
-          localStorage.setItem('user', JSON.stringify(updatedUser))
+          // Check for website task completion notification
+          if (data.allWebsiteTasksCompleted && !user.websiteTasksCompletedNotified) {
+            // Show notification that all website tasks are complete
+            const updatedUser = { ...user, websiteTasksCompletedNotified: true }
+            localStorage.setItem('user', JSON.stringify(updatedUser))
+            
+            // You could show a toast notification here
+            console.log('🎉 All website improvement tasks completed! Now focusing on growth and marketing.')
+          }
+          
+          // Update user plan if using old generation method
+          if (!user.focusArea && data.tasks) {
+            const updatedPlan = user.plan + '\n\n' + data.tasks
+            const updatedUser = { ...user, plan: updatedPlan }
+            localStorage.setItem('user', JSON.stringify(updatedUser))
+          }
         }
       }
     } catch (error) {
@@ -423,6 +462,16 @@ export default function DashboardView({ user }: DashboardViewProps) {
                   <div className="text-xs text-gray-600">{xp} XP</div>
                 </div>
               </div>
+
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowLeaderboardModal(true)}
+                className="flex items-center space-x-2"
+              >
+                <Trophy className="h-4 w-4 text-yellow-500" />
+                <span>Leaderboard</span>
+              </Button>
             </div>
           </div>
 
@@ -452,9 +501,9 @@ export default function DashboardView({ user }: DashboardViewProps) {
               <Calendar className="h-4 w-4" />
               <span>Create Content</span>
             </TabsTrigger>
-            <TabsTrigger value="chat" className="flex items-center space-x-2">
-              <MessageCircle className="h-4 w-4" />
-              <span>AI Coach</span>
+            <TabsTrigger value="buddy" className="flex items-center space-x-2">
+              <Users className="h-4 w-4" />
+              <span>My Buddy</span>
             </TabsTrigger>
           </TabsList>
 
@@ -468,6 +517,88 @@ export default function DashboardView({ user }: DashboardViewProps) {
                   Complete your daily tasks to build consistent marketing habits that grow your business to 1,000 users.
                 </p>
               </div>
+              
+              {/* Growth Goals Tracking */}
+              {user.goalType && user.goalAmount && (
+                <Card className="mb-6">
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <Trophy className="h-5 w-5 text-yellow-600" />
+                      <span>Your Growth Journey</span>
+                    </CardTitle>
+                    <CardDescription>
+                      Track your progress towards your {user.goalTimeline}-month goal
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-medium text-gray-900">
+                            {user.goalType === 'users' ? 'User Growth Goal' : 'Revenue Goal (MRR)'}
+                          </h3>
+                          <p className="text-sm text-gray-600">
+                            Target: {parseInt(user.goalAmount).toLocaleString()} {user.goalType === 'users' ? 'users' : 'USD/month'} in {user.goalTimeline} months
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="text-sm">
+                          {user.goalTimeline} month plan
+                        </Badge>
+                      </div>
+                      
+                      {/* Progress visualization */}
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Current Progress</span>
+                          <span className="font-medium">Day {currentDay} of {parseInt(user.goalTimeline) * 30}</span>
+                        </div>
+                        <Progress 
+                          value={(currentDay / (parseInt(user.goalTimeline) * 30)) * 100} 
+                          className="h-2"
+                        />
+                        <div className="flex justify-between text-xs text-gray-500">
+                          <span>Started</span>
+                          <span>{Math.round((currentDay / (parseInt(user.goalTimeline) * 30)) * 100)}% complete</span>
+                          <span>Goal: {user.goalAmount} {user.goalType === 'users' ? 'users' : 'USD/month'}</span>
+                        </div>
+                      </div>
+                      
+                      {/* Milestones */}
+                      <div className="mt-4">
+                        <h4 className="text-sm font-medium text-gray-900 mb-2">Milestones</h4>
+                        <div className="space-y-2">
+                          {[25, 50, 75, 100].map((percentage) => {
+                            const milestoneDay = Math.round((percentage / 100) * parseInt(user.goalTimeline) * 30)
+                            const milestoneValue = Math.round((percentage / 100) * parseInt(user.goalAmount))
+                            const isReached = currentDay >= milestoneDay
+                            
+                            return (
+                              <div key={percentage} className={`flex items-center space-x-2 p-2 rounded ${
+                                isReached ? 'bg-green-50 text-green-800' : 'bg-gray-50 text-gray-600'
+                              }`}>
+                                {isReached ? (
+                                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                ) : (
+                                  <div className="h-4 w-4 rounded-full border-2 border-gray-300" />
+                                )}
+                                <span className="text-sm">
+                                  {percentage}% - {milestoneValue.toLocaleString()} {user.goalType === 'users' ? 'users' : 'USD/month'}
+                                  <span className="text-xs ml-1">(Day {milestoneDay})</span>
+                                </span>
+                                {isReached && (
+                                  <Badge variant="secondary" className="text-xs ml-auto">
+                                    Reached!
+                                  </Badge>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
               
               <HabitTracker 
                 tasks={todaysTasks} 
@@ -519,23 +650,22 @@ export default function DashboardView({ user }: DashboardViewProps) {
             </div>
           </TabsContent>
 
-          {/* MVP Tab 3: AI Coach - Integrated guidance and strategy */}
-          <TabsContent value="chat">
+          {/* MVP Tab 3: Marketing Buddy - Social accountability and motivation */}
+          <TabsContent value="buddy">
             <div className="space-y-6">
               <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Your AI Marketing Coach</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Your Marketing Buddy</h2>
                 <p className="text-gray-600 max-w-2xl mx-auto">
-                  Get personalized guidance on your daily tasks, content strategy, and growth tactics.
+                  Stay motivated with your accountability partner, compete on leaderboards, and tackle challenges together.
                 </p>
               </div>
               
-              <ChatInterface 
+              <BuddySystem 
                 user={user}
-                dailyTasks={todaysTasks}
                 streak={streak}
                 xp={xp}
+                todaysTasks={todaysTasks}
               />
-              
 
             </div>
           </TabsContent>
@@ -580,6 +710,30 @@ export default function DashboardView({ user }: DashboardViewProps) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Leaderboard Modal */}
+      {showLeaderboardModal && (
+        <Dialog open={showLeaderboardModal} onOpenChange={setShowLeaderboardModal}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center space-x-2">
+                <Trophy className="h-6 w-6 text-yellow-500" />
+                <span>Marketing Leaderboard</span>
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="mt-4">
+              <BuddySystem 
+                user={user}
+                streak={streak}
+                xp={xp}
+                todaysTasks={todaysTasks}
+                showOnlyLeaderboard={true}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   )

@@ -32,9 +32,9 @@ export default function AnalyzePage() {
   const router = useRouter();
   const [website, setWebsite] = useState("")
   const [analyzing, setAnalyzing] = useState(false)
-  const [analysis, setAnalysis] = useState(null)
+  const [analysis, setAnalysis] = useState<any>(null)
   const [error, setError] = useState("")
-  const [analysisInfo, setAnalysisInfo] = useState(null)
+  const [analysisInfo, setAnalysisInfo] = useState<any>(null)
 
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -478,54 +478,29 @@ export default function AnalyzePage() {
               <CardContent className="p-8 text-center">
                 <h2 className="text-2xl font-bold mb-4">Ready to turn these insights into action?</h2>
                 <p className="text-indigo-100 mb-6">
-                  Start your 30-day marketing journey with personalized daily tasks based on this analysis.
+                  Get started on your marketing journey with personalized daily tasks based on this analysis.
                 </p>
                 <Button
                   size="lg"
                   variant="secondary"
                   className="px-8 py-3"
-                  onClick={async () => {
-                    if (typeof window !== "undefined") {
-                      localStorage.setItem("marketing-buddy-visited", "true")
+                  onClick={() => {
+                    // Extract basic info from analysis for pre-filling
+                    const analysisData = {
+                      productName: analysis?.businessOverview?.summary?.split(' ')[0] || '',
+                      website: website || '',
+                      valueProp: analysis?.businessOverview?.valueProps?.[0] || '',
+                      websiteAnalysis: analysis
                     }
-                    // Retrieve existing user data
-                    let userData = {}
-                    if (typeof window !== "undefined") {
-                      const stored = localStorage.getItem("marketing-buddy-user")
-                      if (stored) {
-                        try {
-                          userData = JSON.parse(stored)
-                        } catch {
-                          userData = {}
-                        }
-                      }
-                    }
-
-                    // Attach website analysis so dashboard can render it
-                    const payload = { ...userData, websiteAnalysis: analysis }
-
-                    try {
-                      const res = await fetch("/api/generate-plan", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(payload),
-                      })
-                      if (res.ok) {
-                        const data = await res.json()
-                        payload["plan"] = data.plan || "Plan generation in progress..."
-                      }
-                    } catch (e) {
-                      console.error("Plan generation failed", e)
-                    }
-
-                    if (typeof window !== "undefined") {
-                      localStorage.setItem("marketing-buddy-user", JSON.stringify(payload))
-                      localStorage.setItem("marketing-buddy-visited", "true")
-                    }
-                    router.push("/")
+                    
+                    // Encode the analysis data for URL
+                    const encodedAnalysis = encodeURIComponent(JSON.stringify(analysisData))
+                    
+                    // Redirect to onboarding with post-analysis flow
+                    router.push(`/onboarding?flow=post-analysis&analysis=${encodedAnalysis}&website=${encodeURIComponent(website || '')}`)
                   }}
                 >
-                  Start Your 30-Day Journey
+                  Start Your Marketing Journey
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </CardContent>

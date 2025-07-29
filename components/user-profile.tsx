@@ -35,13 +35,20 @@ export default function UserProfile({ user, onSignOut, onUpdateProfile }: UserPr
   const [editingSection, setEditingSection] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     productName: user.productName || "",
+    website: user.website || "",
     valueProp: user.valueProp || "",
     northStarGoal: user.northStarGoal || "",
-    websiteUrl: user.websiteUrl || "",
+    customGoal: user.customGoal || "",
     targetAudience: user.targetAudience || "",
-    marketingExperience: user.marketingExperience || "",
-    currentChallenges: user.currentChallenges || "",
-    preferredPlatforms: user.preferredPlatforms || []
+    goalType: user.goalType || "users",
+    goalAmount: user.goalAmount || "",
+    goalTimeline: user.goalTimeline || "6",
+    marketingStrategy: user.marketingStrategy || "6-month",
+    currentUsers: user.currentUsers || "",
+    currentPlatforms: user.currentPlatforms || [],
+    experienceLevel: user.experienceLevel || "",
+    preferredPlatforms: user.preferredPlatforms || [],
+    challenges: user.challenges || ""
   })
   const [isSaving, setIsSaving] = useState(false)
   const [monthlyStrategies, setMonthlyStrategies] = useState<any[]>([])

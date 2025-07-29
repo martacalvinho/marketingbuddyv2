@@ -70,9 +70,14 @@ export default function LandingPage() {
               Validation
             </a>
           </div>
-          <Link href="/analyze" className="px-6 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg text-white font-semibold shadow-lg hover:shadow-xl transition">
-            Analyze My Website
-          </Link>
+          <div className="flex items-center space-x-4">
+            <Link href="/analyze" className="px-6 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg text-white font-semibold shadow-lg hover:shadow-xl transition">
+              Analyze My Website
+            </Link>
+            <Link href="/login" className="px-4 py-2 text-gray-700 font-medium hover:text-indigo-600 transition-colors">
+              Login
+            </Link>
+          </div>
         </div>
       </nav>
 
@@ -90,11 +95,11 @@ export default function LandingPage() {
               Get a customized 6-month marketing roadmap broken into manageable daily tasks. We analyze your website, create tailored content, and guide you every step of the way.
             </p>
             <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6">
-              <Link href="/analyze" className="px-8 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl text-white font-bold text-lg shadow-lg hover:shadow-xl transition text-center">
-                Analyze My Website
+              <Link href="/onboarding" className="px-8 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl text-white font-bold text-lg shadow-lg hover:shadow-xl transition text-center">
+                Start Marketing
               </Link>
-              <Link href="#how-it-works" className="px-8 py-4 bg-white rounded-xl border border-blue-200 text-blue-600 font-bold text-lg shadow hover:shadow-md transition text-center">
-                See How It Works
+              <Link href="/analyze" className="px-8 py-4 bg-white rounded-xl border border-blue-200 text-blue-600 font-bold text-lg shadow hover:shadow-md transition text-center">
+                Analyze My Website
               </Link>
             </div>
           </div>
@@ -148,9 +153,9 @@ export default function LandingPage() {
                     </div>
                     <div className="bg-gray-100 p-4 border-t border-gray-200">
                       <div className="text-center">
-                        <Link href="/dashboard" className="inline-flex items-center bg-blue-500 text-white px-4 py-2 rounded-full hover:bg-blue-600 transition">
-                          <ListChecks className="mr-2 h-5 w-5" />
-                          <span>View Your Daily Tasks</span>
+                        <Link href="/onboarding" className="inline-flex items-center bg-blue-500 text-white px-4 py-2 rounded-full hover:bg-blue-600 transition">
+                          <Rocket className="mr-2 h-5 w-5" />
+                          <span>Get Started</span>
                         </Link>
                       </div>
                     </div>
@@ -424,7 +429,7 @@ export default function LandingPage() {
                       <div className="flex items-center bg-gray-50 rounded-lg p-4">
                         <div className="w-4 h-4 bg-gray-300 rounded-full mr-4"></div>
                         <div className="flex-1">
-                          <div className="font-semibold text-gray-500">Month 5-6: Paid Campaigns</div>
+                          <div className="font-semibold text-gray-700">Month 5-6: Paid Campaigns</div>
                           <div className="text-sm text-gray-500">Google Ads, Facebook Ads, retargeting</div>
                           <div className="text-xs text-gray-500 font-medium mt-1">⏳ Upcoming</div>
                         </div>

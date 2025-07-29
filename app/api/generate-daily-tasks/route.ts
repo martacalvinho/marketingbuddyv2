@@ -23,7 +23,12 @@ CONTEXT:
 - Business: ${user.productName || 'Not specified'}
 - Value Prop: ${user.valueProp || 'Not specified'}
 - Goal: ${user.northStarGoal || 'Not specified'}
-- Website Analysis: ${user.websiteAnalysis ? JSON.stringify(user.websiteAnalysis).substring(0, 500) : 'Not available'}
+- Industry: ${user.websiteAnalysis?.businessOverview?.industry || 'Not specified'}
+- Target Audience: ${user.websiteAnalysis?.businessOverview?.targetAudience?.join(', ') || 'Not specified'}
+- Key Services: ${user.websiteAnalysis?.businessOverview?.services?.join(', ') || 'Not specified'}
+- Unique Value: ${user.websiteAnalysis?.competitivePositioning?.differentiators?.join(', ') || 'Not specified'}
+- Marketing Opportunities: ${user.websiteAnalysis?.marketingOpportunities?.slice(0,3).map((op: any) => op.title).join(', ') || 'Not identified'}
+- Content Messaging: ${user.websiteAnalysis?.contentMessagingAnalysis?.currentMessaging || 'Not analyzed'}
 
 MONTH ${month} STRATEGY CONTEXT:
 ${monthStrategy || 'General marketing growth strategy'}
@@ -32,9 +37,11 @@ TASK REQUIREMENTS:
 - Generate 3 specific, actionable daily tasks for Day ${currentDay}
 - Each task should take 15 minutes or less
 - Tasks must align with Month ${month} strategy and business analysis
-- Include platform-specific actions based on business type
+- Include platform-specific actions based on business type and industry
 - Focus on measurable outcomes that build toward 1000 users
-- Consider the user's industry and target audience
+- MUST be specific to the user's industry, target audience, and unique value proposition
+- Reference specific services, differentiators, or messaging from the website analysis
+- Avoid generic tasks - make them highly relevant to this specific business
 
 TASK METADATA REQUIREMENTS:
 - For each task, include a category (content, analytics, community, strategy, engagement)
@@ -58,7 +65,7 @@ EXAMPLE TASKS (adapt to user's business):
 - **Task 2:** Set up basic Instagram Business Profile and upload 3-4 high-quality graphics related to [business value proposition].
 - **Task 3:** Draft initial LinkedIn post announcing [product launch], targeting [specific audience].
 
-Make tasks specific to the user's business, not generic examples.`
+CRITICAL: Tasks must be highly specific to this user's business context. Use the industry, target audience, services, and unique value proposition to create personalized, actionable tasks that directly relate to their business goals and website analysis.`
           }
         ],
         temperature: 0.7,

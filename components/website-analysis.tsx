@@ -21,9 +21,10 @@ interface WebsiteAnalysisProps {
   analysis: any
   websiteUrl?: string
   onReAnalyze?: (url: string) => Promise<void>
+  onStartJourney?: () => void
 }
 
-export default function WebsiteAnalysis({ analysis, websiteUrl, onReAnalyze }: WebsiteAnalysisProps) {
+export default function WebsiteAnalysis({ analysis, websiteUrl, onReAnalyze, onStartJourney }: WebsiteAnalysisProps) {
   const [isReAnalyzing, setIsReAnalyzing] = useState(false)
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle")
 
@@ -362,6 +363,28 @@ export default function WebsiteAnalysis({ analysis, websiteUrl, onReAnalyze }: W
           </div>
         </CardContent>
       </Card>
+
+      {/* Start Marketing Journey CTA */}
+      {onStartJourney && (
+        <Card className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
+          <CardContent className="p-8 text-center">
+            <div className="mb-4">
+              <Zap className="h-12 w-12 mx-auto mb-4" />
+              <h3 className="text-2xl font-bold mb-2">Ready to Start Your Marketing Journey?</h3>
+              <p className="text-indigo-100 mb-6">
+                Based on your website analysis, we'll create a personalized marketing strategy and daily tasks to help you grow.
+              </p>
+            </div>
+            <Button 
+              onClick={onStartJourney}
+              size="lg"
+              className="bg-white text-indigo-600 hover:bg-gray-100 font-semibold px-8 py-3"
+            >
+              Start Marketing Journey
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
