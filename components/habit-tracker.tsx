@@ -1,13 +1,20 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Twitter, Linkedin, MessageSquare, Instagram, Video, FileText, Zap, Copy, Check, Loader2, CheckCircle2, Circle, Target, ChevronRight, ChevronLeft, Calendar, Clock, Lightbulb } from "lucide-react"
+import { Twitter, Linkedin, MessageSquare, Instagram, Video, FileText, Zap, Copy, Check, Loader2, CheckCircle2, Circle, Target, ChevronRight, ChevronLeft, Calendar, Clock, Lightbulb, Trophy } from "lucide-react"
 import WeekProgress from "./week-progress"
+
+interface Milestone {
+  title: string
+  date: string
+  type: 'goal_achieved' | 'user_added'
+  goalType?: 'users' | 'revenue'
+}
 
 interface HabitTrackerProps {
   tasks: any[]
@@ -94,16 +101,115 @@ export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAd
   const [showEditGoal, setShowEditGoal] = useState(false)
   const [editingTask, setEditingTask] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
-  const [userGoal, setUserGoal] = useState(1000)
-  const [revenueGoal, setRevenueGoal] = useState(1000)
-  const [currentUsers, setCurrentUsers] = useState(Math.min(Math.ceil(currentDay * 5.5), 1000))
-  const [currentRevenue, setCurrentRevenue] = useState(Math.min(Math.ceil(currentDay * 15), 1000))
+  // Use onboarding goal data or fallback to defaults
+  const getUserGoal = () => {
+    if (user?.goals?.primary?.type === 'users') return parseInt(user.goals.primary.target) || 1000
+    if (user?.goalType === 'users') return parseInt(user.goalAmount) || 1000
+    return 1000
+  }
+  
+  const getRevenueGoal = () => {
+    if (user?.goals?.primary?.type === 'revenue') return parseInt(user.goals.primary.target) || 1000
+    if (user?.goalType === 'revenue') return parseInt(user.goalAmount) || 1000
+    return 1000
+  }
+  
+  const [userGoal, setUserGoal] = useState(getUserGoal())
+  const [revenueGoal, setRevenueGoal] = useState(getRevenueGoal())
+  const [currentUsers, setCurrentUsers] = useState(Math.min(Math.ceil(currentDay * 5.5), getUserGoal()))
+  const [currentRevenue, setCurrentRevenue] = useState(Math.min(Math.ceil(currentDay * 15), getRevenueGoal()))
   const [editingTaskId, setEditingTaskId] = useState<string | number | null>(null)
   const [editingTaskTitle, setEditingTaskTitle] = useState("")
   const [editingTaskDescription, setEditingTaskDescription] = useState("")
   const [noteEditingTaskId, setNoteEditingTaskId] = useState<string | number | null>(null)
   const [taskNote, setTaskNote] = useState("")
   const [draggedTask, setDraggedTask] = useState<any | null>(null)
+  // Milestone state
+  const [milestones, setMilestones] = useState(user?.milestones || [])
+  const [showAddMilestone, setShowAddMilestone] = useState(false)
+  const [newMilestone, setNewMilestone] = useState({ title: '', date: '' })
+  
+  // Check if goals have been achieved and save as milestones
+  // Also handle setting new goals when current goals are reached
+  useEffect(() => {
+    const newUserMilestones = [...milestones]
+    let updated = false
+    
+    // Check if user goal has been achieved
+    if (currentUsers >= userGoal) {
+      const userGoalMilestone = {
+        title: `Reached ${userGoal.toLocaleString()} users`,
+        date: new Date().toISOString(),
+        type: 'goal_achieved',
+        goalType: 'users'
+      }
+      
+      // Check if this milestone doesn't already exist
+      const exists = newUserMilestones.some(m => 
+        m.type === 'goal_achieved' && m.goalType === 'users' && m.title === userGoalMilestone.title
+      )
+      
+      if (!exists) {
+        newUserMilestones.push(userGoalMilestone)
+        updated = true
+      }
+    }
+    
+    // Check if revenue goal has been achieved
+    if (currentRevenue >= revenueGoal) {
+      const revenueGoalMilestone = {
+        title: `Reached $${revenueGoal.toLocaleString()} MRR`,
+        date: new Date().toISOString(),
+        type: 'goal_achieved',
+        goalType: 'revenue'
+      }
+      
+      // Check if this milestone doesn't already exist
+      const exists = newUserMilestones.some(m => 
+        m.type === 'goal_achieved' && m.goalType === 'revenue' && m.title === revenueGoalMilestone.title
+      )
+      
+      if (!exists) {
+        newUserMilestones.push(revenueGoalMilestone)
+        updated = true
+      }
+    }
+    
+    if (updated) {
+      setMilestones(newUserMilestones)
+      // Update user data in localStorage
+      const userData = localStorage.getItem('user')
+      if (userData) {
+        const parsedUser = JSON.parse(userData)
+        const updatedUser = { ...parsedUser, milestones: newUserMilestones }
+        localStorage.setItem('user', JSON.stringify(updatedUser))
+      }
+    }
+  }, [currentUsers, userGoal, currentRevenue, revenueGoal, milestones])
+  
+  const handleAddMilestone = () => {
+    if (newMilestone.title.trim()) {
+      const milestoneToAdd = {
+        title: newMilestone.title,
+        date: newMilestone.date || new Date().toISOString(),
+        type: 'user_added'
+      }
+      
+      const updatedMilestones = [...milestones, milestoneToAdd]
+      setMilestones(updatedMilestones)
+      setNewMilestone({ title: '', date: '' })
+      setShowAddMilestone(false)
+      
+      // Update user data in localStorage
+      const userData = localStorage.getItem('user')
+      if (userData) {
+        const parsedUser = JSON.parse(userData)
+        const updatedUser = { ...parsedUser, milestones: updatedMilestones }
+        localStorage.setItem('user', JSON.stringify(updatedUser))
+      }
+    }
+  }
+  
   const completedTasks = tasks.filter((task) => task.completed).length
   const currentWeek = Math.ceil(currentDay / 7)
   const weekGoals = weekStats[currentWeek - 1]?.goals || []
@@ -586,14 +692,49 @@ export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAd
                   <h3 className="font-semibold text-gray-800">My Goal</h3>
                   <p className="text-sm text-gray-600">Track your progress toward success</p>
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="text-xs"
-                  onClick={() => setShowEditGoal(!showEditGoal)}
-                >
-                  {showEditGoal ? 'Save Goals' : 'Edit Goal'}
-                </Button>
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-xs"
+                    onClick={() => {
+                      if (confirm('Are you sure you want to reset your goals? This will reset your progress.')) {
+                        // Reset both goals and current values
+                        setUserGoal(getUserGoal())
+                        setRevenueGoal(getRevenueGoal())
+                        setCurrentUsers(0)
+                        setCurrentRevenue(0)
+                        
+                        // Update user data in localStorage
+                        const userData = localStorage.getItem('user')
+                        if (userData) {
+                          const parsedUser = JSON.parse(userData)
+                          // Reset goals in user data
+                          if (parsedUser.goals?.primary) {
+                            parsedUser.goals.primary = {
+                              type: parsedUser.goals.primary.type,
+                              target: parsedUser.goals.primary.type === 'users' ? 1000 : 1000,
+                              timeline: parsedUser.goals.primary.timeline,
+                              startDate: new Date().toISOString(),
+                              status: 'active'
+                            }
+                          }
+                          localStorage.setItem('user', JSON.stringify(parsedUser))
+                        }
+                      }
+                    }}
+                  >
+                    Reset Goals
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-xs"
+                    onClick={() => setShowEditGoal(!showEditGoal)}
+                  >
+                    {showEditGoal ? 'Save Goals' : 'Edit Goal'}
+                  </Button>
+                </div>
               </div>
               
               {/* Goal Options - User can select/edit */}
@@ -611,12 +752,9 @@ export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAd
                           className="w-16 px-2 py-1 text-xs border rounded"
                         />
                         <span className="text-xs text-blue-600">/</span>
-                        <input 
-                          type="number" 
-                          value={userGoal} 
-                          onChange={(e) => setUserGoal(Number(e.target.value))}
-                          className="w-16 px-2 py-1 text-xs border rounded"
-                        />
+                        <span className="text-xs text-blue-600 font-medium">
+                          {userGoal.toLocaleString()}
+                        </span>
                       </div>
                     ) : (
                       <span className="text-sm text-blue-600 font-medium">
@@ -632,6 +770,32 @@ export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAd
                   </div>
                   <div className="text-xs text-blue-600 mt-1">
                     {((currentUsers / userGoal) * 100).toFixed(1)}% complete
+                    {currentUsers >= userGoal && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="ml-2 text-xs"
+                        onClick={() => {
+                          const newGoal = prompt('Enter your new user goal:', (userGoal * 2).toString())
+                          if (newGoal && !isNaN(Number(newGoal)) && Number(newGoal) > 0) {
+                            setUserGoal(Number(newGoal))
+                            // Reset current users to 0 for the new goal
+                            setCurrentUsers(0)
+                            // Update user data in localStorage
+                            const userData = localStorage.getItem('user')
+                            if (userData) {
+                              const parsedUser = JSON.parse(userData)
+                              if (parsedUser.goals?.primary?.type === 'users') {
+                                parsedUser.goals.primary.target = newGoal
+                                localStorage.setItem('user', JSON.stringify(parsedUser))
+                              }
+                            }
+                          }
+                        }}
+                      >
+                        Set New Goal
+                      </Button>
+                    )}
                   </div>
                 </div>
                 
@@ -649,12 +813,9 @@ export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAd
                           className="w-16 px-2 py-1 text-xs border rounded"
                         />
                         <span className="text-xs text-green-600">/ $</span>
-                        <input 
-                          type="number" 
-                          value={revenueGoal} 
-                          onChange={(e) => setRevenueGoal(Number(e.target.value))}
-                          className="w-16 px-2 py-1 text-xs border rounded"
-                        />
+                        <span className="text-xs text-green-600 font-medium">
+                          {revenueGoal.toLocaleString()}
+                        </span>
                         <span className="text-xs text-green-600">MRR</span>
                       </div>
                     ) : (
@@ -671,6 +832,32 @@ export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAd
                   </div>
                   <div className="text-xs text-green-600 mt-1">
                     {((currentRevenue / revenueGoal) * 100).toFixed(1)}% complete
+                    {currentRevenue >= revenueGoal && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="ml-2 text-xs"
+                        onClick={() => {
+                          const newGoal = prompt('Enter your new revenue goal:', (revenueGoal * 2).toString())
+                          if (newGoal && !isNaN(Number(newGoal)) && Number(newGoal) > 0) {
+                            setRevenueGoal(Number(newGoal))
+                            // Reset current revenue to 0 for the new goal
+                            setCurrentRevenue(0)
+                            // Update user data in localStorage
+                            const userData = localStorage.getItem('user')
+                            if (userData) {
+                              const parsedUser = JSON.parse(userData)
+                              if (parsedUser.goals?.primary?.type === 'revenue') {
+                                parsedUser.goals.primary.target = newGoal
+                                localStorage.setItem('user', JSON.stringify(parsedUser))
+                              }
+                            }
+                          }
+                        }}
+                      >
+                        Set New Goal
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -701,6 +888,49 @@ export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAd
               </div>
             </div>
             
+            {/* Milestones Section */}
+            <div className="bg-white/80 rounded-xl p-6 border border-gray-200 shadow-sm mt-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="font-semibold text-gray-800">🎯 Milestones</h3>
+                  <p className="text-sm text-gray-600">Celebrate your achievements</p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-xs"
+                  onClick={() => setShowAddMilestone(true)}
+                >
+                  Add Milestone
+                </Button>
+              </div>
+              
+              {/* Milestones List */}
+              <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
+                {milestones.length > 0 ? (
+                  milestones.map((milestone: Milestone, index: number) => (
+                    <div key={index} className="flex items-center p-3 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-lg border border-yellow-200">
+                      <Trophy className="h-5 w-5 text-yellow-600 mr-3 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{milestone.title}</p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(milestone.date).toLocaleDateString()}
+                          {milestone.type === 'goal_achieved' && ' (Goal Achieved)'}
+                          {milestone.type === 'user_added' && ' (Added Manually)'}
+                        </p>
+                      </div>
+                      <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0" />
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-4 text-gray-500">
+                    <Trophy className="h-8 w-8 mx-auto text-gray-300 mb-2" />
+                    <p className="text-sm">No milestones yet. Achieve your goals to unlock milestones!</p>
+                  </div>
+                )}
+              </div>
+            </div>
+            
             {/* Smart Insights */}
             {streak >= 7 && (
               <div className="mt-4 p-3 bg-gradient-to-r from-green-100 to-blue-100 rounded-lg border border-green-200">
@@ -721,6 +951,52 @@ export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAd
         </CardContent>
         )}
       </Card>
+      
+      {/* Add Milestone Modal */}
+      {showAddMilestone && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Add New Milestone</h3>
+              <button
+                onClick={() => setShowAddMilestone(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <Circle className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Milestone Title</label>
+                <input
+                  type="text"
+                  value={newMilestone.title}
+                  onChange={(e) => setNewMilestone({ ...newMilestone, title: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., Reached 500 followers"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date Achieved</label>
+                <input
+                  type="date"
+                  value={newMilestone.date}
+                  onChange={(e) => setNewMilestone({ ...newMilestone, date: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="flex justify-end space-x-3 pt-4">
+                <Button variant="outline" onClick={() => setShowAddMilestone(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleAddMilestone}>
+                  Add Milestone
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

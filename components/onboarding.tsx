@@ -175,7 +175,7 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
 
   const handleComplete = async () => {
     try {
-      const response = await fetch('/api/generate-marketing-plan', {
+      const response = await fetch('/api/generate-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -186,12 +186,35 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
           ...formData,
           plan: planData.plan,
           onboardingCompleted: true,
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
+          goals: {
+            primary: {
+              type: formData.goalType,
+              target: formData.goalAmount,
+              timeline: formData.goalTimeline,
+              startDate: new Date().toISOString(),
+              status: 'active'
+            }
+          },
+          milestones: []
         }
         onComplete(completeUserData)
       }
     } catch (error) {
-      onComplete({ ...formData, onboardingCompleted: true })
+      onComplete({ 
+        ...formData, 
+        onboardingCompleted: true,
+        goals: {
+          primary: {
+            type: formData.goalType,
+            target: formData.goalAmount,
+            timeline: formData.goalTimeline,
+            startDate: new Date().toISOString(),
+            status: 'active'
+          }
+        },
+        milestones: []
+      })
     }
   }
 

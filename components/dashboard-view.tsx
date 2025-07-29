@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Flame, Target, Calendar, BookOpen, MessageCircle, CheckCircle2, Zap, TrendingUp, BarChart3, X, Users, Trophy, Heart } from "lucide-react"
+import { Flame, Target, Calendar, BookOpen, MessageCircle, CheckCircle2, Zap, TrendingUp, BarChart3, X, Users, Trophy, Heart, Plus } from "lucide-react"
 import HabitTracker from "@/components/habit-tracker"
 import ContentGenerator from "@/components/content-generator"
 import ContentLibrary from "@/components/content-library"
@@ -31,6 +31,9 @@ export default function DashboardView({ user }: DashboardViewProps) {
   const [xp, setXp] = useState(user.xp || 0)
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [showLeaderboardModal, setShowLeaderboardModal] = useState(false)
+  const [milestones, setMilestones] = useState(user.milestones || [])
+  const [showAddMilestone, setShowAddMilestone] = useState(false)
+  const [newMilestone, setNewMilestone] = useState({ title: '', date: '' })
 
   useEffect(() => {
     loadTasksForDay(currentDay)
@@ -426,6 +429,22 @@ export default function DashboardView({ user }: DashboardViewProps) {
     }
   }
 
+  // Milestone functions
+  const handleAddMilestone = () => {
+    if (newMilestone.title.trim() && newMilestone.date) {
+      const updatedMilestones = [...milestones, { 
+        ...newMilestone, 
+        id: Date.now().toString(),
+        date: newMilestone.date 
+      }]
+      setMilestones(updatedMilestones)
+      // TODO: Update user data with new milestones
+      // This would typically involve calling an API to save the milestones
+      setNewMilestone({ title: '', date: '' })
+      setShowAddMilestone(false)
+    }
+  }
+
   const xpToNextLevel = 100
   const currentLevel = Math.floor(xp / xpToNextLevel) + 1
   const xpProgress = ((xp % xpToNextLevel) / xpToNextLevel) * 100
@@ -519,7 +538,7 @@ export default function DashboardView({ user }: DashboardViewProps) {
               </div>
               
               {/* Growth Goals Tracking */}
-              {user.goalType && user.goalAmount && (
+              {(user.goals?.primary?.type && user.goals?.primary?.target) || (user.goalType && user.goalAmount) && (
                 <Card className="mb-6">
                   <CardHeader>
                     <CardTitle className="flex items-center space-x-2">
@@ -527,7 +546,7 @@ export default function DashboardView({ user }: DashboardViewProps) {
                       <span>Your Growth Journey</span>
                     </CardTitle>
                     <CardDescription>
-                      Track your progress towards your {user.goalTimeline}-month goal
+                      Track your progress towards your {user.goals?.primary?.timeline || user.goalTimeline}-month goal
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -535,14 +554,14 @@ export default function DashboardView({ user }: DashboardViewProps) {
                       <div className="flex items-center justify-between">
                         <div>
                           <h3 className="font-medium text-gray-900">
-                            {user.goalType === 'users' ? 'User Growth Goal' : 'Revenue Goal (MRR)'}
+                            {user.goals?.primary?.type === 'users' || user.goalType === 'users' ? 'User Growth Goal' : 'Revenue Goal (MRR)'}
                           </h3>
                           <p className="text-sm text-gray-600">
-                            Target: {parseInt(user.goalAmount).toLocaleString()} {user.goalType === 'users' ? 'users' : 'USD/month'} in {user.goalTimeline} months
+                            Target: {parseInt(user.goals?.primary?.target || user.goalAmount).toLocaleString()} {user.goals?.primary?.type === 'users' || user.goalType === 'users' ? 'users' : 'USD/month'} in {user.goals?.primary?.timeline || user.goalTimeline} months
                           </p>
                         </div>
                         <Badge variant="outline" className="text-sm">
-                          {user.goalTimeline} month plan
+                          {user.goals?.primary?.timeline || user.goalTimeline} month plan
                         </Badge>
                       </div>
                       
@@ -550,26 +569,33 @@ export default function DashboardView({ user }: DashboardViewProps) {
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Current Progress</span>
-                          <span className="font-medium">Day {currentDay} of {parseInt(user.goalTimeline) * 30}</span>
+                          <span className="font-medium">Day {currentDay} of {parseInt(user.goals?.primary?.timeline || user.goalTimeline) * 30}</span>
                         </div>
                         <Progress 
-                          value={(currentDay / (parseInt(user.goalTimeline) * 30)) * 100} 
+                          value={(currentDay / (parseInt(user.goals?.primary?.timeline || user.goalTimeline) * 30)) * 100} 
                           className="h-2"
                         />
                         <div className="flex justify-between text-xs text-gray-500">
                           <span>Started</span>
-                          <span>{Math.round((currentDay / (parseInt(user.goalTimeline) * 30)) * 100)}% complete</span>
-                          <span>Goal: {user.goalAmount} {user.goalType === 'users' ? 'users' : 'USD/month'}</span>
+                          <span>{Math.round((currentDay / (parseInt(user.goals?.primary?.timeline || user.goalTimeline) * 30)) * 100)}% complete</span>
+                          <span>Goal: {user.goals?.primary?.target || user.goalAmount} {user.goals?.primary?.type === 'users' || user.goalType === 'users' ? 'users' : 'USD/month'}</span>
                         </div>
                       </div>
                       
                       {/* Milestones */}
                       <div className="mt-4">
-                        <h4 className="text-sm font-medium text-gray-900 mb-2">Milestones</h4>
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-sm font-medium text-gray-900">Milestones</h4>
+                          <Button variant="outline" size="sm" onClick={() => setShowAddMilestone(true)}>
+                            <Plus className="h-3 w-3 mr-1" />
+                            Add
+                          </Button>
+                        </div>
                         <div className="space-y-2">
+                          {/* Predefined milestones */}
                           {[25, 50, 75, 100].map((percentage) => {
-                            const milestoneDay = Math.round((percentage / 100) * parseInt(user.goalTimeline) * 30)
-                            const milestoneValue = Math.round((percentage / 100) * parseInt(user.goalAmount))
+                            const milestoneDay = Math.round((percentage / 100) * parseInt(user.goals?.primary?.timeline || user.goalTimeline) * 30)
+                            const milestoneValue = Math.round((percentage / 100) * parseInt(user.goals?.primary?.target || user.goalAmount))
                             const isReached = currentDay >= milestoneDay
                             
                             return (
@@ -582,7 +608,7 @@ export default function DashboardView({ user }: DashboardViewProps) {
                                   <div className="h-4 w-4 rounded-full border-2 border-gray-300" />
                                 )}
                                 <span className="text-sm">
-                                  {percentage}% - {milestoneValue.toLocaleString()} {user.goalType === 'users' ? 'users' : 'USD/month'}
+                                  {percentage}% - {milestoneValue.toLocaleString()} {user.goals?.primary?.type === 'users' || user.goalType === 'users' ? 'users' : 'USD/month'}
                                   <span className="text-xs ml-1">(Day {milestoneDay})</span>
                                 </span>
                                 {isReached && (
@@ -593,6 +619,20 @@ export default function DashboardView({ user }: DashboardViewProps) {
                               </div>
                             )
                           })}
+                          
+                          {/* User-defined milestones */}
+                          {milestones.map((milestone: any, index: number) => (
+                            <div key={milestone.id || index} className="flex items-center space-x-2 p-2 rounded bg-blue-50 text-blue-800">
+                              <CheckCircle2 className="h-4 w-4 text-blue-600" />
+                              <span className="text-sm">
+                                {milestone.title}
+                                <span className="text-xs ml-1">({milestone.date})</span>
+                              </span>
+                              <Badge variant="secondary" className="text-xs ml-auto">
+                                Custom
+                              </Badge>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>
@@ -712,6 +752,46 @@ export default function DashboardView({ user }: DashboardViewProps) {
         </div>
       )}
 
+      {/* Add Milestone Modal */}
+      {showAddMilestone && (
+        <Dialog open={showAddMilestone} onOpenChange={setShowAddMilestone}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Add New Milestone</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700">Milestone Title</label>
+                <input
+                  type="text"
+                  value={newMilestone.title}
+                  onChange={(e) => setNewMilestone({ ...newMilestone, title: e.target.value })}
+                  className="w-full mt-1 p-2 border border-gray-300 rounded-md"
+                  placeholder="e.g., Reached 500 followers"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Date Achieved</label>
+                <input
+                  type="date"
+                  value={newMilestone.date}
+                  onChange={(e) => setNewMilestone({ ...newMilestone, date: e.target.value })}
+                  className="w-full mt-1 p-2 border border-gray-300 rounded-md"
+                />
+              </div>
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button variant="outline" onClick={() => setShowAddMilestone(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleAddMilestone}>
+                  Add Milestone
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
       {/* Leaderboard Modal */}
       {showLeaderboardModal && (
         <Dialog open={showLeaderboardModal} onOpenChange={setShowLeaderboardModal}>
@@ -722,7 +802,6 @@ export default function DashboardView({ user }: DashboardViewProps) {
                 <span>Marketing Leaderboard</span>
               </DialogTitle>
             </DialogHeader>
-            
             <div className="mt-4">
               <BuddySystem 
                 user={user}
