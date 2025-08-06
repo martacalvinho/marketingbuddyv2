@@ -3,25 +3,44 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import DashboardView from "@/components/dashboard-view"
+import { supabase } from "@/lib/supabase"
+
+type UserLike = {
+  id: string
+  email?: string
+}
 
 export default function DashboardPage() {
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState<UserLike | null>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
-    // Check if user exists in localStorage
-    const userData = localStorage.getItem("user")
-    
-    if (userData) {
-      setUser(JSON.parse(userData))
-    } else {
-      // No user data - redirect to onboarding
-      router.push("/onboarding")
-      return
+    let isMounted = true
+    const init = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!isMounted) return
+      if (!user) {
+        router.replace("/login")
+        return
+      }
+      setUser({ id: user.id, email: user.email ?? undefined })
+      setLoading(false)
     }
+    init()
 
-    setLoading(false)
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session?.user) {
+        router.replace("/login")
+      } else {
+        setUser({ id: session.user.id, email: session.user.email ?? undefined })
+      }
+    })
+
+    return () => {
+      isMounted = false
+      sub.subscription.unsubscribe()
+    }
   }, [router])
 
   if (loading) {
@@ -32,9 +51,22 @@ export default function DashboardPage() {
     )
   }
 
-  if (!user) {
-    return null // Will redirect to onboarding
-  }
+  if (!user) return null
 
-  return <DashboardView user={user} />
+  return (
+    <div className="min-h-screen">
+      <div className="p-4 flex justify-end">
+        <button
+          className="px-3 py-1 text-sm rounded bg-gray-100 hover:bg-gray-200"
+          onClick={async () => {
+            await supabase.auth.signOut()
+            router.replace("/login")
+          }}
+        >
+          Sign out
+        </button>
+      </div>
+      <DashboardView user={user as any} />
+    </div>
+  )
 }
