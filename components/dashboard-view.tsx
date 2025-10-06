@@ -7,6 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Flame, Target, Calendar, BookOpen, MessageCircle, CheckCircle2, Zap, TrendingUp, BarChart3, X, Users, Trophy, Heart, Plus } from "lucide-react"
 import HabitTracker from "@/components/habit-tracker"
 import ContentGenerator from "@/components/content-generator"
@@ -17,6 +21,7 @@ import LearnSection from "@/components/learn-section"
 import MarketingBuddy from "@/components/marketing-buddy"
 import MarketingAnalytics from "@/components/marketing-analytics"
 import UserProfile from "@/components/user-profile"
+import { supabase } from "@/lib/supabase"
 
 interface DashboardViewProps {
   user: any
@@ -34,10 +39,55 @@ export default function DashboardView({ user }: DashboardViewProps) {
   const [milestones, setMilestones] = useState(user.milestones || [])
   const [showAddMilestone, setShowAddMilestone] = useState(false)
   const [newMilestone, setNewMilestone] = useState({ title: '', date: '' })
+  const [showGoalModal, setShowGoalModal] = useState(false)
+  const [goalType, setGoalType] = useState<'users' | 'mrr'>(user.goalType || 'users')
+  const [goalAmount, setGoalAmount] = useState<string>(user.goalAmount || '')
+  const [goalTimeline, setGoalTimeline] = useState<string>(String(user.goalTimeline || '6'))
 
   useEffect(() => {
     loadTasksForDay(currentDay)
   }, [currentDay])
+
+  // Prompt for goals if not set yet (post-onboarding simplification)
+  useEffect(() => {
+    const missingStructuredGoal = !(user.goals && user.goals.primary && user.goals.primary.target)
+    const missingFlatGoal = !(user.goalType && user.goalAmount)
+    if (missingStructuredGoal && missingFlatGoal) {
+      setShowGoalModal(true)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Save goals
+  const saveGoals = async () => {
+    try {
+      const parsedTimeline = parseInt(String(goalTimeline), 10)
+      const { error } = await supabase
+        .from('onboarding')
+        .update({
+          goal_type: goalType,
+          goal_amount: goalAmount,
+          goal_timeline: Number.isFinite(parsedTimeline) ? parsedTimeline : null,
+          goals: {
+            primary: {
+              type: goalType,
+              target: goalAmount,
+              timeline: String(goalTimeline || '6'),
+              startDate: new Date().toISOString(),
+              status: 'active'
+            }
+          }
+        })
+        .eq('user_id', user.id)
+
+      if (error) throw error
+      setShowGoalModal(false)
+      loadTasksForDay(currentDay)
+    } catch (e) {
+      console.error('Failed to save goals:', e)
+      setShowGoalModal(false)
+    }
+  }
 
   const loadTasksForDay = (day: number) => {
     if (user.plan) {
@@ -733,17 +783,33 @@ export default function DashboardView({ user }: DashboardViewProps) {
                   window.location.href = '/landing'
                 }}
                 onUpdateProfile={async (updates: any) => {
-                  // Update user data in localStorage or send to API
-                  const updatedUser = { ...user, ...updates }
-                  localStorage.setItem('user', JSON.stringify(updatedUser))
-                  
+                  try {
+                    // Persist key fields to Supabase onboarding row
+                    const payload: any = {}
+                    if ('productName' in updates) payload.product_name = updates.productName
+                    if ('valueProp' in updates) payload.value_prop = updates.valueProp
+                    if ('website' in updates) payload.website = updates.website
+                    if ('websiteAnalysis' in updates) payload.website_analysis = updates.websiteAnalysis
+                    if ('plan' in updates) payload.plan = updates.plan
+
+                    if (Object.keys(payload).length > 0) {
+                      const { error } = await supabase
+                        .from('onboarding')
+                        .update(payload)
+                        .eq('user_id', user.id)
+                      if (error) throw error
+                    }
+                  } catch (e) {
+                    console.error('Failed to update profile in Supabase:', e)
+                  }
+
                   // If plan was updated, reload tasks
                   if (updates.plan) {
                     loadTasksForDay(currentDay)
                   }
-                  
-                  // Close modal and force re-render
+
                   setShowProfileModal(false)
+                  // For now, reload to pick up latest data mapping
                   window.location.reload()
                 }}
               />

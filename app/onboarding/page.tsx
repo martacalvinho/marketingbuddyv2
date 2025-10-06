@@ -60,14 +60,14 @@ export default function OnboardingPage() {
         const n = parseInt(String(v ?? '').trim(), 10)
         return Number.isFinite(n) ? n : null
       }
-      await supabase.from('onboarding').upsert({
+      const { data: saveData, error: saveError } = await supabase.from('onboarding').upsert({
         user_id: user.id,
+        data: userData, // Store full data in jsonb column
         product_name: userData.productName ?? null,
         website: userData.website ?? null,
         value_prop: userData.valueProp ?? null,
         north_star_goal: userData.northStarGoal ?? null,
         custom_goal: userData.customGoal ?? null,
-        target_audience: userData.targetAudience ?? null,
         goal_type: userData.goalType ?? null,
         goal_amount: userData.goalAmount ?? null,
         goal_timeline: toInt(userData.goalTimeline),
@@ -84,14 +84,19 @@ export default function OnboardingPage() {
         goals: userData.goals ?? null,
         milestones: userData.milestones ?? null,
         onboarding_completed: true,
-        created_at: userData.createdAt ?? null,
       })
+      
+      if (saveError) {
+        console.error('Supabase save error:', saveError)
+        throw saveError
+      }
     } catch (e) {
       // non-fatal; proceed to dashboard
       // eslint-disable-next-line no-console
       console.warn('Failed to save onboarding to Supabase:', e)
     }
-    router.push('/dashboard')
+    const redirect = searchParams.get('redirect') || '/dashboard'
+    router.push(redirect)
   }
 
   const handleSkip = async () => {
@@ -100,6 +105,7 @@ export default function OnboardingPage() {
       try {
         await supabase.from('onboarding').upsert({
           user_id: user.id,
+          data: {}, // Required jsonb field
           onboarding_completed: false,
         })
       } catch (e) {
@@ -107,7 +113,8 @@ export default function OnboardingPage() {
         console.warn('Failed to record skip in Supabase:', e)
       }
     }
-    router.push('/dashboard')
+    const redirect = searchParams.get('redirect') || '/dashboard'
+    router.push(redirect)
   }
 
   if (checkingAuth) return null

@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,7 +25,26 @@ export default function LoginPage() {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
       }
-      router.replace("/dashboard");
+      // After auth, decide where to go based on onboarding
+      const redirect = searchParams.get("redirect") ?? undefined;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: onboarding, error } = await supabase
+          .from("onboarding")
+          .select("onboarding_completed")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        const incomplete = !!(error || !onboarding || onboarding.onboarding_completed !== true);
+        const desired = redirect ?? "/dashboard";
+        if (incomplete) {
+          router.replace(`/onboarding?redirect=${encodeURIComponent(desired)}`);
+        } else {
+          router.replace(desired);
+        }
+      } else {
+        const desired = redirect ?? "/dashboard";
+        router.replace(`/onboarding?redirect=${encodeURIComponent(desired)}`);
+      }
     } catch (err: any) {
       setError(err?.message ?? "Something went wrong");
     } finally {

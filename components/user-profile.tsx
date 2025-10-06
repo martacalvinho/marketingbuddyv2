@@ -23,6 +23,8 @@ import {
   CheckCircle2,
   AlertCircle
 } from "lucide-react"
+import WebsiteAnalysis from "@/components/website-analysis"
+import TargetAudienceView from "@/components/target-audience-view"
 
 interface UserProfileProps {
   user: any
@@ -257,6 +259,78 @@ export default function UserProfile({ user, onSignOut, onUpdateProfile }: UserPr
             </Button>
           </div>
         </CardHeader>
+      </Card>
+
+      {/* Website Analysis (read-only, same aesthetics as onboarding) */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center space-x-2">
+                <Lightbulb className="h-5 w-5" />
+                <span>Website Analysis</span>
+              </CardTitle>
+              <CardDescription>AI analysis of your product and market positioning</CardDescription>
+            </div>
+            {user.website && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    const res = await fetch('/api/analyze-website', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ website: user.website })
+                    })
+                    const data = await res.json()
+                    if (onUpdateProfile) {
+                      await onUpdateProfile({ websiteAnalysis: {
+                        businessOverview: data.businessOverview,
+                        marketingOpportunities: data.marketingOpportunities,
+                        marketingStrengths: data.marketingStrengths,
+                        contentMessagingAnalysis: data.contentMessagingAnalysis,
+                        competitivePositioning: data.competitivePositioning,
+                        actionableRecommendations: data.actionableRecommendations,
+                      } })
+                    }
+                  } catch (e) {
+                    console.error('Re-analyze failed:', e)
+                  }
+                }}
+                disabled={isSaving}
+              >
+                {isSaving ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                Re-run Analysis
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          <WebsiteAnalysis analysis={user.websiteAnalysis} websiteUrl={user.website} />
+        </CardContent>
+      </Card>
+
+      {/* Target Audience (demographics + psychographics) */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center space-x-2">
+                <Target className="h-5 w-5" />
+                <span>Target Audience</span>
+              </CardTitle>
+              <CardDescription>Demographics and insights generated during onboarding</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {user.targetAudience ? (
+            <TargetAudienceView targetAudience={user.targetAudience} />
+          ) : (
+            <div className="text-sm text-gray-600">No target audience data available yet.</div>
+          )}
+        </CardContent>
       </Card>
 
       {/* Account Information */}

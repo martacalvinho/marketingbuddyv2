@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -77,8 +77,10 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
     websiteAnalysis: initialData?.websiteAnalysis || null
   })
 
-  const totalSteps = flow === 'from-landing' ? 12 : 11
-  const progress = (currentStep / totalSteps) * 100
+  // Simplified step flow: only Website Analysis -> Basic Info -> Target Audience
+  const stepMap = flow === 'from-landing' ? [0, 1, 3] : [1, 3]
+  const totalSteps = stepMap.length
+  const progress = totalSteps > 1 ? (currentStep / (totalSteps - 1)) * 100 : 100
 
   const updateFormData = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -162,11 +164,16 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
     }
   }
 
-  const nextStep = () => {
-    if (currentStep === 4 && !formData.targetAudience) {
+  // Auto-generate demographics/target audience when entering that step (actual step 3)
+  useEffect(() => {
+    const actualStep = stepMap[currentStep]
+    if (actualStep === 3 && !formData.targetAudience && formData.websiteAnalysis) {
       generateTargetAudience()
     }
-    setCurrentStep(prev => Math.min(prev + 1, totalSteps))
+  }, [currentStep, stepMap, formData.targetAudience, formData.websiteAnalysis])
+
+  const nextStep = () => {
+    setCurrentStep(prev => Math.min(prev + 1, totalSteps - 1))
   }
 
   const prevStep = () => {
@@ -219,18 +226,18 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
   }
 
   const renderStep = () => {
-    // Adjust step number for post-analysis flow (skip website analysis)
-    const adjustedStep = flow === 'post-analysis' ? currentStep + 1 : currentStep
+    // Determine which actual step to render using simplified step map
+    const actualStep = stepMap[currentStep]
     
     // Debug logging
-    console.log('Onboarding renderStep:', {
+    console.log('Onboarding renderStep (simplified):', {
       flow,
       currentStep,
-      adjustedStep,
+      actualStep,
       hasWebsiteAnalysis: !!formData.websiteAnalysis
     })
     
-    switch (adjustedStep) {
+    switch (actualStep) {
       case 0: // Website Analysis (only for from-landing flow)
         if (formData.websiteAnalysis && !isAnalyzing) {
           // Show analysis results
@@ -480,48 +487,7 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
           </div>
         )
 
-      case 2: // Marketing Goals
-        return (
-          <div className="space-y-6">
-            <div className="text-center">
-              <Zap className="h-12 w-12 text-indigo-600 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">What's Your North Star Goal?</h2>
-              <p className="text-gray-600">Choose your primary marketing objective.</p>
-            </div>
-            <RadioGroup value={formData.northStarGoal} onValueChange={(value) => updateFormData('northStarGoal', value)}>
-              <div className="space-y-3">
-                {MARKETING_GOALS.map((goal) => {
-                  const Icon = goal.icon
-                  return (
-                    <div key={goal.id} className="flex items-center space-x-2">
-                      <RadioGroupItem value={goal.id} id={goal.id} />
-                      <Label htmlFor={goal.id} className="flex-1 cursor-pointer">
-                        <Card className="p-3 hover:bg-gray-50 transition-colors">
-                          <div className="flex items-center space-x-3">
-                            <Icon className="h-5 w-5 text-indigo-600" />
-                            <div>
-                              <h3 className="font-medium text-gray-900">{goal.title}</h3>
-                              <p className="text-sm text-gray-600">{goal.description}</p>
-                            </div>
-                          </div>
-                        </Card>
-                      </Label>
-                    </div>
-                  )
-                })}
-              </div>
-            </RadioGroup>
-            <div>
-              <Label htmlFor="customGoal">Custom Goal (Optional)</Label>
-              <Input
-                id="customGoal"
-                placeholder="Describe your specific goal"
-                value={formData.customGoal}
-                onChange={(e) => updateFormData('customGoal', e.target.value)}
-              />
-            </div>
-          </div>
-        )
+      // Skip original case 2 (Marketing Goals) in simplified flow
 
       case 3: // Target Audience
         return (
@@ -730,6 +696,11 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
                     Edit Manually
                   </Button>
                 </div>
+                <div className="flex justify-end">
+                  <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={handleComplete}>
+                    Finish Setup
+                  </Button>
+                </div>
               </div>
             ) : (
               /* Show simple form if no structured data */
@@ -749,12 +720,17 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
                     rows={4}
                   />
                 </div>
+                <div className="flex justify-end">
+                  <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={handleComplete}>
+                    Finish Setup
+                  </Button>
+                </div>
               </div>
             )}
           </div>
         )
 
-      case 4: // Focus Area
+      case 4: // Focus Area (unreached in simplified flow)
         return (
           <div className="space-y-6">
             <div className="text-center">
@@ -811,7 +787,7 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
           </div>
         )
 
-      case 5: // Daily Task Count
+      case 5: // Daily Task Count (unreached in simplified flow)
         return (
           <div className="space-y-6">
             <div className="text-center">
@@ -856,7 +832,7 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
           </div>
         )
 
-      case 6: // Goals & Timeline
+      case 6: // Goals & Timeline (unreached in simplified flow)
         return (
           <div className="space-y-6">
             <div className="text-center">
@@ -905,7 +881,7 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
           </div>
         )
 
-      case 7: // Marketing Strategy
+      case 7: // Marketing Strategy (unreached in simplified flow)
         return (
           <div className="space-y-6">
             <div className="text-center">
@@ -948,7 +924,7 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
           </div>
         )
 
-      case 8: // Experience Level
+      case 8: // Experience Level (unreached in simplified flow)
         return (
           <div className="space-y-6">
             <div className="text-center">
@@ -976,7 +952,7 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
           </div>
         )
 
-      case 9: // Preferred Platforms
+      case 9: // Preferred Platforms (unreached in simplified flow)
         return (
           <div className="space-y-6">
             <div className="text-center">
@@ -1007,7 +983,7 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
           </div>
         )
 
-      case 10: // Current Challenges
+      case 10: // Current Challenges (unreached in simplified flow)
         return (
           <div className="space-y-6">
             <div className="text-center">
@@ -1030,7 +1006,7 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
           </div>
         )
 
-      case 11: // Current Users/Platforms
+      case 11: // Current Users/Platforms (unreached in simplified flow)
         return (
           <div className="space-y-6">
             <div className="text-center">
@@ -1088,28 +1064,16 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
   }
 
   const canProceed = () => {
-    const adjustedStep = flow === 'post-analysis' ? currentStep + 1 : currentStep
-    
-    switch (adjustedStep) {
+    const actualStep = stepMap[currentStep]
+    switch (actualStep) {
       case 0: return formData.websiteAnalysis !== null
       case 1: return formData.productName && formData.website && formData.valueProp
-      case 2: return formData.northStarGoal
-      case 3: return formData.targetAudience
-      case 4: return formData.focusArea
-      case 5: return formData.dailyTaskCount
-      case 6: return formData.goalAmount && formData.goalTimeline
-      case 7: return formData.marketingStrategy
-      case 8: return formData.experienceLevel
-      case 9: return formData.preferredPlatforms.length > 0
-      case 10: return formData.challenges.trim().length > 0
-      case 11: return true // Current status is optional
+      case 3: return true // Target audience shown; can finish here
       default: return true
     }
   }
 
-  const isWebsiteAnalysisStep = () => {
-    return flow === 'from-landing' && currentStep === 0
-  }
+  const isWebsiteAnalysisStep = () => flow === 'from-landing' && stepMap[currentStep] === 0
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -1132,7 +1096,7 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
           <Button
             variant="outline"
             onClick={prevStep}
-            disabled={currentStep === (flow === 'from-landing' ? 0 : 1)}
+            disabled={currentStep === 0}
           >
             <ChevronLeft className="h-4 w-4 mr-2" />
             Back

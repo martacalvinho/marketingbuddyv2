@@ -24,16 +24,64 @@ export default function DashboardPage() {
         router.replace("/login")
         return
       }
-      setUser({ id: user.id, email: user.email ?? undefined })
+      // Check onboarding completion before allowing dashboard access
+      const { data: onboarding, error } = await supabase
+        .from("onboarding")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle()
+
+      if (error || !onboarding || onboarding.onboarding_completed !== true) {
+        router.replace("/onboarding?redirect=/dashboard")
+        return
+      }
+
+      // Enrich user object for DashboardView
+      const enrichedUser: any = {
+        id: user.id,
+        email: user.email ?? undefined,
+        productName: onboarding.product_name ?? "",
+        website: onboarding.website ?? "",
+        valueProp: onboarding.value_prop ?? "",
+        northStarGoal: onboarding.north_star_goal ?? "",
+        customGoal: onboarding.custom_goal ?? "",
+        goalType: onboarding.goal_type ?? "",
+        goalAmount: onboarding.goal_amount ?? "",
+        goalTimeline: String(onboarding.goal_timeline ?? "6"),
+        marketingStrategy: onboarding.marketing_strategy ?? "6-month",
+        currentUsers: onboarding.current_users != null ? String(onboarding.current_users) : "",
+        currentPlatforms: onboarding.current_platforms ?? [],
+        experienceLevel: onboarding.experience_level ?? "",
+        preferredPlatforms: onboarding.preferred_platforms ?? [],
+        challenges: onboarding.challenges ?? "",
+        focusArea: onboarding.focus_area ?? "both",
+        dailyTaskCount: String(onboarding.daily_task_count ?? "3"),
+        websiteAnalysis: onboarding.website_analysis ?? onboarding.data?.websiteAnalysis ?? null,
+        targetAudience: onboarding.data?.targetAudience ?? "",
+        plan: onboarding.plan ?? null,
+        goals: onboarding.goals ?? null,
+        milestones: onboarding.milestones ?? [],
+      }
+
+      setUser(enrichedUser)
       setLoading(false)
     }
     init()
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!session?.user) {
         router.replace("/login")
       } else {
-        setUser({ id: session.user.id, email: session.user.email ?? undefined })
+        const { data: onboarding, error } = await supabase
+          .from("onboarding")
+          .select("onboarding_completed")
+          .eq("user_id", session.user.id)
+          .maybeSingle()
+        if (error || !onboarding || onboarding.onboarding_completed !== true) {
+          router.replace("/onboarding?redirect=/dashboard")
+        } else {
+          setUser({ id: session.user.id, email: session.user.email ?? undefined })
+        }
       }
     })
 
