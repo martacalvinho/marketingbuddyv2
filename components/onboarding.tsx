@@ -56,6 +56,8 @@ const PLATFORMS = [
 export default function Onboarding({ flow, initialData, onComplete, onSkip }: OnboardingProps) {
   const [currentStep, setCurrentStep] = useState(flow === 'from-landing' ? 0 : 1)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [isGeneratingAudience, setIsGeneratingAudience] = useState(false)
+  const [isCompletingSetup, setIsCompletingSetup] = useState(false)
   const [formData, setFormData] = useState({
     productName: initialData?.productName || '',
     website: initialData?.website || '',
@@ -68,6 +70,8 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
     goalTimeline: '6',
     marketingStrategy: '6-month',
     currentUsers: '',
+    currentMrr: '',
+    launchDate: '',
     currentPlatforms: [] as string[],
     experienceLevel: '',
     preferredPlatforms: [] as string[],
@@ -143,6 +147,7 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
   }
 
   const generateTargetAudience = async () => {
+    setIsGeneratingAudience(true)
     try {
       const response = await fetch('/api/generate-target-audience', {
         method: 'POST',
@@ -161,6 +166,8 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
       }
     } catch (error) {
       updateFormData('targetAudience', 'Small business owners and entrepreneurs looking to grow their online presence.')
+    } finally {
+      setIsGeneratingAudience(false)
     }
   }
 
@@ -181,6 +188,7 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
   }
 
   const handleComplete = async () => {
+    setIsCompletingSetup(true)
     try {
       const response = await fetch('/api/generate-plan', {
         method: 'POST',
@@ -208,8 +216,9 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
         onComplete(completeUserData)
       }
     } catch (error) {
-      onComplete({ 
-        ...formData, 
+      console.error('Failed to generate plan:', error)
+      onComplete({
+        ...formData,
         onboardingCompleted: true,
         goals: {
           primary: {
@@ -222,6 +231,8 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
         },
         milestones: []
       })
+    } finally {
+      setIsCompletingSetup(false)
     }
   }
 
@@ -382,8 +393,7 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
                               </Badge>
                             </div>
                           </div>
-                          <p className="text-sm text-indigo-800 mb-2">{rec.description}</p>
-                          <p className="text-xs text-indigo-700 italic">Why: {rec.reasoning}</p>
+                          <p className="text-sm text-indigo-800">{rec.description}</p>
                         </div>
                       ))}
                     </div>
@@ -483,6 +493,37 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
                   rows={3}
                 />
               </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="currentUsers">Current Users</Label>
+                  <Input
+                    id="currentUsers"
+                    type="number"
+                    placeholder="e.g., 50"
+                    value={formData.currentUsers}
+                    onChange={(e) => updateFormData('currentUsers', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="currentMrr">Current MRR ($)</Label>
+                  <Input
+                    id="currentMrr"
+                    type="number"
+                    placeholder="e.g., 500"
+                    value={formData.currentMrr}
+                    onChange={(e) => updateFormData('currentMrr', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="launchDate">Launch Date</Label>
+                  <Input
+                    id="launchDate"
+                    type="date"
+                    value={formData.launchDate}
+                    onChange={(e) => updateFormData('launchDate', e.target.value)}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         )
@@ -497,8 +538,14 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Who's Your Target Audience?</h2>
             </div>
             
-            {/* Show structured target audience if available */}
-            {formData.targetAudience && typeof formData.targetAudience === 'object' ? (
+            {/* Show loading state while generating */}
+            {isGeneratingAudience ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mb-4"></div>
+                <p className="text-gray-600 text-lg font-medium">Analyzing target audience...</p>
+                <p className="text-gray-500 text-sm mt-2">This may take a moment</p>
+              </div>
+            ) : formData.targetAudience && typeof formData.targetAudience === 'object' ? (
               <div className="space-y-6">
                 {/* Demographics */}
                 <Card>
@@ -696,11 +743,6 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
                     Edit Manually
                   </Button>
                 </div>
-                <div className="flex justify-end">
-                  <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={handleComplete}>
-                    Finish Setup
-                  </Button>
-                </div>
               </div>
             ) : (
               /* Show simple form if no structured data */
@@ -719,11 +761,6 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
                     onChange={(e) => updateFormData('targetAudience', e.target.value)}
                     rows={4}
                   />
-                </div>
-                <div className="flex justify-end">
-                  <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={handleComplete}>
-                    Finish Setup
-                  </Button>
                 </div>
               </div>
             )}
@@ -1126,6 +1163,19 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
           </div>
         </div>
       </div>
+
+      {/* Completion Modal */}
+      {isCompletingSetup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="max-w-md w-full mx-4">
+            <CardContent className="p-8 text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-6"></div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Analyzing information and generating your marketing plan</h3>
+              <p className="text-gray-600">This may take a moment...</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }

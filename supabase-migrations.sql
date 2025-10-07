@@ -37,6 +37,8 @@ CREATE TABLE IF NOT EXISTS public.onboarding (
   goal_timeline integer NULL,
   marketing_strategy text NULL,
   current_users integer NULL,
+  current_mrr numeric(10,2) NULL,
+  launch_date date NULL,
   current_platforms text[] NULL,
   experience_level text NULL,
   preferred_platforms text[] NULL,
@@ -84,6 +86,10 @@ CREATE TABLE IF NOT EXISTS public.tasks (
   platform text NULL, -- 'twitter', 'linkedin', 'instagram', etc.
   related_content_id uuid NULL, -- Links to content table
   metadata jsonb NULL, -- Additional flexible data
+  completion_note text NULL,
+  performance_data jsonb NULL,
+  skipped_count integer NOT NULL DEFAULT 0,
+  last_status_change timestamp with time zone NULL,
   created_at timestamp with time zone NULL DEFAULT now(),
   updated_at timestamp with time zone NULL DEFAULT now(),
   CONSTRAINT tasks_pkey PRIMARY KEY (id),
@@ -97,6 +103,27 @@ CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON public.tasks USING btree (user_i
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON public.tasks USING btree (status);
 CREATE INDEX IF NOT EXISTS idx_tasks_due_date ON public.tasks USING btree (due_date);
 CREATE INDEX IF NOT EXISTS idx_tasks_created_at ON public.tasks USING btree (created_at DESC);
+
+-- ============================================
+-- 3b. WEEKLY_REVIEWS TABLE
+-- ============================================
+CREATE TABLE IF NOT EXISTS public.weekly_reviews (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  user_id uuid NOT NULL,
+  week_start_date date NOT NULL,
+  traction_channel text NULL,
+  waste_channel text NULL,
+  focus_next_week text[] NULL,
+  feeling integer NULL CHECK (feeling BETWEEN 1 AND 10),
+  notes text NULL,
+  ai_summary jsonb NULL,
+  created_at timestamp with time zone NULL DEFAULT now(),
+  CONSTRAINT weekly_reviews_pkey PRIMARY KEY (id),
+  CONSTRAINT weekly_reviews_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users (id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_weekly_reviews_user_id ON public.weekly_reviews USING btree (user_id);
+CREATE INDEX IF NOT EXISTS idx_weekly_reviews_week_start ON public.weekly_reviews USING btree (week_start_date);
 
 -- ============================================
 -- 4. CONTENT TABLE
@@ -245,6 +272,20 @@ ALTER TABLE public.content ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.buddy_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.analytics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.streaks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.weekly_reviews ENABLE ROW LEVEL SECURITY;
+
+-- Buddy pairs table: simple manual matching
+CREATE TABLE IF NOT EXISTS public.buddy_pairs (
+  user_id uuid NOT NULL,
+  buddy_user_id uuid NOT NULL,
+  status text NULL DEFAULT 'active', -- 'active','pending','inactive'
+  matched_by text NULL DEFAULT 'admin',
+  matched_at timestamp with time zone NULL DEFAULT now(),
+  CONSTRAINT buddy_pairs_pkey PRIMARY KEY (user_id, buddy_user_id),
+  CONSTRAINT buddy_pairs_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users (id) ON DELETE CASCADE,
+  CONSTRAINT buddy_pairs_buddy_id_fkey FOREIGN KEY (buddy_user_id) REFERENCES auth.users (id) ON DELETE CASCADE
+);
+ALTER TABLE public.buddy_pairs ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
 DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
@@ -288,6 +329,28 @@ CREATE POLICY "Users can update own tasks" ON public.tasks
 DROP POLICY IF EXISTS "Users can delete own tasks" ON public.tasks;
 CREATE POLICY "Users can delete own tasks" ON public.tasks
   FOR DELETE USING (auth.uid() = user_id);
+
+-- Weekly reviews policies
+DROP POLICY IF EXISTS "Users can view own weekly reviews" ON public.weekly_reviews;
+CREATE POLICY "Users can view own weekly reviews" ON public.weekly_reviews
+  FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert own weekly reviews" ON public.weekly_reviews;
+CREATE POLICY "Users can insert own weekly reviews" ON public.weekly_reviews
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update own weekly reviews" ON public.weekly_reviews;
+CREATE POLICY "Users can update own weekly reviews" ON public.weekly_reviews
+  FOR UPDATE USING (auth.uid() = user_id);
+
+-- Buddy pairs policies (both sides can see)
+DROP POLICY IF EXISTS "Users can view their buddy pairs" ON public.buddy_pairs;
+CREATE POLICY "Users can view their buddy pairs" ON public.buddy_pairs
+  FOR SELECT USING (auth.uid() = user_id OR auth.uid() = buddy_user_id);
+
+DROP POLICY IF EXISTS "Admins can insert buddy pairs" ON public.buddy_pairs;
+CREATE POLICY "Admins can insert buddy pairs" ON public.buddy_pairs
+  FOR INSERT WITH CHECK (true);
 
 -- Content policies
 DROP POLICY IF EXISTS "Users can view own content" ON public.content;

@@ -1,19 +1,27 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Twitter, Linkedin, MessageSquare, Instagram, Video, FileText, Zap, Copy, Check, Loader2, CheckCircle2, Circle, Target, ChevronRight, ChevronLeft, Calendar, Clock, Lightbulb, Trophy } from "lucide-react"
+import { Twitter, Linkedin, MessageSquare, Instagram, Video, FileText, Zap, Copy, Check, Loader2, CheckCircle2, Circle, Target, ChevronRight, ChevronLeft, Calendar, Clock, Lightbulb, Trophy, Download } from "lucide-react"
 import WeekProgress from "./week-progress"
 
 interface Milestone {
+  id?: string
   title: string
   date: string
   type: 'goal_achieved' | 'user_added'
   goalType?: 'users' | 'revenue'
+  emoji?: string
+  description?: string
+  progressCurrent?: number
+  progressTarget?: number
+  unit?: string
+  unlocked?: boolean
 }
 
 interface HabitTrackerProps {
@@ -24,6 +32,8 @@ interface HabitTrackerProps {
   onUpdateTask?: (taskId: string | number, updates: Partial<any>) => void
   onReorderTasks?: (newOrder: any[]) => void
   onAddTaskNote?: (taskId: string | number, note: string) => void
+  onSkipTask?: (taskId: string | number) => void
+  onSuggestContent?: (platformId: string, task: any) => void
   streak: number
   xp: number
   currentDay?: number
@@ -93,31 +103,87 @@ const getCategoryColor = (category: string) => {
 }
 
 
+// Detect primary platform for a task and map to content generator type id
+const detectPlatformId = (task: any): string | null => {
+  if (!task) return null
+  const explicit = (task.platform || '').toLowerCase().trim()
+  const text = `${task.title || ''} ${task.description || ''}`.toLowerCase()
+  const has = (s: string) => text.includes(s)
 
-export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAddTask, onUpdateTask, onReorderTasks, onAddTaskNote, streak, xp, currentDay = 1, onDayChange, user, weekStats = [], onTaskUpdate }: HabitTrackerProps) {
+  const platform = explicit ||
+    (has('linkedin') ? 'linkedin' :
+    has('twitter') || has('tweet') || has('x.com') ? 'twitter' :
+    has('reddit') || has('subreddit') ? 'reddit' :
+    has('instagram') || has('ig ') || has('insta') ? 'instagram' :
+    has('tiktok') || has('tik tok') ? 'tiktok' :
+    has('build in public') ? 'build-in-public' :
+    has('blog') || has('article') || has('seo') ? 'blog' : '')
+
+  switch (platform) {
+    case 'twitter': return 'twitter-thread'
+    case 'linkedin': return 'linkedin-post'
+    case 'reddit': return 'reddit-post'
+    case 'instagram': return 'instagram-post'
+    case 'tiktok': return 'tiktok-script'
+    case 'build-in-public': return 'build-in-public'
+    case 'blog': return 'seo-blog'
+    default: return null
+  }
+}
+
+const getPlatformIcon = (platformId: string): any => {
+  switch (platformId) {
+    case 'twitter-thread': return Twitter
+    case 'linkedin-post': return Linkedin
+    case 'reddit-post': return MessageSquare
+    case 'instagram-post': return Instagram
+    case 'tiktok-script': return Video
+    case 'build-in-public': return Zap
+    case 'seo-blog': return FileText
+    default: return null
+  }
+}
+
+
+export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAddTask, onUpdateTask, onReorderTasks, onAddTaskNote, onSkipTask, onSuggestContent, streak, xp, currentDay = 1, onDayChange, user, weekStats = [], onTaskUpdate }: HabitTrackerProps) {
   const [newTitle, setNewTitle] = useState("")
   const [newDesc, setNewDesc] = useState("")
   const [isJourneyCollapsed, setIsJourneyCollapsed] = useState(false)
   const [showEditGoal, setShowEditGoal] = useState(false)
   const [editingTask, setEditingTask] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
-  // Use onboarding goal data or fallback to defaults
+  // Compute goals strictly from onboarding baselines (10x rule)
   const getUserGoal = () => {
-    if (user?.goals?.primary?.type === 'users') return parseInt(user.goals.primary.target) || 1000
-    if (user?.goalType === 'users') return parseInt(user.goalAmount) || 1000
-    return 1000
+    const current = parseInt(user?.currentUsers || '0', 10) || 0
+    return current === 0 ? 10 : current * 10
   }
   
   const getRevenueGoal = () => {
-    if (user?.goals?.primary?.type === 'revenue') return parseInt(user.goals.primary.target) || 1000
-    if (user?.goalType === 'revenue') return parseInt(user.goalAmount) || 1000
-    return 1000
+    const current = parseFloat(user?.currentMrr || '0') || 0
+    return current === 0 ? 10 : Math.max(10, Math.round(current * 10))
   }
   
   const [userGoal, setUserGoal] = useState(getUserGoal())
   const [revenueGoal, setRevenueGoal] = useState(getRevenueGoal())
-  const [currentUsers, setCurrentUsers] = useState(Math.min(Math.ceil(currentDay * 5.5), getUserGoal()))
-  const [currentRevenue, setCurrentRevenue] = useState(Math.min(Math.ceil(currentDay * 15), getRevenueGoal()))
+  const [currentUsers, setCurrentUsers] = useState(() => {
+    const n = parseInt(user?.currentUsers || '0', 10)
+    return Number.isFinite(n) ? n : 0
+  })
+  const [currentRevenue, setCurrentRevenue] = useState(() => {
+    const n = parseFloat(user?.currentMrr || '0')
+    return Number.isFinite(n) ? n : 0
+  })
+  
+  // Refresh goals and current baselines if onboarding values change
+  useEffect(() => {
+    setUserGoal(getUserGoal())
+    setRevenueGoal(getRevenueGoal())
+    const cu = parseInt(user?.currentUsers || '0', 10)
+    setCurrentUsers(Number.isFinite(cu) ? cu : 0)
+    const cr = parseFloat(user?.currentMrr || '0')
+    setCurrentRevenue(Number.isFinite(cr) ? cr : 0)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.currentUsers, user?.currentMrr])
   const [editingTaskId, setEditingTaskId] = useState<string | number | null>(null)
   const [editingTaskTitle, setEditingTaskTitle] = useState("")
   const [editingTaskDescription, setEditingTaskDescription] = useState("")
@@ -127,7 +193,100 @@ export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAd
   // Milestone state
   const [milestones, setMilestones] = useState(user?.milestones || [])
   const [showAddMilestone, setShowAddMilestone] = useState(false)
-  const [newMilestone, setNewMilestone] = useState({ title: '', date: '' })
+  const [newMilestone, setNewMilestone] = useState({ title: '', date: '', emoji: '🏅', description: '', current: '', target: '', unit: '' })
+  const [celebratingId, setCelebratingId] = useState<string | null>(null)
+  // Share UI state
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [shareTemplate, setShareTemplate] = useState<'journey' | 'milestone' | 'weekly'>('journey')
+  const shareCardRef = useRef<HTMLDivElement>(null)
+
+  // Aggregate weekly stats (for shareable summary)
+  const weekDone = (weekStats || []).reduce((acc: number, d: any) => acc + (d?.done || 0), 0)
+  const weekTotal = (weekStats || []).reduce((acc: number, d: any) => acc + (d?.total || 0), 0)
+  const winsGoals = Array.from(new Set((weekStats || []).flatMap((d: any) => d?.goals || []))).slice(0, 4)
+
+  // Achievement presets (locked/unlocked)
+  const achievementPresets = [
+    { id: 'users-10', title: 'First 10 Users', unlocked: currentUsers >= 10, progress: `${Math.min(currentUsers, 10)}/10`, icon: '👥', blurb: 'Every journey starts somewhere' },
+    { id: 'streak-7', title: '7-Day Streak', unlocked: streak >= 7, progress: `${Math.min(streak, 7)}/7 days`, icon: '🔥', blurb: 'Consistency is key' },
+    { id: 'mrr-1', title: 'First Dollar', unlocked: currentRevenue >= 1, progress: `$${Math.min(currentRevenue, 1).toLocaleString()}/$1 MRR`, icon: '💰', blurb: 'The first dollar is the hardest' },
+    { id: 'users-100', title: '100 Users', unlocked: currentUsers >= 100, progress: `${Math.min(currentUsers, 100)}/100`, icon: '🚩', blurb: 'Real traction begins' },
+    { id: 'streak-30', title: '30-Day Streak', unlocked: streak >= 30, progress: `${Math.min(streak, 30)}/30 days`, icon: '⚡️', blurb: 'Unstoppable momentum' },
+    { id: 'mrr-100', title: '$100 MRR', unlocked: currentRevenue >= 100, progress: `$${Math.min(currentRevenue, 100).toLocaleString()}/$100 MRR`, icon: '💎', blurb: 'Proof people pay' },
+  ]
+
+  // Track previous achievement unlocked states to trigger celebration once
+  const prevAchievementsRef = useRef<Record<string, boolean>>({})
+  useEffect(() => {
+    const current: Record<string, boolean> = Object.fromEntries(achievementPresets.map(a => [a.id, !!a.unlocked]))
+    const prev = prevAchievementsRef.current
+    const justUnlocked = Object.keys(current).find(id => current[id] === true && prev[id] === false)
+    if (justUnlocked) {
+      setCelebratingId(justUnlocked)
+      launchConfetti()
+      setTimeout(() => setCelebratingId(null), 1200)
+    }
+    prevAchievementsRef.current = current
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUsers, currentRevenue, streak])
+
+  // SVG progress ring for visual goals
+  const ProgressRing = ({ size = 120, stroke = 10, value, max, colorFrom, colorTo, label, sub }: { size?: number, stroke?: number, value: number, max: number, colorFrom: string, colorTo: string, label: string, sub?: string }) => {
+    const radius = (size - stroke) / 2
+    const circ = 2 * Math.PI * radius
+    const pct = Math.max(0, Math.min(1, max > 0 ? value / max : 0))
+    const dash = pct * circ
+    return (
+      <div className="flex flex-col items-center">
+        <svg width={size} height={size} className="rotate-[270deg]">
+          <defs>
+            <linearGradient id={`grad-${label}`} x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor={colorFrom} />
+              <stop offset="100%" stopColor={colorTo} />
+            </linearGradient>
+          </defs>
+          <circle cx={size/2} cy={size/2} r={radius} stroke="#e5e7eb" strokeWidth={stroke} fill="none" />
+          <circle cx={size/2} cy={size/2} r={radius} stroke={`url(#grad-${label})`} strokeWidth={stroke} fill="none" strokeDasharray={`${dash} ${circ}`} strokeLinecap="round" />
+        </svg>
+        <div className="-mt-24 text-center">
+          <div className="text-2xl font-bold text-gray-900">{label}</div>
+          <div className="text-sm text-gray-600">{value.toLocaleString()} / {max.toLocaleString()}{sub ? ` ${sub}` : ''}</div>
+          <div className="text-xs text-gray-500">{(pct * 100).toFixed(1)}% to goal</div>
+        </div>
+      </div>
+    )
+  }
+
+  const handleDownloadShareCard = async () => {
+    if (!shareCardRef.current) return
+    try {
+      const win: any = window as any
+      if (!win.htmlToImage) {
+        // Load html-to-image from CDN lazily
+        await new Promise<void>((resolve, reject) => {
+          const s = document.createElement('script')
+          s.src = 'https://unpkg.com/html-to-image@1.11.11/dist/html-to-image.js'
+          s.async = true
+          s.onload = () => resolve()
+          s.onerror = () => reject(new Error('Failed to load html-to-image'))
+          document.body.appendChild(s)
+        })
+      }
+      const dataUrl = await (win.htmlToImage as any).toPng(shareCardRef.current, { pixelRatio: 2, cacheBust: true })
+      const link = document.createElement('a')
+      link.href = dataUrl
+      link.download = `marketing-share-${shareTemplate}.png`
+      link.click()
+    } catch (e) {
+      const shareText = `🚀 My Marketing Journey - Day ${currentDay}\n\n👥 Users: ${currentUsers.toLocaleString()} / ${userGoal.toLocaleString()}\n💰 Revenue: $${currentRevenue.toLocaleString()} / $${revenueGoal.toLocaleString()} MRR\n🔥 ${streak} day streak\n\nBuilding: ${user?.productName || 'My Product'} — ${window.location.origin}/landing`
+      if (navigator.share) {
+        try { await navigator.share({ title: 'My Marketing Journey', text: shareText }) } catch {}
+      } else {
+        await navigator.clipboard.writeText(shareText)
+        alert('Image export unavailable. Copied share text to clipboard.')
+      }
+    }
+  }
   
   // Check if goals have been achieved and save as milestones
   // Also handle setting new goals when current goals are reached
@@ -189,15 +348,24 @@ export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAd
   
   const handleAddMilestone = () => {
     if (newMilestone.title.trim()) {
-      const milestoneToAdd = {
+      const cur = parseFloat(String(newMilestone.current || ''))
+      const tgt = parseFloat(String(newMilestone.target || ''))
+      const unlocked = Number.isFinite(cur) && Number.isFinite(tgt) ? cur >= tgt : false
+      const milestoneToAdd: Milestone = {
+        id: `m-${Date.now()}`,
         title: newMilestone.title,
         date: newMilestone.date || new Date().toISOString(),
-        type: 'user_added'
+        type: 'user_added',
+        emoji: newMilestone.emoji || '🏅',
+        description: newMilestone.description || '',
+        progressCurrent: Number.isFinite(cur) ? cur : undefined,
+        progressTarget: Number.isFinite(tgt) ? tgt : undefined,
+        unit: newMilestone.unit || '',
+        unlocked
       }
-      
-      const updatedMilestones = [...milestones, milestoneToAdd]
+      const updatedMilestones: Milestone[] = [...milestones, milestoneToAdd]
       setMilestones(updatedMilestones)
-      setNewMilestone({ title: '', date: '' })
+      setNewMilestone({ title: '', date: '', emoji: '🏅', description: '', current: '', target: '', unit: '' })
       setShowAddMilestone(false)
       
       // Update user data in localStorage
@@ -209,10 +377,45 @@ export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAd
       }
     }
   }
+
+  const launchConfetti = async () => {
+    try {
+      const win: any = window as any
+      if (!win.confetti) {
+        await new Promise<void>((resolve, reject) => {
+          const s = document.createElement('script')
+          s.src = 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js'
+          s.async = true
+          s.onload = () => resolve()
+          s.onerror = () => reject(new Error('Failed to load confetti'))
+          document.body.appendChild(s)
+        })
+      }
+      ;(win.confetti as any)({ particleCount: 140, spread: 70, origin: { y: 0.6 } })
+      setTimeout(() => (win.confetti as any)({ particleCount: 80, angle: 60, spread: 55, origin: { x: 0 } }), 150)
+      setTimeout(() => (win.confetti as any)({ particleCount: 80, angle: 120, spread: 55, origin: { x: 1 } }), 300)
+    } catch {}
+  }
+
+  const markCustomMilestoneCompleted = async (id: string) => {
+    setMilestones((prev: Milestone[]) => {
+      const updated = prev.map(m => m.id === id ? { ...m, unlocked: true, date: new Date().toISOString() } : m)
+      // persist to localStorage
+      const userData = localStorage.getItem('user')
+      if (userData) {
+        const parsedUser = JSON.parse(userData)
+        localStorage.setItem('user', JSON.stringify({ ...parsedUser, milestones: updated }))
+      }
+      return updated
+    })
+    setCelebratingId(id)
+    await launchConfetti()
+    setTimeout(() => setCelebratingId(null), 1200)
+  }
   
   const completedTasks = tasks.filter((task) => task.completed).length
   const currentWeek = Math.ceil(currentDay / 7)
-  const weekGoals = weekStats[currentWeek - 1]?.goals || []
+  const currentWeekGoals = weekStats[currentWeek - 1]?.goals || []
   const totalTasks = tasks.length
   const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0
 
@@ -414,13 +617,18 @@ export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAd
                 <p className="text-sm">AI-powered tasks will be generated based on your marketing strategy</p>
               </div>
             ) : (
-              tasks.map((task, index) => (
+              tasks.map((task, index) => {
+                const platformId = detectPlatformId(task)
+                const PlatformIcon: any = platformId ? getPlatformIcon(platformId) : null
+                return (
                 <div
                   key={task.id}
                   className={`group relative transition-all duration-200 ${
-                    task.completed 
-                      ? "bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200" 
-                      : "bg-white border border-gray-200 hover:border-blue-300 hover:shadow-sm"
+                    task.completed
+                      ? "bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200"
+                      : task.skipped
+                        ? "bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 opacity-75"
+                        : "bg-white border border-gray-200 hover:border-blue-300 hover:shadow-sm"
                   } rounded-xl p-4 cursor-move`}
                   draggable
                   onDragStart={(e) => handleDragStart(e, task)}
@@ -439,13 +647,13 @@ export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAd
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => !task.completed && handleCompleteTask(task.id)}
+                      onClick={() => !task.completed && !task.skipped && handleCompleteTask(task.id)}
                       className={`p-2 h-auto transition-all duration-200 ${
                         task.completed 
                           ? "bg-green-100 hover:bg-green-200" 
-                          : "hover:bg-blue-50 hover:scale-110"
+                          : task.skipped ? "bg-gray-100" : "hover:bg-blue-50 hover:scale-110"
                       }`}
-                      disabled={task.completed}
+                      disabled={task.completed || task.skipped}
                     >
                       {task.completed ? (
                         <CheckCircle2 className="h-6 w-6 text-green-600" />
@@ -486,16 +694,18 @@ export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAd
                             <div>
                               <h3 
                                 className={`font-medium cursor-pointer transition-colors ${
-                                  task.completed 
-                                    ? "text-green-800 line-through" 
-                                    : "text-gray-900 hover:text-blue-700"
+                                  task.completed
+                                    ? "text-green-800 line-through"
+                                    : task.skipped
+                                      ? "text-gray-500 line-through"
+                                      : "text-gray-900 hover:text-blue-700"
                                 }`}
                                 onClick={() => !task.completed && startEditTaskDetails(task)}
                               >
                                 {task.title}
                               </h3>
                               <p className={`text-sm leading-relaxed ${
-                                task.completed ? "text-green-700" : "text-gray-600"
+                                task.completed ? "text-green-700" : task.skipped ? "text-gray-500" : "text-gray-600"
                               }`}>
                                 {task.description}
                               </p>
@@ -527,9 +737,19 @@ export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAd
                       {/* Edit/Save/Cancel Buttons */}
                       {editingTaskId !== task.id && (
                         <div className="flex space-x-2 mt-2">
+                          {onSuggestContent && PlatformIcon && !task.completed && (
+                            <Button size="sm" variant="ghost" className="text-gray-400 hover:text-indigo-600" onClick={() => onSuggestContent(platformId!, task)} title="Create content for this task">
+                              <PlatformIcon className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button size="sm" variant="outline" onClick={() => startEditTaskDetails(task)}>
                             Edit
                           </Button>
+                          {onSkipTask && !task.completed && !task.skipped && (
+                            <Button size="sm" variant="outline" onClick={() => onSkipTask(task.id)}>
+                              Skip
+                            </Button>
+                          )}
                           <Button size="sm" variant="outline" onClick={() => startAddNote(task)}>
                             {task.note ? 'Edit Note' : 'Add Note'}
                           </Button>
@@ -563,8 +783,14 @@ export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAd
                         </div>
                       ) : null}
                       
-                      {/* Category Badge */}
+                      {/* Status & Category Badges */}
                       <div className="flex flex-wrap gap-2 mt-3">
+                        {task.skipped && (
+                          <Badge variant="outline" className="text-xs bg-gray-100 text-gray-700">Skipped</Badge>
+                        )}
+                        {task.completed && (
+                          <Badge variant="outline" className="text-xs bg-green-100 text-green-700">Done</Badge>
+                        )}
                         {task.category && (
                           <Badge 
                             className={`text-xs ${getCategoryColor(task.category)}`}
@@ -578,7 +804,7 @@ export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAd
                     </div>
                   </div>
                 </div>
-              ))
+              )})
             )}
           </div>
 
@@ -698,29 +924,14 @@ export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAd
                     size="sm" 
                     className="text-xs"
                     onClick={() => {
-                      if (confirm('Are you sure you want to reset your goals? This will reset your progress.')) {
-                        // Reset both goals and current values
+                      if (confirm('Reset goals to 10x your current baselines from onboarding?')) {
+                        // Reset both goals and current values to onboarding baselines and 10x targets
                         setUserGoal(getUserGoal())
                         setRevenueGoal(getRevenueGoal())
-                        setCurrentUsers(0)
-                        setCurrentRevenue(0)
-                        
-                        // Update user data in localStorage
-                        const userData = localStorage.getItem('user')
-                        if (userData) {
-                          const parsedUser = JSON.parse(userData)
-                          // Reset goals in user data
-                          if (parsedUser.goals?.primary) {
-                            parsedUser.goals.primary = {
-                              type: parsedUser.goals.primary.type,
-                              target: parsedUser.goals.primary.type === 'users' ? 1000 : 1000,
-                              timeline: parsedUser.goals.primary.timeline,
-                              startDate: new Date().toISOString(),
-                              status: 'active'
-                            }
-                          }
-                          localStorage.setItem('user', JSON.stringify(parsedUser))
-                        }
+                        const cu = parseInt(user?.currentUsers || '0', 10)
+                        setCurrentUsers(Number.isFinite(cu) ? cu : 0)
+                        const cr = parseFloat(user?.currentMrr || '0')
+                        setCurrentRevenue(Number.isFinite(cr) ? cr : 0)
                       }
                     }}
                   >
@@ -737,6 +948,16 @@ export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAd
                 </div>
               </div>
               
+              {/* Visual Progress Rings */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+                <div className="p-4 bg-white rounded-lg border">
+                  <ProgressRing value={currentUsers} max={userGoal} colorFrom="#3b82f6" colorTo="#6366f1" label="Users" />
+                </div>
+                <div className="p-4 bg-white rounded-lg border">
+                  <ProgressRing value={currentRevenue} max={revenueGoal} colorFrom="#10b981" colorTo="#22c55e" label="MRR" sub="MRR" />
+                </div>
+              </div>
+
               {/* Goal Options - User can select/edit */}
               <div className="space-y-4">
                 {/* Users Goal */}
@@ -864,36 +1085,18 @@ export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAd
               
               {/* Share Button */}
               <div className="mt-4 text-center">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="text-xs"
-                  onClick={() => {
-                    // Create shareable text
-                    const shareText = `🚀 My Marketing Journey - Day ${currentDay}\n\n👥 Users: ${currentUsers.toLocaleString()} / ${userGoal.toLocaleString()}\n💰 Revenue: $${currentRevenue.toLocaleString()} / $${revenueGoal.toLocaleString()} MRR\n🔥 ${streak} day streak\n\nBuilding toward my first 1,000 users with @MarketingBuddy! 💪`
-                    
-                    if (navigator.share) {
-                      navigator.share({
-                        title: 'My Marketing Journey',
-                        text: shareText
-                      })
-                    } else {
-                      navigator.clipboard.writeText(shareText)
-                      alert('Progress copied to clipboard! 📋')
-                    }
-                  }}
-                >
-                  📷 Share Progress
+                <Button size="sm" className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white" onClick={() => { setShareTemplate('journey'); setShowShareModal(true) }}>
+                  📷 Generate Share Card
                 </Button>
               </div>
             </div>
             
-            {/* Milestones Section */}
+            {/* Milestones Section - Achievements Style */}
             <div className="bg-white/80 rounded-xl p-6 border border-gray-200 shadow-sm mt-6">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="font-semibold text-gray-800">🎯 Milestones</h3>
-                  <p className="text-sm text-gray-600">Celebrate your achievements</p>
+                  <h3 className="font-semibold text-gray-800">🏆 Milestones</h3>
+                  <p className="text-sm text-gray-600">Unlock achievements as you grow</p>
                 </div>
                 <Button 
                   variant="outline" 
@@ -904,30 +1107,88 @@ export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAd
                   Add Milestone
                 </Button>
               </div>
-              
-              {/* Milestones List */}
-              <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
-                {milestones.length > 0 ? (
-                  milestones.map((milestone: Milestone, index: number) => (
-                    <div key={index} className="flex items-center p-3 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-lg border border-yellow-200">
-                      <Trophy className="h-5 w-5 text-yellow-600 mr-3 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{milestone.title}</p>
-                        <p className="text-xs text-gray-500">
-                          {new Date(milestone.date).toLocaleDateString()}
-                          {milestone.type === 'goal_achieved' && ' (Goal Achieved)'}
-                          {milestone.type === 'user_added' && ' (Added Manually)'}
-                        </p>
-                      </div>
-                      <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0" />
+              {/* Achievements Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {achievementPresets.map((m) => {
+                  const isCelebrating = celebratingId === m.id
+                  return (
+                  <div key={m.id} className={`p-4 rounded-xl border shadow-sm transition-all duration-700 ${m.unlocked ? 'bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-200' : 'bg-gray-50 border-gray-200'} ${isCelebrating ? 'rotate-180 ring-4 ring-amber-300 scale-[1.02]' : ''}`}>
+                    <div className="flex items-start justify-between">
+                      <div className="text-2xl" aria-hidden>{m.icon}</div>
+                      {m.unlocked ? <Badge variant="outline" className="bg-green-100 text-green-700">Unlocked</Badge> : <Badge variant="outline" className="bg-gray-100 text-gray-600">Locked</Badge>}
                     </div>
-                  ))
+                    <div className="mt-2">
+                      <div className="font-semibold text-gray-900">{m.title}</div>
+                      <div className="text-xs text-gray-600">{m.unlocked ? `Unlocked ${new Date().toLocaleDateString()}` : `Progress: ${m.progress}`}</div>
+                      <div className="text-xs text-gray-500 mt-2">“{m.blurb}”</div>
+                    </div>
+                  </div>
+                  )
+                })}
+              </div>
+
+              {/* Custom Milestones - user created */}
+              <div className="mt-6">
+                <h4 className="text-sm font-medium text-gray-800 mb-2">Your Milestones</h4>
+                {milestones.length === 0 ? (
+                  <div className="text-xs text-gray-500">You haven’t added any custom milestones yet.</div>
                 ) : (
-                  <div className="text-center py-4 text-gray-500">
-                    <Trophy className="h-8 w-8 mx-auto text-gray-300 mb-2" />
-                    <p className="text-sm">No milestones yet. Achieve your goals to unlock milestones!</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {milestones.map((m: Milestone) => {
+                      const isCelebrating = celebratingId === m.id
+                      const isUnlocked = !!m.unlocked
+                      return (
+                        <div
+                          key={m.id || m.title}
+                          className={`relative p-4 rounded-xl border shadow-sm transition-all duration-700 transform cursor-pointer ${isUnlocked ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200' : 'bg-gray-50 border-gray-200'} ${isCelebrating ? 'rotate-180 ring-4 ring-green-300 scale-[1.02]' : ''}`}
+                          onClick={() => !isUnlocked && m.id && markCustomMilestoneCompleted(m.id)}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="text-2xl" aria-hidden>{m.emoji || '🏅'}</div>
+                            {isUnlocked ? (
+                              <Badge variant="outline" className="bg-green-100 text-green-700">Completed</Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-gray-100 text-gray-600">Locked</Badge>
+                            )}
+                          </div>
+                          <div className="mt-2">
+                            <div className="font-semibold text-gray-900 truncate" title={m.title}>{m.title}</div>
+                            {m.description && <div className="text-xs text-gray-600 mt-1 truncate" title={m.description}>{m.description}</div>}
+                            {(m.progressTarget != null) && (
+                              <div className="text-xs text-gray-600 mt-1">
+                                Progress: {Math.max(0, Math.round(m.progressCurrent || 0))}{m.unit ? m.unit : ''}/{Math.max(0, Math.round(m.progressTarget))}{m.unit ? m.unit : ''}
+                              </div>
+                            )}
+                            <div className="text-[11px] text-gray-500 mt-1">{new Date(m.date).toLocaleDateString()}</div>
+                          </div>
+                          {!isUnlocked && (
+                            <div className="mt-3">
+                              <Button size="sm" className="text-xs" onClick={() => m.id && markCustomMilestoneCompleted(m.id)}>
+                                Mark as Done
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* This Week's Wins */}
+            <div className="bg-white/80 rounded-xl p-6 border border-blue-200 shadow-sm mt-6">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold text-blue-900">🌟 This Week's Wins</h3>
+                <Button size="sm" variant="outline" onClick={() => { setShareTemplate('weekly'); setShowShareModal(true) }}>Share My Wins</Button>
+              </div>
+              <div className="text-sm text-blue-800">
+                <div className="mb-2">Tasks completed: {weekDone}/{weekTotal} {weekTotal > 0 && '⭐'}</div>
+                <ul className="list-disc ml-5 space-y-1">
+                  {(winsGoals.length > 0 ? winsGoals : currentWeekGoals).map((g, i) => (
+                    <li key={i}>{g}</li>
+                  ))}
+                </ul>
               </div>
             </div>
             
@@ -976,6 +1237,29 @@ export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAd
                   placeholder="e.g., Reached 500 followers"
                 />
               </div>
+              <div className="flex items-center gap-3">
+                <div className="w-24">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Emoji</label>
+                  <input
+                    type="text"
+                    maxLength={2}
+                    value={newMilestone.emoji}
+                    onChange={(e) => setNewMilestone({ ...newMilestone, emoji: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    placeholder="🏅"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <input
+                    type="text"
+                    value={newMilestone.description}
+                    onChange={(e) => setNewMilestone({ ...newMilestone, description: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    placeholder="Short blurb for context"
+                  />
+                </div>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Date Achieved</label>
                 <input
@@ -984,6 +1268,35 @@ export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAd
                   onChange={(e) => setNewMilestone({ ...newMilestone, date: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Progress (optional)</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={newMilestone.current}
+                    onChange={(e) => setNewMilestone({ ...newMilestone, current: e.target.value })}
+                    className="w-24 px-3 py-2 border border-gray-300 rounded-md"
+                    placeholder="0"
+                  />
+                  <span className="text-sm text-gray-500">/</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={newMilestone.target}
+                    onChange={(e) => setNewMilestone({ ...newMilestone, target: e.target.value })}
+                    className="w-28 px-3 py-2 border border-gray-300 rounded-md"
+                    placeholder="100"
+                  />
+                  <input
+                    type="text"
+                    value={newMilestone.unit}
+                    onChange={(e) => setNewMilestone({ ...newMilestone, unit: e.target.value })}
+                    className="w-24 px-3 py-2 border border-gray-300 rounded-md"
+                    placeholder="unit (e.g. users, $ MRR)"
+                  />
+                </div>
               </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <Button variant="outline" onClick={() => setShowAddMilestone(false)}>
@@ -997,6 +1310,85 @@ export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAd
           </div>
         </div>
       )}
+
+      {/* Share Modal with Templates */}
+      <Dialog open={showShareModal} onOpenChange={setShowShareModal}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Generate Shareable Card</DialogTitle>
+            <DialogDescription>Pick a template and download an image to post on social.</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col md:flex-row gap-6">
+            <div className="md:w-1/3 space-y-3">
+              <div className="grid grid-cols-3 md:grid-cols-1 gap-2">
+                <Button variant={shareTemplate==='journey'?'default':'outline'} onClick={() => setShareTemplate('journey')}>Journey</Button>
+                <Button variant={shareTemplate==='milestone'?'default':'outline'} onClick={() => setShareTemplate('milestone')}>Milestone</Button>
+                <Button variant={shareTemplate==='weekly'?'default':'outline'} onClick={() => setShareTemplate('weekly')}>Weekly Recap</Button>
+              </div>
+              <div className="pt-2">
+                <Button className="w-full" onClick={handleDownloadShareCard}>
+                  <Download className="h-4 w-4 mr-2" /> Download Image
+                </Button>
+              </div>
+            </div>
+            <div className="md:w-2/3">
+              <div ref={shareCardRef} className="relative rounded-2xl border shadow-xl overflow-hidden bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-6">
+                {shareTemplate === 'journey' && (
+                  <div className="space-y-3">
+                    <div className="text-sm text-indigo-700">🚀 My Marketing Journey</div>
+                    <div className="text-gray-900 text-lg font-semibold">Day {currentDay} of building in public</div>
+                    <div className="mt-2 text-sm text-gray-700 space-y-1">
+                      <div>📊 Progress:</div>
+                      <div>👥 {currentUsers.toLocaleString()} / {userGoal.toLocaleString()} users</div>
+                      <div>💰 ${currentRevenue.toLocaleString()} MRR</div>
+                      <div>🔥 {streak}-day streak</div>
+                    </div>
+                    <div className="mt-3 text-sm text-gray-800">
+                      <div className="font-medium mb-1">This week I:</div>
+                      <ul className="list-disc ml-5">
+                        {(winsGoals.length > 0 ? winsGoals : currentWeekGoals).slice(0,3).map((g, i) => (<li key={i}>{g}</li>))}
+                      </ul>
+                    </div>
+                    <div className="mt-3 text-xs text-gray-600">Building: {user?.productName || 'My Product'} • Track your journey: {typeof window !== 'undefined' ? window.location.origin : ''}/landing</div>
+                  </div>
+                )}
+                {shareTemplate === 'milestone' && (() => {
+                  const firstUnlocked = achievementPresets.find(a => a.unlocked)
+                  const showcase = firstUnlocked || achievementPresets[0]
+                  const nextGoal = userGoal > currentUsers ? `${userGoal.toLocaleString()} users` : `${revenueGoal.toLocaleString()} MRR`
+                  return (
+                  <div className="space-y-3 text-center">
+                    <div className="text-2xl">🎉 MILESTONE!</div>
+                    <div className="text-xl font-bold text-gray-900">{showcase.title}</div>
+                    <div className="text-sm text-gray-700">{showcase.unlocked ? 'Unlocked' : 'In Progress'} • {showcase.progress}</div>
+                    <div className="mt-3 h-24 bg-gradient-to-r from-indigo-200 to-purple-200 rounded-lg flex items-center justify-center text-indigo-800 text-sm">Growth chart coming soon</div>
+                    <div className="text-sm text-gray-800">Next goal: {nextGoal}</div>
+                    <div className="mt-3 text-xs text-gray-600">Building: {user?.productName || 'My Product'} • Follow my journey: {typeof window !== 'undefined' ? window.location.origin : ''}/landing</div>
+                  </div>)
+                })()}
+                {shareTemplate === 'weekly' && (
+                  <div className="space-y-3">
+                    <div className="text-sm text-blue-700">📈 Week {currentWeek} Recap</div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="p-2 rounded bg-white/70 border">Tasks: {weekDone}/{weekTotal} ⭐</div>
+                      <div className="p-2 rounded bg-white/70 border">New users: +{Math.max(0, Math.round(currentUsers/Math.max(1,currentWeek)))}</div>
+                      <div className="p-2 rounded bg-white/70 border">Revenue: +${Math.max(0, Math.round(currentRevenue/Math.max(1,currentWeek)))}</div>
+                      <div className="p-2 rounded bg-white/70 border">Streak: {streak} days</div>
+                    </div>
+                    <div className="text-sm text-gray-800">
+                      <div className="font-medium mb-1">What worked:</div>
+                      <ul className="list-disc ml-5">
+                        {(winsGoals.length > 0 ? winsGoals : currentWeekGoals).slice(0,3).map((g, i) => (<li key={i}>{g}</li>))}
+                      </ul>
+                    </div>
+                    <div className="mt-2 text-xs text-gray-600">Building: {user?.productName || 'My Product'}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

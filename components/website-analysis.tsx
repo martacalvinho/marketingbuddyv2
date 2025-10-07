@@ -192,8 +192,7 @@ export default function WebsiteAnalysis({ analysis, websiteUrl, onReAnalyze, onS
                     </Badge>
                   </div>
                 </div>
-                <p className="text-sm text-blue-800 mb-2">{opportunity.description}</p>
-                {opportunity.reasoning && <p className="text-xs text-blue-700 italic">Why: {opportunity.reasoning}</p>}
+                <p className="text-sm text-blue-800">{opportunity.description}</p>
               </div>
             ))}
           </div>

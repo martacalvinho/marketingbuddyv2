@@ -50,6 +50,8 @@ export default function DashboardPage() {
         goalTimeline: String(onboarding.goal_timeline ?? "6"),
         marketingStrategy: onboarding.marketing_strategy ?? "6-month",
         currentUsers: onboarding.current_users != null ? String(onboarding.current_users) : "",
+        currentMrr: onboarding.current_mrr != null ? String(onboarding.current_mrr) : "",
+        launchDate: onboarding.launch_date ?? "",
         currentPlatforms: onboarding.current_platforms ?? [],
         experienceLevel: onboarding.experience_level ?? "",
         preferredPlatforms: onboarding.preferred_platforms ?? [],
@@ -58,7 +60,7 @@ export default function DashboardPage() {
         dailyTaskCount: String(onboarding.daily_task_count ?? "3"),
         websiteAnalysis: onboarding.website_analysis ?? onboarding.data?.websiteAnalysis ?? null,
         targetAudience: onboarding.data?.targetAudience ?? "",
-        plan: onboarding.plan ?? null,
+        plan: typeof onboarding.plan === 'string' ? onboarding.plan : (onboarding.plan?.markdown ?? null),
         goals: onboarding.goals ?? null,
         milestones: onboarding.milestones ?? [],
       }

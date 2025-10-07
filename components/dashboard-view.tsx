@@ -38,11 +38,23 @@ export default function DashboardView({ user }: DashboardViewProps) {
   const [showLeaderboardModal, setShowLeaderboardModal] = useState(false)
   const [milestones, setMilestones] = useState(user.milestones || [])
   const [showAddMilestone, setShowAddMilestone] = useState(false)
+  const [skipCounts, setSkipCounts] = useState<Record<string, number>>({})
+  const [avoidPlatforms, setAvoidPlatforms] = useState<string[]>([])
+  const [showWeeklyReview, setShowWeeklyReview] = useState(false)
+  const [weeklyForm, setWeeklyForm] = useState({
+    tractionChannel: "",
+    wasteChannel: "",
+    focusNextWeek: [] as string[],
+    feeling: "7",
+    notes: "",
+  })
   const [newMilestone, setNewMilestone] = useState({ title: '', date: '' })
   const [showGoalModal, setShowGoalModal] = useState(false)
   const [goalType, setGoalType] = useState<'users' | 'mrr'>(user.goalType || 'users')
   const [goalAmount, setGoalAmount] = useState<string>(user.goalAmount || '')
   const [goalTimeline, setGoalTimeline] = useState<string>(String(user.goalTimeline || '6'))
+  const [weekLockMessage, setWeekLockMessage] = useState<string | null>(null)
+  const [contentHint, setContentHint] = useState<{ platformId: string; task: any } | null>(null)
 
   useEffect(() => {
     loadTasksForDay(currentDay)
@@ -89,12 +101,168 @@ export default function DashboardView({ user }: DashboardViewProps) {
     }
   }
 
-  const loadTasksForDay = (day: number) => {
+  // Ensure a DB row exists then update
+  const updateTaskInDB = async (taskId: string | number, updates: any, derive?: (row: any) => any) => {
+    try {
+      const task = todaysTasks.find((t: any) => t.id === taskId) || (tasksByDay[currentDay] || []).find((t: any) => t.id === taskId)
+      if (!task) return
+      let dbId = (task as any).db_id
+      if (!dbId) {
+        const insertPayload: any = {
+          user_id: user.id,
+          title: task.title,
+          description: task.description || null,
+          category: task.category || null,
+          platform: task.platform || null,
+          status: (updates?.status as string) || 'pending',
+          metadata: { day: task.day || currentDay }
+        }
+        const { data: inserted, error: insErr } = await supabase.from('tasks').insert(insertPayload).select('id').single()
+        if (insErr) throw insErr
+        dbId = inserted?.id
+        setTodaysTasks((prev: any[]) => prev.map((t) => t.id === taskId ? { ...t, db_id: dbId } : t))
+        setTasksByDay((prev) => ({ ...prev, [currentDay]: (prev[currentDay] || []).map((t: any) => t.id === taskId ? { ...t, db_id: dbId } : t) }))
+      }
+      let finalUpdates = { ...updates }
+      if (derive && dbId) {
+        const { data: row, error: rowErr } = await supabase.from('tasks').select('*').eq('id', dbId).single()
+        if (!rowErr && row) {
+          finalUpdates = { ...finalUpdates, ...derive(row) }
+        }
+      }
+      if (dbId) {
+        await supabase.from('tasks').update(finalUpdates).eq('id', dbId)
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('updateTaskInDB error:', e)
+    }
+  }
+
+  const skipTask = (taskId: string | number) => {
+    setTodaysTasks((prev: any[]) => prev.map((task: any) => (task.id === taskId ? { ...task, skipped: true } : task)))
+    setTasksByDay((prev) => ({
+      ...prev,
+      [currentDay]: (prev[currentDay] || []).map((t: any) => t.id === taskId ? { ...t, skipped: true, skippedCount: (t.skippedCount || 0) + 1 } : t)
+    }))
+
+    const task = todaysTasks.find((t: any) => t.id === taskId)
+    if (task) {
+      const key = (task.platform || task.title || '').toLowerCase()
+      setSkipCounts((prev: Record<string, number>) => ({ ...prev, [key]: (prev[key] || 0) + 1 }))
+      updateTaskInDB(taskId, { status: 'skipped', last_status_change: new Date().toISOString() }, (row) => ({ skipped_count: (row?.skipped_count || 0) + 1 }))
+
+      const isReddit = (task.title || '').toLowerCase().includes('reddit') || (task.platform || '').toLowerCase() === 'reddit'
+      const count = (skipCounts[key] || 0) + 1
+      if (isReddit && count >= 3) {
+        const confirmSwitch = typeof window !== 'undefined' ? window.confirm('You seem to skip Reddit tasks. Pause Reddit and try a different channel?') : false
+        if (confirmSwitch) {
+          setAvoidPlatforms((prev: string[]) => Array.from(new Set([...(prev || []), 'reddit'])))
+          const alt = {
+            id: `${currentDay + 1}-${Date.now()}-alt`,
+            title: 'Try a LinkedIn post instead of Reddit',
+            description: 'Share a short LinkedIn post targeting your ideal users. Focus on a key value proposition.',
+            xp: 10,
+            completed: false,
+            estimatedTime: '15 min',
+            day: currentDay + 1,
+            category: 'content',
+            platform: 'linkedin',
+          }
+          setTasksByDay((prev) => ({ ...prev, [currentDay + 1]: [...(prev[currentDay + 1] || []), alt] }))
+        }
+      }
+    }
+  }
+
+  const mapDbTasksToUi = (rows: any[], day: number) => {
+    return rows.map((r: any) => ({
+      id: r.id,
+      title: r.title,
+      description: r.description || '',
+      xp: 10,
+      completed: r.status === 'completed',
+      skipped: r.status === 'skipped',
+      estimatedTime: r.estimated_minutes ? `${r.estimated_minutes} min` : '15 min',
+      day,
+      category: r.category || 'strategy',
+      platform: r.platform || undefined,
+      note: r.completion_note || undefined,
+      db_id: r.id,
+    }))
+  }
+
+  const checkWeekUnlocked = async (targetWeek: number) => {
+    if (targetWeek <= 1) return true
+    const prevWeek = targetWeek - 1
+    try {
+      const { data: rows, error } = await supabase
+        .from('tasks')
+        .select('id,status,metadata')
+        .eq('user_id', user.id)
+        .contains('metadata', { week: prevWeek })
+      if (error) return false
+      const total = rows?.length || 0
+      const attempted = rows?.filter((r: any) => r.status === 'completed' || r.status === 'skipped').length || 0
+      const attemptedPct = total > 0 ? (attempted / total) : 0
+      // Weekly review exists?
+      const { data: wr } = await supabase
+        .from('weekly_reviews')
+        .select('id')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+      const hasReview = !!(wr && wr.length > 0)
+      // Content created?
+      const { data: contentRows } = await supabase
+        .from('content')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1)
+      const hasContent = !!(contentRows && contentRows.length > 0)
+      return attemptedPct >= 0.5 && hasReview && hasContent
+    } catch {
+      return false
+    }
+  }
+
+  const loadTasksForDay = async (day: number) => {
+    setWeekLockMessage(null)
+    // Enforce gating before any DB read or generation
+    const week = Math.ceil(day / 7)
+    if (week > 1) {
+      const unlocked = await checkWeekUnlocked(week)
+      if (!unlocked) {
+        setWeekLockMessage(`Week ${week} is locked. Requirements: attempt at least 50% of Week ${week - 1} tasks, create at least one piece of content, and complete a Weekly Review. Once done, check again to unlock personalized Week ${week} tasks.`)
+        setTasksByDay((prev) => ({ ...prev, [day]: [] }))
+        setTodaysTasks([])
+        return
+      }
+    }
+    // Load from DB first
+    try {
+      const { data: dbRows, error } = await supabase
+        .from('tasks')
+        .select('id,title,description,category,platform,status,metadata,estimated_minutes,completed_at,completion_note')
+        .eq('user_id', user.id)
+        .contains('metadata', { day })
+        .order('created_at', { ascending: true })
+      if (!error && dbRows && dbRows.length > 0) {
+        const ui = mapDbTasksToUi(dbRows, day)
+        setTasksByDay((prev) => ({ ...prev, [day]: ui }))
+        setTodaysTasks(ui)
+        return
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('Failed loading tasks from DB:', e)
+    }
+    // Gating already enforced above before DB read
     if (user.plan) {
       // Convert day to month and week context for 6-month plan
       const month = Math.ceil(day / 30) // Roughly 30 days per month
       const dayInMonth = ((day - 1) % 30) + 1
-      const week = Math.ceil(dayInMonth / 7)
+      const weekInMonth = Math.ceil(dayInMonth / 7)
       
       // Try multiple parsing strategies for the new 6-month format
       let tasks: any[] = []
@@ -125,19 +293,88 @@ export default function DashboardView({ user }: DashboardViewProps) {
       }
       
       if (tasks.length > 0) {
-        setTasksByDay((prev) => ({ ...prev, [day]: tasks }))
-        setTodaysTasks(tasks)
+        // Persist parsed tasks so future loads use DB
+        try {
+          const rows = tasks.map((t: any) => ({
+            user_id: user.id,
+            title: t.title,
+            description: t.description || null,
+            category: t.category || null,
+            platform: t.platform || null,
+            status: 'pending',
+            metadata: { day, week: Math.ceil(day / 7), month, source: 'plan_parse' }
+          }))
+          const { data: inserted } = await supabase.from('tasks').insert(rows).select('*')
+          const ui = inserted ? mapDbTasksToUi(inserted, day) : tasks
+          setTasksByDay((prev) => ({ ...prev, [day]: ui }))
+          setTodaysTasks(ui)
+        } catch {
+          setTasksByDay((prev) => ({ ...prev, [day]: tasks }))
+          setTodaysTasks(tasks)
+        }
         return
       }
     }
 
-    // If no tasks found and we're in a new month, generate daily tasks
+    // If no tasks found, generate daily tasks (context-aware for week > 1)
     const month = Math.ceil(day / 30)
     const weekInMonth = Math.ceil(((day - 1) % 30 + 1) / 7)
     
-    if (month > 1 && day > 30) {
-      generateDailyTasksForMonth(day, month, weekInMonth)
-      return
+    // Generate tasks for this day and persist to DB
+    try {
+      // Build context signals from recent activity
+      let contextSignals: any = {}
+      try {
+        const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
+        const { data: recentTasks } = await supabase
+          .from('tasks')
+          .select('status, category, platform, completed_at, skipped_count')
+          .eq('user_id', user.id)
+          .gte('completed_at', twoWeeksAgo)
+        const { data: contentRows } = await supabase
+          .from('content')
+          .select('platform, engagement_metrics')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(100)
+        const { data: ob } = await supabase
+          .from('onboarding')
+          .select('goals, data')
+          .eq('user_id', user.id)
+          .single()
+        contextSignals = { recentTasks: recentTasks || [], content: contentRows || [], goals: ob?.goals || null, milestones }
+      } catch {}
+
+      const apiEndpoint = user.focusArea ? '/api/generate-enhanced-daily-tasks' : '/api/generate-daily-tasks'
+      const response = await fetch(apiEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user, day, month, weekInMonth, monthStrategy: '', focusArea: user.focusArea || 'growth', dailyTaskCount: user.dailyTaskCount || '3', websiteAnalysis: user.websiteAnalysis, contextSignals })
+      })
+      const data = await response.json()
+      let generatedTasks = Array.isArray(data.tasks) ? data.tasks : []
+      if (!Array.isArray(data.tasks) && data.tasks) {
+        generatedTasks = parseTasks(String(data.tasks), day)
+      }
+      if (generatedTasks.length > 0) {
+        const rows = generatedTasks.map((t: any) => ({
+          user_id: user.id,
+          title: t.title,
+          description: t.description || null,
+          category: t.category || null,
+          platform: t.platform || null,
+          status: 'pending',
+          metadata: { day, week, month, source: 'on_demand' }
+        }))
+        const { data: inserted } = await supabase.from('tasks').insert(rows).select('*')
+        const ui = inserted ? mapDbTasksToUi(inserted, day) : generatedTasks
+        setTasksByDay((prev) => ({ ...prev, [day]: ui }))
+        setTodaysTasks(ui)
+        return
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('Task generation failed:', e)
     }
 
     // fallback empty
@@ -414,6 +651,8 @@ export default function DashboardView({ user }: DashboardViewProps) {
 
   const addTaskNote = (taskId: string | number, note: string) => {
     updateTask(taskId, { note })
+    // Persist note to DB
+    updateTaskInDB(taskId, { completion_note: note })
   }
 
   interface WeekInfo { total: number; done: number; goals: string[] }
@@ -452,6 +691,41 @@ export default function DashboardView({ user }: DashboardViewProps) {
       const completedCount = todaysTasks.filter((t: any) => t.completed || t.id === taskId).length
       if (completedCount === todaysTasks.length) {
         setStreak((prev: any) => prev + 1)
+      }
+
+      // Persist completion to DB
+      updateTaskInDB(taskId, { status: 'completed', completed_at: new Date().toISOString(), last_status_change: new Date().toISOString() })
+
+      // Simple follow-up rules
+      const title = (task.title || '').toLowerCase()
+      const note = (task.note || '').toLowerCase()
+      if (title.includes('reddit') && (note.includes('upvote') || note.includes('positive') || note.includes('good'))) {
+        const followUp = {
+          id: `${currentDay + 1}-${Date.now()}-reddit-followup`,
+          title: 'Post in 2 more relevant subreddits',
+          description: 'Double down on Reddit traction by posting in 2 additional subreddits where your audience hangs out.',
+          xp: 10,
+          completed: false,
+          estimatedTime: '15 min',
+          day: currentDay + 1,
+          category: 'community',
+          platform: 'reddit',
+        }
+        setTasksByDay((prev) => ({ ...prev, [currentDay + 1]: [...(prev[currentDay + 1] || []), followUp] }))
+      }
+      if (title.includes('twitter thread')) {
+        const followUp = {
+          id: `${currentDay + 1}-${Date.now()}-repurpose`,
+          title: 'Turn your Twitter thread into a blog post',
+          description: 'Repurpose the thread into a concise blog for SEO and longer-form readers.',
+          xp: 10,
+          completed: false,
+          estimatedTime: '15 min',
+          day: currentDay + 1,
+          category: 'content',
+          platform: 'blog',
+        }
+        setTasksByDay((prev) => ({ ...prev, [currentDay + 1]: [...(prev[currentDay + 1] || []), followUp] }))
       }
     }
   }
@@ -582,9 +856,10 @@ export default function DashboardView({ user }: DashboardViewProps) {
               {/* Enhanced header with clear value proposition */}
               <div className="text-center mb-8">
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">Your Daily Marketing System</h2>
-                <p className="text-gray-600 max-w-2xl mx-auto">
-                  Complete your daily tasks to build consistent marketing habits that grow your business to 1,000 users.
-                </p>
+                <div className="max-w-2xl mx-auto flex items-center justify-center gap-3 text-gray-600">
+                  <p>Complete your daily tasks to build consistent marketing habits that grow your business to 1,000 users.</p>
+                  <Button variant="outline" size="sm" onClick={() => loadTasksForDay(currentDay)}>Generate today's tasks</Button>
+                </div>
               </div>
               
               {/* Growth Goals Tracking */}
@@ -690,6 +965,19 @@ export default function DashboardView({ user }: DashboardViewProps) {
                 </Card>
               )}
               
+              {/* Week Lock Notice */}
+              {weekLockMessage && (
+                <Card className="border-amber-200 bg-amber-50">
+                  <CardContent className="p-4 flex items-start gap-4">
+                    <div className="text-amber-700 text-sm flex-1">{weekLockMessage}</div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setShowWeeklyReview(true)}>Open Weekly Review</Button>
+                      <Button size="sm" onClick={() => loadTasksForDay(currentDay)}>Check Again</Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               <HabitTracker 
                 tasks={todaysTasks} 
                 onCompleteTask={completeTask} 
@@ -698,6 +986,11 @@ export default function DashboardView({ user }: DashboardViewProps) {
                 onUpdateTask={updateTask}
                 onReorderTasks={reorderTasks}
                 onAddTaskNote={addTaskNote}
+                onSkipTask={skipTask}
+                onSuggestContent={(platformId, task) => {
+                  setContentHint({ platformId, task })
+                  setActiveTab('create')
+                }}
                 streak={streak} 
                 xp={xp} 
                 currentDay={currentDay}
@@ -727,6 +1020,8 @@ export default function DashboardView({ user }: DashboardViewProps) {
                 onTaskUpdate={() => {
                   loadTasksForDay(currentDay)
                 }}
+                initialPlatformId={contentHint?.platformId}
+                initialSelectedTask={contentHint?.task}
               />
               
               {/* Integrated learning tips */}
@@ -855,8 +1150,68 @@ export default function DashboardView({ user }: DashboardViewProps) {
               </div>
             </div>
           </DialogContent>
-        </Dialog>
-      )}
+        </Dialog>)}
+
+      {/* Weekly Review Modal */}
+      <Dialog open={showWeeklyReview} onOpenChange={setShowWeeklyReview}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Weekly Review</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>What got traction this week?</Label>
+              <Input value={weeklyForm.tractionChannel} onChange={(e) => setWeeklyForm({ ...weeklyForm, tractionChannel: e.target.value })} placeholder="e.g., Twitter, SEO, Newsletter" />
+            </div>
+            <div>
+              <Label>What felt like a waste of time?</Label>
+              <Input value={weeklyForm.wasteChannel} onChange={(e) => setWeeklyForm({ ...weeklyForm, wasteChannel: e.target.value })} placeholder="e.g., Reddit" />
+            </div>
+            <div>
+              <Label>Focus next week (comma separated)</Label>
+              <Input value={weeklyForm.focusNextWeek.join(', ')} onChange={(e) => setWeeklyForm({ ...weeklyForm, focusNextWeek: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })} placeholder="e.g., Twitter threads, Cold outreach" />
+            </div>
+            <div>
+              <Label>How are you feeling? (1-10)</Label>
+              <Input type="number" min={1} max={10} value={weeklyForm.feeling} onChange={(e) => setWeeklyForm({ ...weeklyForm, feeling: e.target.value })} />
+            </div>
+            <div>
+              <Label>Notes</Label>
+              <Input value={weeklyForm.notes} onChange={(e) => setWeeklyForm({ ...weeklyForm, notes: e.target.value })} placeholder="Highlights, struggles, ideas" />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowWeeklyReview(false)}>Cancel</Button>
+              <Button onClick={async () => {
+                try {
+                  const weekStart = new Date()
+                  // Align to previous Monday for simplicity
+                  const day = weekStart.getDay() // 0=Sun
+                  const diff = (day === 0 ? -6 : 1) - day
+                  weekStart.setDate(weekStart.getDate() + diff)
+                  const payload: any = {
+                    user_id: user.id,
+                    week_start_date: weekStart.toISOString().slice(0,10),
+                    traction_channel: weeklyForm.tractionChannel || null,
+                    waste_channel: weeklyForm.wasteChannel || null,
+                    focus_next_week: weeklyForm.focusNextWeek.length ? weeklyForm.focusNextWeek : null,
+                    feeling: parseInt(weeklyForm.feeling) || null,
+                    notes: weeklyForm.notes || null,
+                  }
+                  const { error } = await supabase.from('weekly_reviews').insert(payload)
+                  if (!error) {
+                    setXp((prev: number) => prev + 50)
+                  }
+                } catch (e) {
+                  // eslint-disable-next-line no-console
+                  console.warn('Failed to save weekly review:', e)
+                } finally {
+                  setShowWeeklyReview(false)
+                }
+              }}>Save Review (+50 XP)</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Leaderboard Modal */}
       {showLeaderboardModal && (

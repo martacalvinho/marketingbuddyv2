@@ -9,11 +9,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Twitter, Linkedin, MessageSquare, Instagram, Video, FileText, Zap, Copy, Check, Loader2, CheckCircle2, Circle, BookOpen, Trash2, Edit3, Eye, Heart, BarChart3, ThumbsUp } from "lucide-react"
 import InstagramImageDisplay from "@/components/instagram-image-display"
+import { supabase } from "@/lib/supabase"
 
 interface ContentGeneratorProps {
   user: any
   dailyTasks?: any[]
   onTaskUpdate?: () => void
+  initialPlatformId?: string
+  initialSelectedTask?: any
 }
 
 const contentTypes = [
@@ -75,7 +78,7 @@ const contentTypes = [
   },
 ]
 
-export default function ContentGenerator({ user, dailyTasks = [], onTaskUpdate }: ContentGeneratorProps) {
+export default function ContentGenerator({ user, dailyTasks = [], onTaskUpdate, initialPlatformId, initialSelectedTask }: ContentGeneratorProps) {
   const [selectedType, setSelectedType] = useState<any>(null)
   const [generating, setGenerating] = useState(false)
   const [generatedContent, setGeneratedContent] = useState("")
@@ -123,6 +126,14 @@ export default function ContentGenerator({ user, dailyTasks = [], onTaskUpdate }
       'tiktok': ['tiktok', 'tik tok'],
       'blog': ['blog post', 'article', 'seo content', 'website content']
     }
+
+  // When navigated from tasks via platform icon
+  useEffect(() => {
+    if (initialSelectedTask) {
+      setContentMode('daily-habit')
+      setSelectedDailyTask(initialSelectedTask)
+    }
+  }, [initialSelectedTask])
     
     // Find the most specific platform match (return only the first match to avoid conflicts)
     for (const [platform, patterns] of Object.entries(platformPatterns)) {
@@ -153,7 +164,7 @@ export default function ContentGenerator({ user, dailyTasks = [], onTaskUpdate }
       'instagram': ['instagram-post', 'instagram-story'],
       'reddit': ['reddit-post'],
       'tiktok': ['tiktok-script'],
-      'blog': ['seo-blog-post', 'build-in-public']
+      'blog': ['seo-blog', 'build-in-public']
     }
     
     const relevantTypeIds = detectedPlatforms.flatMap(platform => 
@@ -164,27 +175,124 @@ export default function ContentGenerator({ user, dailyTasks = [], onTaskUpdate }
   }
 
   const saveToContentLibrary = () => {
-    if (generatedContent && selectedType) {
-      const newContent = {
-        id: Date.now(),
-        type: selectedType.name,
-        platform: selectedType.id,
-        content: generatedContent,
-        image: generatedImage,
-        marketingStyle: marketingStyle,
-        createdAt: new Date().toISOString(),
-        characterCount: generatedContent.length,
-        analytics: {
-          views24h: 0,
-          likes24h: 0,
-          viewsAllTime: 0,
-          likesAllTime: 0
-        }
+    const normalizePlatform = (id: string) => {
+      switch (id) {
+        case 'twitter-thread': return 'twitter'
+        case 'linkedin-post': return 'linkedin'
+        case 'reddit-post': return 'reddit'
+        case 'instagram-post':
+        case 'instagram-story': return 'instagram'
+        case 'tiktok-script': return 'tiktok'
+        case 'seo-blog': return 'blog'
+        default: return id
       }
-      setUsedContent(prev => [newContent, ...prev])
-      setContentSaved(true)
-      setTimeout(() => setContentSaved(false), 2000)
     }
+
+    const save = async () => {
+      if (!generatedContent || !selectedType) return
+      const nowIso = new Date().toISOString()
+      const platform = normalizePlatform(selectedType.id)
+      let taskId = contentMode === 'daily-habit' && selectedDailyTask ? (selectedDailyTask.db_id || selectedDailyTask.id) : null
+      const titleFromContent = (generatedContent || '').split('\n')[0].slice(0, 80)
+      const title = selectedDailyTask?.title ? `${selectedType.name}: ${selectedDailyTask.title.slice(0, 50)}` : (titleFromContent || `${selectedType.name} Draft`)
+
+      try {
+        // Ensure task exists in DB if coming from daily-habit without a db_id
+        if (contentMode === 'daily-habit' && selectedDailyTask && !selectedDailyTask.db_id) {
+          const insertTaskPayload: any = {
+            user_id: user.id,
+            title: selectedDailyTask.title,
+            description: selectedDailyTask.description || null,
+            category: selectedDailyTask.category || null,
+            platform: normalizePlatform(selectedDailyTask.platform || platform),
+            status: 'pending',
+            metadata: { day: selectedDailyTask.day || 1, source: 'content_link' }
+          }
+          const { data: insTask, error: insTaskErr } = await supabase
+            .from('tasks')
+            .insert(insertTaskPayload)
+            .select('id')
+            .single()
+          if (!insTaskErr && insTask?.id) {
+            taskId = insTask.id
+          }
+        }
+
+        // Insert content row
+        const { data: inserted, error } = await supabase
+          .from('content')
+          .insert({
+            user_id: user.id,
+            title,
+            content_text: generatedContent,
+            platform,
+            content_type: selectedType.id,
+            status: 'draft',
+            ai_generated: true,
+            task_id: taskId || null,
+            engagement_metrics: { views: 0, comments: 0, followers: 0, acquisitions: 0 },
+            metadata: { marketingStyle, imageUrl: generatedImage, mode: contentMode }
+          })
+          .select('id, task_id')
+          .single()
+        if (error) throw error
+
+        // Link back to task if present
+        if ((taskId || inserted?.task_id) && inserted?.id) {
+          const linkId = taskId || inserted.task_id
+          await supabase
+            .from('tasks')
+            .update({ related_content_id: inserted.id, platform, last_status_change: nowIso })
+            .eq('id', linkId)
+        }
+
+        // Keep local UI list for immediate feedback
+        const newContent = {
+          id: inserted.id,
+          type: selectedType.name,
+          platform: selectedType.id,
+          content: generatedContent,
+          image: generatedImage,
+          marketingStyle: marketingStyle,
+          createdAt: nowIso,
+          characterCount: generatedContent.length,
+          analytics: {
+            views24h: 0,
+            likes24h: 0,
+            viewsAllTime: 0,
+            likesAllTime: 0
+          }
+        }
+        setUsedContent(prev => [newContent, ...prev])
+        setContentSaved(true)
+        setTimeout(() => setContentSaved(false), 2000)
+        onTaskUpdate?.()
+      } catch (e) {
+        console.error('Failed to save content to Supabase:', e)
+        // Fall back to local only
+        const newContent = {
+          id: Date.now(),
+          type: selectedType.name,
+          platform: selectedType.id,
+          content: generatedContent,
+          image: generatedImage,
+          marketingStyle: marketingStyle,
+          createdAt: nowIso,
+          characterCount: generatedContent.length,
+          analytics: {
+            views24h: 0,
+            likes24h: 0,
+            viewsAllTime: 0,
+            likesAllTime: 0
+          }
+        }
+        setUsedContent(prev => [newContent, ...prev])
+        setContentSaved(true)
+        setTimeout(() => setContentSaved(false), 2000)
+      }
+    }
+
+    void save()
   }
 
   const startEditingAnalytics = (contentId: string, currentAnalytics: any) => {
@@ -197,13 +305,47 @@ export default function ContentGenerator({ user, dailyTasks = [], onTaskUpdate }
     })
   }
 
-  const saveAnalytics = (contentId: string) => {
+  const saveAnalytics = async (contentId: string) => {
+    // Local update
     setUsedContent(prev => prev.map(content => 
       content.id === contentId 
         ? { ...content, analytics: { ...analyticsForm } }
         : content
     ))
     setEditingAnalytics(null)
+
+    // Try to persist analytics to Supabase and adopt into related task
+    try {
+      const nowIso = new Date().toISOString()
+      // Update content.engagement_metrics
+      const { error: upErr } = await supabase
+        .from('content')
+        .update({ engagement_metrics: { ...analyticsForm } })
+        .eq('id', contentId)
+      if (upErr) return
+      // Fetch task_id
+      const { data: row } = await supabase
+        .from('content')
+        .select('task_id, platform')
+        .eq('id', contentId)
+        .single()
+      if (row?.task_id) {
+        const summary = `Views24h: ${analyticsForm.views24h}, Likes24h: ${analyticsForm.likes24h}, All-time Views: ${analyticsForm.viewsAllTime}, All-time Likes: ${analyticsForm.likesAllTime}`
+        await supabase
+          .from('tasks')
+          .update({
+            performance_data: { ...analyticsForm },
+            completion_note: summary,
+            platform: row.platform || null,
+            last_status_change: nowIso
+          })
+          .eq('id', row.task_id)
+      }
+      onTaskUpdate?.()
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('Failed to persist analytics to Supabase:', e)
+    }
   }
 
   const cancelEditingAnalytics = () => {
@@ -584,7 +726,7 @@ export default function ContentGenerator({ user, dailyTasks = [], onTaskUpdate }
               const isDisabled = contentMode === 'daily-habit' && !selectedDailyTask
               const relevantTypes = getRelevantContentTypes()
               const isRelevant = relevantTypes.some(t => t.id === type.id)
-              const isHighlighted = contentMode === 'daily-habit' && selectedDailyTask && isRelevant
+              const isHighlighted = (contentMode === 'daily-habit' && selectedDailyTask && isRelevant) || (!!initialPlatformId && type.id === initialPlatformId)
               const isDimmed = contentMode === 'daily-habit' && selectedDailyTask && !isRelevant
               
               return (
