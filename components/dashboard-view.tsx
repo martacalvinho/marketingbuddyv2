@@ -15,7 +15,6 @@ import { Flame, Target, Calendar, BookOpen, MessageCircle, CheckCircle2, Zap, Tr
 import HabitTracker from "@/components/habit-tracker"
 import ContentGenerator from "@/components/content-generator"
 import ContentLibrary from "@/components/content-library"
-import BuddySystem from "@/components/buddy-system"
 import WebsiteAnalysis from "@/components/website-analysis"
 import LearnSection from "@/components/learn-section"
 import MarketingBuddy from "@/components/marketing-buddy"
@@ -25,9 +24,10 @@ import { supabase } from "@/lib/supabase"
 
 interface DashboardViewProps {
   user: any
+  onUserRefresh?: () => Promise<void> | void
 }
 
-export default function DashboardView({ user }: DashboardViewProps) {
+export default function DashboardView({ user, onUserRefresh }: DashboardViewProps) {
   const [activeTab, setActiveTab] = useState("today")
   const [tasksByDay, setTasksByDay] = useState<Record<number, any[]>>({})
   const [todaysTasks, setTodaysTasks] = useState<any[]>([])
@@ -55,6 +55,25 @@ export default function DashboardView({ user }: DashboardViewProps) {
   const [goalTimeline, setGoalTimeline] = useState<string>(String(user.goalTimeline || '6'))
   const [weekLockMessage, setWeekLockMessage] = useState<string | null>(null)
   const [contentHint, setContentHint] = useState<{ platformId: string; task: any } | null>(null)
+
+  // Load milestones from Supabase (DB-backed)
+  useEffect(() => {
+    let ignore = false
+    const load = async () => {
+      try {
+        if (!user?.id) return
+        const { data, error } = await supabase
+          .from('milestones')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+        if (!ignore && !error && data) setMilestones(data as any)
+      } catch {}
+    }
+    load()
+    return () => { ignore = true }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
 
   useEffect(() => {
     loadTasksForDay(currentDay)
@@ -318,44 +337,24 @@ export default function DashboardView({ user }: DashboardViewProps) {
       // If unlocked and not yet seeded, seed this week adaptively
       await ensureWeekSeeded(week)
     }
-    // For first 7 days (Week 1), use structured plan. Day 8+ = adaptive tasks
+    // Always try to load from DB first for the given day
     const planText = typeof user.plan === 'string' ? user.plan : (user.plan?.markdown || '')
-    const shouldUsePlan = planText && day <= 7
-    console.log(`Day ${day}: Plan available: ${!!planText}, Should use plan: ${shouldUsePlan} (Week 1 structured, Day 8+ adaptive)`)
-    
-    // Load from DB first (unless we should use plan)
-    if (!shouldUsePlan) {
-      try {
-        console.log(`Loading tasks for day ${day} from DB, user ${user.id}`)
-        const { data: dbRows, error } = await supabase
-          .from('tasks')
-          .select('id,title,description,category,platform,status,metadata,estimated_minutes,completed_at')
-          .eq('user_id', user.id)
-          .filter('metadata->>day', 'eq', String(day))
-          .order('created_at', { ascending: true })
-        
-        console.log(`DB query result for day ${day}:`, { rowCount: dbRows?.length || 0, error })
-        
-        if (!error && dbRows && dbRows.length > 0) {
-          const ui = mapDbTasksToUi(dbRows, day)
-          setTasksByDay((prev) => ({ ...prev, [day]: ui }))
-          setTodaysTasks(ui)
-          console.log(`✅ Loaded ${ui.length} tasks from DB for day ${day}`)
-          return
-        }
-        
-        if (error) {
-          console.error(`DB query error for day ${day}:`, error)
-        }
-      } catch (e) {
-        // eslint-disable-next-line no-console
-        console.warn('Failed loading tasks from DB:', e)
+    try {
+      const { data: dbRows } = await supabase
+        .from('tasks')
+        .select('id,title,description,category,platform,status,metadata,estimated_minutes,completed_at')
+        .eq('user_id', user.id)
+        .filter('metadata->>day', 'eq', String(day))
+        .order('created_at', { ascending: true })
+      if (dbRows && dbRows.length > 0) {
+        const ui = mapDbTasksToUi(dbRows, day)
+        setTasksByDay((prev) => ({ ...prev, [day]: ui }))
+        setTodaysTasks(ui)
+        return
       }
-    }
+    } catch {}
     
     // Try to use plan for first 30 days
-    console.log(`Attempting to parse plan for day ${day}:`, !!planText, `(${planText?.length || 0} chars)`)
-    
     if (planText) {
       try {
         // Convert day to month and week context for 6-month plan
@@ -369,11 +368,10 @@ export default function DashboardView({ user }: DashboardViewProps) {
         // Strategy 1: Look for specific day tasks in Month X format
         const dayRegex = new RegExp(`###\\s*Day\\s*${day}[^\\n]*\\n([\\s\\S]*?)(?=###\\s*Day\\s*${day + 1}|###\\s*Month|$)`, 'i')
         const dayMatch = planText.match(dayRegex)
-        console.log(`Day ${day} regex match:`, !!dayMatch)
         
         if (dayMatch) {
           tasks = parseTasks(dayMatch[1], day)
-          console.log(`Parsed ${tasks.length} tasks from Day ${day} section`)
+          // parsed from Day section
         } else {
           // Strategy 2: Look for Month X and extract daily tasks from week content
           const monthRegex = new RegExp(`###\\s*Month\\s*${month}[^\\n]*\\n([\\s\\S]*?)(?=###\\s*Month\\s*${month + 1}|$)`, 'i')
@@ -391,14 +389,15 @@ export default function DashboardView({ user }: DashboardViewProps) {
               tasks = parseTasks(monthMatch[1], day, 3) // Limit to 3 tasks per day
             }
           }
-          console.log(`Parsed ${tasks.length} tasks from Month/Week fallback for day ${day}`)
+          // parsed from Month/Week fallback
         }
         
         if (tasks.length > 0) {
-          console.log(`✅ Using ${tasks.length} tasks from plan for day ${day}`)
           // Persist parsed tasks so future loads use DB
+          // Deduplicate by title within parsed tasks
+          const uniqueLocal = Array.from(new Map(tasks.map((t: any) => [t.title + '|' + (t.description || ''), t])).values())
           try {
-            const rows = tasks.map((t: any) => ({
+            const rows = uniqueLocal.map((t: any) => ({
               user_id: user.id,
               title: t.title,
               description: t.description || null,
@@ -408,18 +407,17 @@ export default function DashboardView({ user }: DashboardViewProps) {
               metadata: { day, week: Math.ceil(day / 7), month, source: 'plan_parse' }
             }))
             const { data: inserted } = await supabase.from('tasks').insert(rows).select('*')
-            const ui = inserted ? mapDbTasksToUi(inserted, day) : tasks
+            const ui = inserted ? mapDbTasksToUi(inserted, day) : uniqueLocal
             setTasksByDay((prev) => ({ ...prev, [day]: ui }))
             setTodaysTasks(ui)
           } catch {
-            setTasksByDay((prev) => ({ ...prev, [day]: tasks }))
-            setTodaysTasks(tasks)
+            setTasksByDay((prev) => ({ ...prev, [day]: uniqueLocal }))
+            setTodaysTasks(uniqueLocal)
           }
           return
         }
       } catch (e) {
-        // eslint-disable-next-line no-console
-        console.warn('Plan parse failed, will generate tasks instead:', e)
+        // ignore parse errors and continue to generation
       }
     }
 
@@ -469,8 +467,10 @@ export default function DashboardView({ user }: DashboardViewProps) {
       if (!Array.isArray(data.tasks) && data.tasks) {
         generatedTasks = parseTasks(String(data.tasks), day)
       }
-      if (generatedTasks.length > 0) {
-        const rows = generatedTasks.map((t: any) => ({
+      // Deduplicate by title+description
+      const uniqueGen = Array.from(new Map(generatedTasks.map((t: any) => [String(t.title) + '|' + String(t.description || ''), t])).values())
+      if (uniqueGen.length > 0) {
+        const rows = uniqueGen.map((t: any) => ({
           user_id: user.id,
           title: t.title,
           description: t.description || null,
@@ -480,14 +480,13 @@ export default function DashboardView({ user }: DashboardViewProps) {
           metadata: t.metadata || { day, week, month, source: 'on_demand', algorithm_version: 'v2_adaptive' }
         }))
         const { data: inserted } = await supabase.from('tasks').insert(rows).select('*')
-        const ui = inserted ? mapDbTasksToUi(inserted, day) : generatedTasks
+        const ui = inserted ? mapDbTasksToUi(inserted, day) : uniqueGen
         setTasksByDay((prev) => ({ ...prev, [day]: ui }))
         setTodaysTasks(ui)
         return
       }
     } catch (e) {
-      // eslint-disable-next-line no-console
-      console.warn('Task generation failed:', e)
+      // ignore generation errors and fall back to empty
     }
 
     // fallback empty
@@ -867,19 +866,21 @@ export default function DashboardView({ user }: DashboardViewProps) {
   }
 
   // Milestone functions
-  const handleAddMilestone = () => {
-    if (newMilestone.title.trim() && newMilestone.date) {
-      const updatedMilestones = [...milestones, { 
-        ...newMilestone, 
-        id: Date.now().toString(),
-        date: newMilestone.date 
-      }]
-      setMilestones(updatedMilestones)
-      // TODO: Update user data with new milestones
-      // This would typically involve calling an API to save the milestones
-      setNewMilestone({ title: '', date: '' })
-      setShowAddMilestone(false)
-    }
+  const handleAddMilestone = async () => {
+    if (!newMilestone.title.trim() || !newMilestone.date || !user?.id) return
+    try {
+      const payload: any = {
+        user_id: user.id,
+        title: newMilestone.title,
+        date: newMilestone.date,
+        type: 'user_added',
+        unlocked: true
+      }
+      const { data, error } = await supabase.from('milestones').insert(payload).select('*').single()
+      if (!error && data) setMilestones((prev: any[]) => [...prev, data])
+    } catch {}
+    setNewMilestone({ title: '', date: '' })
+    setShowAddMilestone(false)
   }
 
   const xpToNextLevel = 100
@@ -1148,23 +1149,17 @@ export default function DashboardView({ user }: DashboardViewProps) {
             </div>
           </TabsContent>
 
-          {/* MVP Tab 3: Marketing Buddy - Social accountability and motivation */}
+          {/* MVP Tab 3: Marketing Buddy - Accountability coming soon preview */}
           <TabsContent value="buddy">
             <div className="space-y-6">
               <div className="text-center mb-8">
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">Your Marketing Buddy</h2>
                 <p className="text-gray-600 max-w-2xl mx-auto">
-                  Stay motivated with your accountability partner, compete on leaderboards, and tackle challenges together.
+                  Accountability coming soon. Preview how you'll check in on your buddy's tasks, website, progress, milestones, and content.
                 </p>
               </div>
-              
-              <BuddySystem 
-                user={user}
-                streak={streak}
-                xp={xp}
-                todaysTasks={todaysTasks}
-              />
 
+              <MarketingBuddy user={user} />
             </div>
           </TabsContent>
         </Tabs>
@@ -1211,13 +1206,13 @@ export default function DashboardView({ user }: DashboardViewProps) {
                     console.error('Failed to update profile in Supabase:', e)
                   }
 
-                  // If plan was updated, reload tasks
+                  // If plan was updated, reload tasks (minor optimization before full reload)
                   if (updates.plan) {
                     loadTasksForDay(currentDay)
                   }
 
                   setShowProfileModal(false)
-                  // For now, reload to pick up latest data mapping
+                  // Quick full refresh to reflect latest profile values without parent refresh callback
                   window.location.reload()
                 }}
               />
@@ -1336,14 +1331,44 @@ export default function DashboardView({ user }: DashboardViewProps) {
                 <span>Marketing Leaderboard</span>
               </DialogTitle>
             </DialogHeader>
-            <div className="mt-4">
-              <BuddySystem 
-                user={user}
-                streak={streak}
-                xp={xp}
-                todaysTasks={todaysTasks}
-                showOnlyLeaderboard={true}
-              />
+            <div className="mt-2 space-y-4 text-gray-700">
+              <p>Leaderboards and community competitions are coming soon to boost accountability.</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Weekly Leaderboard</CardTitle>
+                    <CardDescription>Track streaks and XP vs your buddy</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between text-sm">
+                      <span>You</span>
+                      <Badge variant="outline">95 XP</Badge>
+                    </div>
+                    <div className="flex items-center justify-between text-sm mt-2 opacity-70">
+                      <span>Buddy</span>
+                      <Badge variant="outline">120 XP</Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">All-time Progress</CardTitle>
+                    <CardDescription>Celebrate milestones together</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span>Tasks Completed</span>
+                        <Badge>28</Badge>
+                      </div>
+                      <div className="flex items-center justify-between opacity-70">
+                        <span>Buddy</span>
+                        <Badge>45</Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </DialogContent>
         </Dialog>

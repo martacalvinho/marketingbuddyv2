@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import DashboardView from "@/components/dashboard-view"
 import { supabase } from "@/lib/supabase"
@@ -18,59 +18,61 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
+  // Rebuild enriched user object from Supabase
+  const refreshUser = useCallback(async () => {
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+    if (!authUser) {
+      router.replace("/login")
+      return
+    }
+    const { data: onboarding, error } = await supabase
+      .from("onboarding")
+      .select("*")
+      .eq("user_id", authUser.id)
+      .maybeSingle()
+
+    if (error || !onboarding || onboarding.onboarding_completed !== true) {
+      router.replace("/onboarding?redirect=/dashboard")
+      return
+    }
+
+    const enrichedUser: any = {
+      id: authUser.id,
+      email: authUser.email ?? undefined,
+      productName: onboarding.product_name ?? "",
+      website: onboarding.website ?? "",
+      valueProp: onboarding.value_prop ?? "",
+      northStarGoal: onboarding.north_star_goal ?? "",
+      customGoal: onboarding.custom_goal ?? "",
+      goalType: onboarding.goal_type ?? "",
+      goalAmount: onboarding.goal_amount ?? "",
+      goalTimeline: String(onboarding.goal_timeline ?? "6"),
+      marketingStrategy: onboarding.marketing_strategy ?? "6-month",
+      strategyMode: onboarding.strategy_mode ?? "foundation_content_community",
+      currentUsers: onboarding.current_users != null ? String(onboarding.current_users) : "",
+      currentMrr: onboarding.current_mrr != null ? String(onboarding.current_mrr) : "",
+      launchDate: onboarding.launch_date ?? "",
+      currentPlatforms: onboarding.current_platforms ?? [],
+      experienceLevel: onboarding.experience_level ?? "",
+      preferredPlatforms: onboarding.preferred_platforms ?? onboarding.data?.preferredPlatforms ?? [],
+      challenges: onboarding.challenges ?? "",
+      focusArea: onboarding.focus_area ?? "both",
+      dailyTaskCount: String(onboarding.daily_task_count ?? "3"),
+      websiteAnalysis: onboarding.website_analysis ?? onboarding.data?.websiteAnalysis ?? null,
+      targetAudience: onboarding.data?.targetAudience ?? "",
+      plan: typeof onboarding.plan === 'string' ? onboarding.plan : (onboarding.plan?.markdown ?? null),
+      goals: onboarding.goals ?? null,
+      milestones: onboarding.milestones ?? [],
+    }
+
+    setUser(enrichedUser)
+  }, [router])
+
   useEffect(() => {
     let isMounted = true
     const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!isMounted) return
-      if (!user) {
-        router.replace("/login")
-        return
-      }
-      // Check onboarding completion before allowing dashboard access
-      const { data: onboarding, error } = await supabase
-        .from("onboarding")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle()
-
-      if (error || !onboarding || onboarding.onboarding_completed !== true) {
-        router.replace("/onboarding?redirect=/dashboard")
-        return
-      }
-
-      // Enrich user object for DashboardView
-      const enrichedUser: any = {
-        id: user.id,
-        email: user.email ?? undefined,
-        productName: onboarding.product_name ?? "",
-        website: onboarding.website ?? "",
-        valueProp: onboarding.value_prop ?? "",
-        northStarGoal: onboarding.north_star_goal ?? "",
-        customGoal: onboarding.custom_goal ?? "",
-        goalType: onboarding.goal_type ?? "",
-        goalAmount: onboarding.goal_amount ?? "",
-        goalTimeline: String(onboarding.goal_timeline ?? "6"),
-        marketingStrategy: onboarding.marketing_strategy ?? "6-month",
-        strategyMode: onboarding.strategy_mode ?? "foundation_content_community",
-        currentUsers: onboarding.current_users != null ? String(onboarding.current_users) : "",
-        currentMrr: onboarding.current_mrr != null ? String(onboarding.current_mrr) : "",
-        launchDate: onboarding.launch_date ?? "",
-        currentPlatforms: onboarding.current_platforms ?? [],
-        experienceLevel: onboarding.experience_level ?? "",
-        preferredPlatforms: onboarding.preferred_platforms ?? onboarding.data?.preferredPlatforms ?? [],
-        challenges: onboarding.challenges ?? "",
-        focusArea: onboarding.focus_area ?? "both",
-        dailyTaskCount: String(onboarding.daily_task_count ?? "3"),
-        websiteAnalysis: onboarding.website_analysis ?? onboarding.data?.websiteAnalysis ?? null,
-        targetAudience: onboarding.data?.targetAudience ?? "",
-        plan: typeof onboarding.plan === 'string' ? onboarding.plan : (onboarding.plan?.markdown ?? null),
-        goals: onboarding.goals ?? null,
-        milestones: onboarding.milestones ?? [],
-      }
-
-      setUser(enrichedUser)
-      setLoading(false)
+      await refreshUser()
+      if (isMounted) setLoading(false)
     }
     init()
 
@@ -78,16 +80,7 @@ export default function DashboardPage() {
       if (!session?.user) {
         router.replace("/login")
       } else {
-        const { data: onboarding, error } = await supabase
-          .from("onboarding")
-          .select("onboarding_completed")
-          .eq("user_id", session.user.id)
-          .maybeSingle()
-        if (error || !onboarding || onboarding.onboarding_completed !== true) {
-          router.replace("/onboarding?redirect=/dashboard")
-        } else {
-          setUser({ id: session.user.id, email: session.user.email ?? undefined })
-        }
+        await refreshUser()
       }
     })
 
@@ -95,7 +88,7 @@ export default function DashboardPage() {
       isMounted = false
       sub.subscription.unsubscribe()
     }
-  }, [router])
+  }, [router, refreshUser])
 
   if (loading) {
     return (
@@ -120,7 +113,7 @@ export default function DashboardPage() {
           Sign out
         </button>
       </div>
-      <DashboardView user={user as any} />
+      <DashboardView user={user as any} onUserRefresh={refreshUser} />
     </div>
   )
 }

@@ -287,6 +287,58 @@ CREATE TABLE IF NOT EXISTS public.buddy_pairs (
 );
 ALTER TABLE public.buddy_pairs ENABLE ROW LEVEL SECURITY;
 
+-- ============================================
+-- 7b. MILESTONES TABLE (new)
+-- ============================================
+-- Tracks user milestones (goal achievements and user-added milestones)
+CREATE TABLE IF NOT EXISTS public.milestones (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  user_id uuid NOT NULL,
+  title text NOT NULL,
+  description text NULL,
+  emoji text NULL,
+  type text NOT NULL DEFAULT 'user_added', -- 'goal_achieved' | 'user_added'
+  goal_type text NULL, -- 'users' | 'revenue' | etc.
+  progress_current numeric NULL,
+  progress_target numeric NULL,
+  unit text NULL,
+  unlocked boolean NOT NULL DEFAULT false,
+  date date NULL,
+  created_at timestamp with time zone NULL DEFAULT now(),
+  updated_at timestamp with time zone NULL DEFAULT now(),
+  CONSTRAINT milestones_pkey PRIMARY KEY (id),
+  CONSTRAINT milestones_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users (id) ON DELETE CASCADE
+);
+
+-- Indexes for milestones
+CREATE INDEX IF NOT EXISTS idx_milestones_user_id ON public.milestones USING btree (user_id);
+CREATE INDEX IF NOT EXISTS idx_milestones_date ON public.milestones USING btree (date DESC);
+
+-- Trigger for milestones updated_at
+DROP TRIGGER IF EXISTS trg_milestones_updated_at ON public.milestones;
+CREATE TRIGGER trg_milestones_updated_at
+  BEFORE UPDATE ON public.milestones
+  FOR EACH ROW
+  EXECUTE FUNCTION set_updated_at();
+
+-- Milestones RLS
+ALTER TABLE public.milestones ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can view own milestones" ON public.milestones;
+CREATE POLICY "Users can view own milestones" ON public.milestones
+  FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert own milestones" ON public.milestones;
+CREATE POLICY "Users can insert own milestones" ON public.milestones
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update own milestones" ON public.milestones;
+CREATE POLICY "Users can update own milestones" ON public.milestones
+  FOR UPDATE USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can delete own milestones" ON public.milestones;
+CREATE POLICY "Users can delete own milestones" ON public.milestones
+  FOR DELETE USING (auth.uid() = user_id);
+
 -- Profiles policies
 DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
 CREATE POLICY "Users can view own profile" ON public.profiles

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Twitter, Linkedin, MessageSquare, Instagram, Video, FileText, Zap, Copy, Check, Loader2, CheckCircle2, Circle, Target, ChevronRight, ChevronLeft, Calendar, Clock, Lightbulb, Trophy, Download } from "lucide-react"
 import WeekProgress from "./week-progress"
+import { supabase } from "@/lib/supabase"
 
 interface Milestone {
   id?: string
@@ -16,10 +17,13 @@ interface Milestone {
   date: string
   type: 'goal_achieved' | 'user_added'
   goalType?: 'users' | 'revenue'
+  goal_type?: 'users' | 'revenue'
   emoji?: string
   description?: string
   progressCurrent?: number
   progressTarget?: number
+  progress_current?: number
+  progress_target?: number
   unit?: string
   unlocked?: boolean
 }
@@ -190,8 +194,25 @@ export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAd
   const [noteEditingTaskId, setNoteEditingTaskId] = useState<string | number | null>(null)
   const [taskNote, setTaskNote] = useState("")
   const [draggedTask, setDraggedTask] = useState<any | null>(null)
-  // Milestone state
-  const [milestones, setMilestones] = useState(user?.milestones || [])
+  // Milestone state (DB-backed)
+  const [milestones, setMilestones] = useState<Milestone[]>(user?.milestones || [])
+  useEffect(() => {
+    let ignore = false
+    const load = async () => {
+      try {
+        if (!user?.id) return
+        const { data, error } = await supabase
+          .from('milestones')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+        if (!ignore && !error && data) setMilestones(data as unknown as Milestone[])
+      } catch {}
+    }
+    load()
+    return () => { ignore = true }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
   const [showAddMilestone, setShowAddMilestone] = useState(false)
   const [newMilestone, setNewMilestone] = useState({ title: '', date: '', emoji: '🏅', description: '', current: '', target: '', unit: '' })
   const [celebratingId, setCelebratingId] = useState<string | null>(null)
@@ -288,94 +309,64 @@ export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAd
     }
   }
   
-  // Check if goals have been achieved and save as milestones
-  // Also handle setting new goals when current goals are reached
+  // Check if goals have been achieved and save as milestones (DB-backed)
   useEffect(() => {
-    const newUserMilestones = [...milestones]
-    let updated = false
-    
-    // Check if user goal has been achieved
-    if (currentUsers >= userGoal) {
-      const userGoalMilestone = {
-        title: `Reached ${userGoal.toLocaleString()} users`,
-        date: new Date().toISOString(),
-        type: 'goal_achieved',
-        goalType: 'users'
-      }
-      
-      // Check if this milestone doesn't already exist
-      const exists = newUserMilestones.some(m => 
-        m.type === 'goal_achieved' && m.goalType === 'users' && m.title === userGoalMilestone.title
-      )
-      
-      if (!exists) {
-        newUserMilestones.push(userGoalMilestone)
-        updated = true
-      }
+    const persistIfNeeded = async () => {
+      try {
+        if (!user?.id) return
+        const toInsert: any[] = []
+        if (currentUsers >= userGoal) {
+          const title = `Reached ${userGoal.toLocaleString()} users`
+          const exists = milestones.some((m: Milestone) => m.type === 'goal_achieved' && (m.goalType === 'users' || m.goal_type === 'users') && m.title === title)
+          if (!exists) toInsert.push({ title, type: 'goal_achieved', goal_type: 'users' })
+        }
+        if (currentRevenue >= revenueGoal) {
+          const title = `Reached $${revenueGoal.toLocaleString()} MRR`
+          const exists = milestones.some((m: Milestone) => m.type === 'goal_achieved' && (m.goalType === 'revenue' || m.goal_type === 'revenue') && m.title === title)
+          if (!exists) toInsert.push({ title, type: 'goal_achieved', goal_type: 'revenue' })
+        }
+        if (toInsert.length) {
+          const rows = toInsert.map(r => ({
+            user_id: user.id,
+            title: r.title,
+            type: r.type,
+            goal_type: r.goal_type,
+            unlocked: true,
+            date: new Date().toISOString().slice(0,10)
+          }))
+          const { data } = await supabase.from('milestones').insert(rows).select('*')
+          if (data) setMilestones((prev: Milestone[]) => [...(data as unknown as Milestone[]), ...prev])
+        }
+      } catch {}
     }
-    
-    // Check if revenue goal has been achieved
-    if (currentRevenue >= revenueGoal) {
-      const revenueGoalMilestone = {
-        title: `Reached $${revenueGoal.toLocaleString()} MRR`,
-        date: new Date().toISOString(),
-        type: 'goal_achieved',
-        goalType: 'revenue'
-      }
-      
-      // Check if this milestone doesn't already exist
-      const exists = newUserMilestones.some(m => 
-        m.type === 'goal_achieved' && m.goalType === 'revenue' && m.title === revenueGoalMilestone.title
-      )
-      
-      if (!exists) {
-        newUserMilestones.push(revenueGoalMilestone)
-        updated = true
-      }
-    }
-    
-    if (updated) {
-      setMilestones(newUserMilestones)
-      // Update user data in localStorage
-      const userData = localStorage.getItem('user')
-      if (userData) {
-        const parsedUser = JSON.parse(userData)
-        const updatedUser = { ...parsedUser, milestones: newUserMilestones }
-        localStorage.setItem('user', JSON.stringify(updatedUser))
-      }
-    }
-  }, [currentUsers, userGoal, currentRevenue, revenueGoal, milestones])
+    void persistIfNeeded()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUsers, userGoal, currentRevenue, revenueGoal])
   
-  const handleAddMilestone = () => {
-    if (newMilestone.title.trim()) {
-      const cur = parseFloat(String(newMilestone.current || ''))
-      const tgt = parseFloat(String(newMilestone.target || ''))
-      const unlocked = Number.isFinite(cur) && Number.isFinite(tgt) ? cur >= tgt : false
-      const milestoneToAdd: Milestone = {
-        id: `m-${Date.now()}`,
+  const handleAddMilestone = async () => {
+    if (!newMilestone.title.trim() || !user?.id) return
+    const cur = parseFloat(String((newMilestone as any).current || ''))
+    const tgt = parseFloat(String((newMilestone as any).target || ''))
+    const unlocked = Number.isFinite(cur) && Number.isFinite(tgt) ? cur >= tgt : false
+    try {
+      const payload: any = {
+        user_id: user.id,
         title: newMilestone.title,
-        date: newMilestone.date || new Date().toISOString(),
-        type: 'user_added',
+        description: newMilestone.description || null,
         emoji: newMilestone.emoji || '🏅',
-        description: newMilestone.description || '',
-        progressCurrent: Number.isFinite(cur) ? cur : undefined,
-        progressTarget: Number.isFinite(tgt) ? tgt : undefined,
-        unit: newMilestone.unit || '',
-        unlocked
+        type: 'user_added',
+        goal_type: null,
+        progress_current: Number.isFinite(cur) ? cur : null,
+        progress_target: Number.isFinite(tgt) ? tgt : null,
+        unit: (newMilestone as any).unit || null,
+        unlocked,
+        date: (newMilestone.date || new Date().toISOString()).slice(0,10)
       }
-      const updatedMilestones: Milestone[] = [...milestones, milestoneToAdd]
-      setMilestones(updatedMilestones)
-      setNewMilestone({ title: '', date: '', emoji: '🏅', description: '', current: '', target: '', unit: '' })
-      setShowAddMilestone(false)
-      
-      // Update user data in localStorage
-      const userData = localStorage.getItem('user')
-      if (userData) {
-        const parsedUser = JSON.parse(userData)
-        const updatedUser = { ...parsedUser, milestones: updatedMilestones }
-        localStorage.setItem('user', JSON.stringify(updatedUser))
-      }
-    }
+      const { data, error } = await supabase.from('milestones').insert(payload).select('*').single()
+      if (!error && data) setMilestones((prev: Milestone[]) => [...prev, data as unknown as Milestone])
+    } catch {}
+    setNewMilestone({ title: '', date: '', emoji: '🏅', description: '', current: '', target: '', unit: '' })
+    setShowAddMilestone(false)
   }
 
   const launchConfetti = async () => {
@@ -398,16 +389,8 @@ export default function HabitTracker({ tasks, onCompleteTask, onDeleteTask, onAd
   }
 
   const markCustomMilestoneCompleted = async (id: string) => {
-    setMilestones((prev: Milestone[]) => {
-      const updated = prev.map(m => m.id === id ? { ...m, unlocked: true, date: new Date().toISOString() } : m)
-      // persist to localStorage
-      const userData = localStorage.getItem('user')
-      if (userData) {
-        const parsedUser = JSON.parse(userData)
-        localStorage.setItem('user', JSON.stringify({ ...parsedUser, milestones: updated }))
-      }
-      return updated
-    })
+    setMilestones((prev: Milestone[]) => prev.map((m: Milestone) => m.id === id ? { ...m, unlocked: true, date: new Date().toISOString() } : m))
+    try { await supabase.from('milestones').update({ unlocked: true, date: new Date().toISOString().slice(0,10) }).eq('id', id) } catch {}
     setCelebratingId(id)
     await launchConfetti()
     setTimeout(() => setCelebratingId(null), 1200)
