@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Onboarding from "@/components/onboarding"
 import { supabase } from "@/lib/supabase"
 
-export default function OnboardingPage() {
+function OnboardingContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [initialData, setInitialData] = useState<any>(null)
@@ -194,5 +194,17 @@ export default function OnboardingPage() {
       onComplete={handleOnboardingComplete}
       onSkip={handleSkip}
     />
+  )
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    }>
+      <OnboardingContent />
+    </Suspense>
   )
 }
