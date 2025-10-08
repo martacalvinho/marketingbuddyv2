@@ -1,222 +1,175 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
-  let websiteAnalysis: any = null
-  
   try {
-    const { productName, valueProp, website, websiteAnalysis: analysis, northStarGoal } = await request.json()
-    websiteAnalysis = analysis
+    const { productName, valueProp, website, websiteAnalysis, northStarGoal } = await request.json()
 
-    const prompt = `You are analyzing the target audience for a specific business. Use the provided website analysis data to create an accurate, business-specific target audience profile.
+    if (!website) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Website URL is required for target audience analysis' 
+      }, { status: 400 })
+    }
 
-Business Information:
-- Product/Business: ${productName}
-- Value Proposition: ${valueProp}
-- Website: ${website || 'Not provided'}
-- Marketing Goal: ${northStarGoal}
+    console.log(`Analyzing target audience for: ${website}`)
 
-${websiteAnalysis ? `IMPORTANT - Website Analysis Data (USE THIS INFORMATION):
-${JSON.stringify(websiteAnalysis, null, 2)}
+    // Step 1: Extract website content using Jina AI Reader (same as website analysis)
+    console.log("Fetching content with Jina AI Reader...")
+    const jinaResponse = await fetch(`https://r.jina.ai/${website}`, {
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "Marketing-Buddy-Analysis/1.0",
+      },
+    })
 
-Pay special attention to:
-- Target Audience from analysis: ${websiteAnalysis.businessOverview?.targetAudience ? JSON.stringify(websiteAnalysis.businessOverview.targetAudience) : 'Not specified'}
-- Industry: ${websiteAnalysis.businessOverview?.industry || 'Not specified'}
-- Business Model: ${websiteAnalysis.businessOverview?.businessModel || 'Not specified'}
-` : ''}
+    if (!jinaResponse.ok) {
+      throw new Error(`Jina AI Reader failed: ${jinaResponse.status} ${jinaResponse.statusText}`)
+    }
 
-IMPORTANT: Base your analysis on the actual business and website analysis provided above. Do NOT use generic data like "small business owners" or "entrepreneurs" unless that's what the business actually serves.
+    const jinaData = await jinaResponse.json()
+    console.log("Jina AI Response received successfully")
 
-Return the analysis in JSON format with the following structure:
+    // Extract content from Jina AI's nested response structure
+    let websiteContent = ""
+    if (jinaData.data && jinaData.data.content) {
+      websiteContent = jinaData.data.content
+    } else if (jinaData.content) {
+      websiteContent = jinaData.content
+    } else if (typeof jinaData === "string") {
+      websiteContent = jinaData
+    } else {
+      throw new Error("Unexpected response format from Jina AI")
+    }
+
+    if (!websiteContent || websiteContent.trim() === "") {
+      throw new Error("No content extracted from website")
+    }
+
+    console.log(`Extracted ${websiteContent.length} characters of content`)
+
+    // Step 2: Analyze target audience with AI using the actual website content
+    const audiencePrompt = `You are a marketing expert analyzing a website to understand WHO the target customers are (not what the business does).
+
+Website URL: ${website}
+Business Name: ${productName}
+Value Proposition: ${valueProp}
+Marketing Goal: ${northStarGoal}
+
+Website Content:
+${websiteContent}
+
+Based on the website content above, analyze WHO the ideal customers/clients are for this business. Focus on understanding the PEOPLE who would buy from or hire this business.
+
+IMPORTANT: Return ONLY valid JSON in this exact format (no markdown, no extra text):
+
 {
   "demographics": {
-    "ageRange": "25-55",
-    "locations": ["Urban areas", "Suburban areas"],
-    "professions": ["Architects", "Interior Designers", "Project Managers"],
-    "incomeLevel": "Mid to upper-middle class",
-    "companySize": "Small to medium firms"
+    "ageRange": "Estimated age range of typical customers (e.g., '30-55', '25-45')",
+    "locations": ["Geographic areas where customers are located"],
+    "professions": ["Job titles or roles of typical customers - WHO would hire/buy from this business"],
+    "incomeLevel": "Income bracket of typical customers (e.g., 'Upper-middle class', '$75k-150k')",
+    "companySize": "If B2B: size of companies that would be customers (e.g., 'Small to medium businesses', 'Enterprise')"
   },
   "psychographics": {
-    "values": ["Efficiency", "Quality", "Innovation"],
-    "interests": ["Design trends", "Technology", "Productivity tools"],
-    "lifestyle": "Brief description of their lifestyle",
-    "personality": ["Detail-oriented", "Results-driven", "Tech-savvy"]
+    "values": ["What do these customers value? (e.g., 'Quality', 'Innovation', 'Reliability')"],
+    "interests": ["What are these customers interested in? (e.g., 'Modern design', 'Sustainability', 'Technology')"],
+    "lifestyle": "Describe the lifestyle of typical customers in 1-2 sentences",
+    "personality": ["Personality traits of typical customers (e.g., 'Detail-oriented', 'Ambitious', 'Quality-focused')"]
   },
   "painPoints": [
-    "Specific challenge they face",
-    "Another pain point",
-    "Third pain point"
+    "What problems do these customers face that this business solves?",
+    "What challenges or frustrations do they experience?",
+    "What keeps them up at night?"
   ],
   "goals": [
-    "Primary goal",
-    "Secondary goal",
-    "Long-term aspiration"
+    "What are these customers trying to achieve?",
+    "What outcomes are they seeking?",
+    "What success looks like for them?"
   ],
   "onlinePresence": [
-    "LinkedIn",
-    "Industry forums",
-    "Professional networks"
+    "Where do these customers spend time online? (e.g., 'LinkedIn', 'Instagram', 'Industry forums')",
+    "What platforms would they use to find this type of business?"
   ],
   "purchasingBehavior": {
-    "decisionFactors": ["ROI", "Ease of use", "Customer testimonials"],
-    "researchMethods": ["Peer recommendations", "Online reviews", "Free trials"],
-    "buyingProcess": "Description of how they typically make purchasing decisions"
+    "decisionFactors": ["What factors influence their buying decision? (e.g., 'Portfolio quality', 'Price', 'Reputation')"],
+    "researchMethods": ["How do they research before buying? (e.g., 'Referrals', 'Online reviews', 'Case studies')"],
+    "buyingProcess": "Describe their typical buying journey in 1-2 sentences"
   }
 }
 
-Ensure all data is specific, actionable, and relevant to the business provided.`
+Focus on analyzing WHO the customers ARE, not what the business does. Be specific based on the website content.`
 
-    console.log('Generating target audience with data:', {
-      productName,
-      website,
-      hasWebsiteAnalysis: !!websiteAnalysis,
-      northStarGoal
-    })
-
-    // Debug: log whether API key is loaded
-    console.log("OpenRouter API Key Loaded:", process.env.OPENROUTER_API_KEY ? "YES" : "NO")
-
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
+    console.log("Sending content to OpenRouter for target audience analysis...")
+    const aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://marketing-buddy.vercel.app',
-        'X-Title': 'Marketing Buddy Target Audience Generation',
+        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://marketing-buddy.vercel.app",
+        "X-Title": "Marketing Buddy Target Audience Analysis",
       },
       body: JSON.stringify({
-        model: 'deepseek/deepseek-r1-0528-qwen3-8b:free',
+        model: "deepseek/deepseek-r1-0528-qwen3-8b:free",
         messages: [
           {
-            role: 'user',
-            content: prompt
-          }
+            role: "user",
+            content: audiencePrompt,
+          },
         ],
-        max_tokens: 1000,
+        max_tokens: 2000,
         temperature: 0.7,
       }),
     })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('OpenAI API Error:', {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText
-      })
-      throw new Error(`OpenAI API request failed: ${response.status} ${response.statusText}`)
+    if (!aiResponse.ok) {
+      const errorText = await aiResponse.text()
+      throw new Error(`OpenRouter API failed: ${aiResponse.status} ${errorText}`)
     }
 
-    const data = await response.json()
-    const rawContent = data.choices[0]?.message?.content || ''
-    
-    let targetAudience
+    const aiData = await aiResponse.json()
+    const analysis = aiData.choices?.[0]?.message?.content
+
+    if (!analysis) {
+      throw new Error("No analysis generated by AI")
+    }
+
+    console.log("Target audience analysis completed successfully")
+    console.log("Raw AI response (first 500 chars):", analysis.substring(0, 500))
+
     try {
-      // Try to parse JSON response
-      const jsonMatch = rawContent.match(/\{[\s\S]*\}/)
-      if (jsonMatch) {
-        targetAudience = JSON.parse(jsonMatch[0])
-      } else {
-        throw new Error('No JSON found in response')
-      }
+      // Clean up the response - remove any markdown formatting
+      const cleanedAnalysis = analysis
+        .replace(/```json\n?/g, "")
+        .replace(/```\n?/g, "")
+        .trim()
+
+      const targetAudience = JSON.parse(cleanedAnalysis)
+      console.log("✅ Target audience parsed successfully")
+
+      return NextResponse.json({
+        success: true,
+        targetAudience,
+        source: 'ai_analysis'
+      })
     } catch (parseError) {
-      console.log('Failed to parse JSON, using fallback structure based on website analysis')
-      
-      // Extract data from website analysis if available
-      const analysisAudience = websiteAnalysis?.businessOverview?.targetAudience || []
-      const industry = websiteAnalysis?.businessOverview?.industry || 'Business'
-      const businessModel = websiteAnalysis?.businessOverview?.businessModel || 'Service-based business'
-      
-      // Create fallback structured data based on actual business context
-      targetAudience = {
-        demographics: {
-          ageRange: "25-55",
-          locations: ["Urban areas", "Suburban areas"],
-          professions: analysisAudience.length > 0 ? analysisAudience : ["Business professionals", "Decision makers"],
-          incomeLevel: "Mid to upper-middle class",
-          companySize: businessModel.includes('enterprise') ? "Medium to large businesses" : "Small to medium businesses"
-        },
-        psychographics: {
-          values: ["Growth", "Efficiency", "Results"],
-          interests: ["Business growth", "Marketing trends", "Technology"],
-          lifestyle: "Busy professionals balancing multiple responsibilities while seeking to scale their business",
-          personality: ["Results-driven", "Tech-savvy", "Goal-oriented"]
-        },
-        painPoints: [
-          "Limited time for marketing activities",
-          "Difficulty measuring marketing ROI",
-          "Keeping up with marketing trends and best practices"
-        ],
-        goals: [
-          "Increase revenue and customer base",
-          "Build strong brand recognition",
-          "Streamline marketing processes"
-        ],
-        onlinePresence: [
-          "LinkedIn",
-          "Twitter",
-          "Industry forums"
-        ],
-        purchasingBehavior: {
-          decisionFactors: ["ROI", "Ease of use", "Customer testimonials"],
-          researchMethods: ["Peer recommendations", "Online reviews", "Free trials"],
-          buyingProcess: "Research thoroughly, seek peer recommendations, and prefer solutions with proven ROI"
-        }
-      }
+      console.error("❌ Target audience parsing error:", parseError)
+      console.error("Raw analysis content:", analysis)
+
+      // Return a helpful error instead of generic fallback
+      return NextResponse.json({
+        success: false,
+        error: "Failed to parse AI response",
+        details: parseError instanceof Error ? parseError.message : String(parseError),
+        rawResponse: analysis.substring(0, 1000)
+      }, { status: 500 })
     }
-
-    return NextResponse.json({ 
-      success: true, 
-      targetAudience 
-    })
-
   } catch (error) {
-    console.error('Target audience generation error:', error)
-    
-    // Extract data from website analysis if available for error fallback
-    const analysisAudience = websiteAnalysis?.businessOverview?.targetAudience || []
-    const industry = websiteAnalysis?.businessOverview?.industry || 'Business'
-    const businessModel = websiteAnalysis?.businessOverview?.businessModel || 'Service-based business'
-    
-    // Fallback structured target audience based on actual business context
-    const fallbackAudience = {
-      demographics: {
-        ageRange: "25-55",
-        locations: ["Urban areas", "Suburban areas"],
-        professions: analysisAudience.length > 0 ? analysisAudience : ["Business professionals", "Decision makers"],
-        incomeLevel: "Mid to upper-middle class",
-        companySize: businessModel.includes('enterprise') ? "Medium to large businesses" : "Small to medium businesses"
-      },
-      psychographics: {
-        values: ["Growth", "Efficiency", "Results"],
-        interests: ["Business growth", "Marketing trends", "Technology"],
-        lifestyle: "Busy professionals balancing multiple responsibilities while seeking to scale their business",
-        personality: ["Results-driven", "Tech-savvy", "Goal-oriented"]
-      },
-      painPoints: [
-        "Limited time for marketing activities",
-        "Difficulty measuring marketing ROI",
-        "Keeping up with marketing trends and best practices"
-      ],
-      goals: [
-        "Increase revenue and customer base",
-        "Build strong brand recognition",
-        "Streamline marketing processes"
-      ],
-      onlinePresence: [
-        "LinkedIn",
-        "Twitter",
-        "Industry forums"
-      ],
-      purchasingBehavior: {
-        decisionFactors: ["ROI", "Ease of use", "Customer testimonials"],
-        researchMethods: ["Peer recommendations", "Online reviews", "Free trials"],
-        buyingProcess: "Research thoroughly, seek peer recommendations, and prefer solutions with proven ROI"
-      }
-    }
-    
-    return NextResponse.json({ 
-      success: true, 
-      targetAudience: fallbackAudience 
-    })
+    console.error("Target audience generation error:", error)
+
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to generate target audience",
+      details: error instanceof Error ? error.stack : String(error)
+    }, { status: 500 })
   }
 }

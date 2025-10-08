@@ -3,18 +3,20 @@ export async function POST(request: Request) {
     const userData = await request.json()
 
     // Generate a 6+ month adaptive marketing plan based on user data
-    const planResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "deepseek/deepseek-r1-0528-qwen3-8b:free",
-        messages: [
-          {
-            role: "system",
-            content: `You are an expert marketing strategist creating a personalized 6+ month multi-platform adaptive marketing plan. 
+    let plan: string | null = null
+    try {
+      const planResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "deepseek/deepseek-r1-0528-qwen3-8b:free",
+          messages: [
+            {
+              role: "system",
+              content: `You are an expert marketing strategist creating a personalized 6+ month multi-platform adaptive marketing plan. 
 
 IMPORTANT: Analyze the business and recommend the BEST platforms and content strategies based on:
 1. Target audience behavior and demographics
@@ -94,29 +96,33 @@ Use this exact format for the first month:
 - **Task 3:** [Specific action with clear instructions]
 
 Continue this pattern for all 30 days. Make tasks specific to the user's product, industry, and goals. Include exact copy templates, specific platforms, and measurable outcomes where possible.`,
-          },
-          {
-            role: "user",
-            content: "Generate my complete 30-day marketing plan in the specified markdown format.",
-          },
-        ],
-        max_tokens: 4000,
-        temperature: 0.7,
-      }),
-    })
-
-    const planData = await planResponse.json()
-    const plan = planData.choices[0]?.message?.content || "Plan generation in progress..."
+            },
+            {
+              role: "user",
+              content: "Generate my complete 30-day marketing plan in the specified markdown format.",
+            },
+          ],
+          max_tokens: 4000,
+          temperature: 0.7,
+        }),
+      })
+      const planData = await planResponse.json()
+      plan = planData.choices[0]?.message?.content || null
+    } catch (aiErr) {
+      console.warn("Plan AI generation failed, proceeding without plan:", aiErr)
+      plan = null
+    }
 
     // In a real app, you'd save this to your database
     // For now, we'll just return success
     return Response.json({
       success: true,
-      message: "Marketing plan generated successfully",
-      plan: plan,
+      message: plan ? "Marketing plan generated successfully" : "Plan not generated; proceeding without plan",
+      plan
     })
   } catch (error) {
     console.error("Plan generation error:", error)
-    return Response.json({ error: "Failed to generate marketing plan" }, { status: 500 })
+    // Never block onboarding on plan errors
+    return Response.json({ success: true, message: "Plan not generated; proceeding without plan", plan: null })
   }
 }

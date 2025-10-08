@@ -205,24 +205,101 @@ export default function DashboardView({ user }: DashboardViewProps) {
       const total = rows?.length || 0
       const attempted = rows?.filter((r: any) => r.status === 'completed' || r.status === 'skipped').length || 0
       const attemptedPct = total > 0 ? (attempted / total) : 0
-      // Weekly review exists?
+      // Unlock next week based on 50% of previous week attempted (completed or skipped)
+      return attemptedPct >= 0.5
+    } catch {
+      return false
+    }
+  }
+
+  // Ensure a week's tasks are seeded once unlocked, using adaptive context from prior week
+  const ensureWeekSeeded = async (weekNumber: number) => {
+    try {
+      if (weekNumber <= 1) return
+      const { data: existing, error: exErr } = await supabase
+        .from('tasks')
+        .select('id')
+        .eq('user_id', user.id)
+        .contains('metadata', { week: weekNumber })
+        .limit(1)
+      if (!exErr && existing && existing.length > 0) return
+
+      // Build adaptive context from previous week
+      const prevWeek = weekNumber - 1
+      const startDay = (prevWeek - 1) * 7 + 1
+      const endDay = prevWeek * 7
+      const { data: prevWeekTasks } = await supabase
+        .from('tasks')
+        .select('status, category, platform, completed_at, skipped_count')
+        .eq('user_id', user.id)
+        .gte('metadata->>day', String(startDay))
+        .lte('metadata->>day', String(endDay))
+      const { data: contentRows } = await supabase
+        .from('content')
+        .select('platform, engagement_metrics')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(100)
       const { data: wr } = await supabase
         .from('weekly_reviews')
-        .select('id')
+        .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(1)
-      const hasReview = !!(wr && wr.length > 0)
-      // Content created?
-      const { data: contentRows } = await supabase
-        .from('content')
-        .select('id')
-        .eq('user_id', user.id)
-        .limit(1)
-      const hasContent = !!(contentRows && contentRows.length > 0)
-      return attemptedPct >= 0.5 && hasReview && hasContent
-    } catch {
-      return false
+
+      const weeklyFeedback = wr && wr.length > 0 ? wr[0] : null
+      const contextSignals = {
+        recentTasks: prevWeekTasks || [],
+        content: contentRows || [],
+        goals: user.goals || null,
+        milestones,
+        weeklyFeedback
+      }
+
+      // Seed the new week days
+      const newStart = (weekNumber - 1) * 7 + 1
+      const newEnd = weekNumber * 7
+      for (let day = newStart; day <= newEnd; day++) {
+        try {
+          const month = Math.ceil(day / 30)
+          const weekInMonth = Math.ceil((((day - 1) % 30) + 1) / 7)
+          const resp = await fetch('/api/generate-enhanced-daily-tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user,
+              day,
+              month,
+              weekInMonth,
+              monthStrategy: '',
+              focusArea: user.focusArea || 'growth',
+              dailyTaskCount: user.dailyTaskCount || '3',
+              websiteAnalysis: user.websiteAnalysis,
+              contextSignals
+            })
+          })
+          const json = await resp.json()
+          const tasks = Array.isArray(json.tasks) ? json.tasks : []
+          if (tasks.length > 0) {
+            const rows = tasks.map((t: any) => ({
+              user_id: user.id,
+              title: t.title,
+              description: t.description || null,
+              category: t.category || null,
+              platform: t.platform || null,
+              status: 'pending',
+              metadata: { day, week: weekNumber, month, source: 'week_seed' }
+            }))
+            await supabase.from('tasks').insert(rows)
+          }
+        } catch (seedErr) {
+          // eslint-disable-next-line no-console
+          console.warn('Failed to seed adaptive week', weekNumber, 'day', day, seedErr)
+        }
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn('ensureWeekSeeded error:', e)
     }
   }
 
@@ -233,86 +310,116 @@ export default function DashboardView({ user }: DashboardViewProps) {
     if (week > 1) {
       const unlocked = await checkWeekUnlocked(week)
       if (!unlocked) {
-        setWeekLockMessage(`Week ${week} is locked. Requirements: attempt at least 50% of Week ${week - 1} tasks, create at least one piece of content, and complete a Weekly Review. Once done, check again to unlock personalized Week ${week} tasks.`)
+        setWeekLockMessage(`Week ${week} is locked. Requirement: attempt at least 50% of Week ${week - 1} tasks to unlock.`)
         setTasksByDay((prev) => ({ ...prev, [day]: [] }))
         setTodaysTasks([])
         return
       }
+      // If unlocked and not yet seeded, seed this week adaptively
+      await ensureWeekSeeded(week)
     }
-    // Load from DB first
-    try {
-      const { data: dbRows, error } = await supabase
-        .from('tasks')
-        .select('id,title,description,category,platform,status,metadata,estimated_minutes,completed_at,completion_note')
-        .eq('user_id', user.id)
-        .contains('metadata', { day })
-        .order('created_at', { ascending: true })
-      if (!error && dbRows && dbRows.length > 0) {
-        const ui = mapDbTasksToUi(dbRows, day)
-        setTasksByDay((prev) => ({ ...prev, [day]: ui }))
-        setTodaysTasks(ui)
-        return
-      }
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.warn('Failed loading tasks from DB:', e)
-    }
-    // Gating already enforced above before DB read
-    if (user.plan) {
-      // Convert day to month and week context for 6-month plan
-      const month = Math.ceil(day / 30) // Roughly 30 days per month
-      const dayInMonth = ((day - 1) % 30) + 1
-      const weekInMonth = Math.ceil(dayInMonth / 7)
-      
-      // Try multiple parsing strategies for the new 6-month format
-      let tasks: any[] = []
-      
-      // Strategy 1: Look for specific day tasks in Month X format
-      const dayRegex = new RegExp(`###\\s*Day\\s*${day}[^\\n]*\\n([\\s\\S]*?)(?=###\\s*Day\\s*${day + 1}|###\\s*Month|$)`, 'i')
-      const dayMatch = user.plan.match(dayRegex)
-      
-      if (dayMatch) {
-        tasks = parseTasks(dayMatch[1], day)
-      } else {
-        // Strategy 2: Look for Month X and extract daily tasks from week content
-        const monthRegex = new RegExp(`###\\s*Month\\s*${month}[^\\n]*\\n([\\s\\S]*?)(?=###\\s*Month\\s*${month + 1}|$)`, 'i')
-        const monthMatch = user.plan.match(monthRegex)
+    // For first 7 days (Week 1), use structured plan. Day 8+ = adaptive tasks
+    const planText = typeof user.plan === 'string' ? user.plan : (user.plan?.markdown || '')
+    const shouldUsePlan = planText && day <= 7
+    console.log(`Day ${day}: Plan available: ${!!planText}, Should use plan: ${shouldUsePlan} (Week 1 structured, Day 8+ adaptive)`)
+    
+    // Load from DB first (unless we should use plan)
+    if (!shouldUsePlan) {
+      try {
+        console.log(`Loading tasks for day ${day} from DB, user ${user.id}`)
+        const { data: dbRows, error } = await supabase
+          .from('tasks')
+          .select('id,title,description,category,platform,status,metadata,estimated_minutes,completed_at')
+          .eq('user_id', user.id)
+          .filter('metadata->>day', 'eq', String(day))
+          .order('created_at', { ascending: true })
         
-        if (monthMatch) {
-          // Look for Week X content within the month
-          const weekRegex = new RegExp(`Week\\s*${week}[^\\n]*([\\s\\S]*?)(?=Week\\s*${week + 1}|###|$)`, 'i')
-          const weekMatch = monthMatch[1].match(weekRegex)
-          
-          if (weekMatch) {
-            tasks = parseTasks(weekMatch[1], day)
-          } else {
-            // Fallback: Extract any tasks from the month content
-            tasks = parseTasks(monthMatch[1], day, 3) // Limit to 3 tasks per day
-          }
-        }
-      }
-      
-      if (tasks.length > 0) {
-        // Persist parsed tasks so future loads use DB
-        try {
-          const rows = tasks.map((t: any) => ({
-            user_id: user.id,
-            title: t.title,
-            description: t.description || null,
-            category: t.category || null,
-            platform: t.platform || null,
-            status: 'pending',
-            metadata: { day, week: Math.ceil(day / 7), month, source: 'plan_parse' }
-          }))
-          const { data: inserted } = await supabase.from('tasks').insert(rows).select('*')
-          const ui = inserted ? mapDbTasksToUi(inserted, day) : tasks
+        console.log(`DB query result for day ${day}:`, { rowCount: dbRows?.length || 0, error })
+        
+        if (!error && dbRows && dbRows.length > 0) {
+          const ui = mapDbTasksToUi(dbRows, day)
           setTasksByDay((prev) => ({ ...prev, [day]: ui }))
           setTodaysTasks(ui)
-        } catch {
-          setTasksByDay((prev) => ({ ...prev, [day]: tasks }))
-          setTodaysTasks(tasks)
+          console.log(`✅ Loaded ${ui.length} tasks from DB for day ${day}`)
+          return
         }
-        return
+        
+        if (error) {
+          console.error(`DB query error for day ${day}:`, error)
+        }
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('Failed loading tasks from DB:', e)
+      }
+    }
+    
+    // Try to use plan for first 30 days
+    console.log(`Attempting to parse plan for day ${day}:`, !!planText, `(${planText?.length || 0} chars)`)
+    
+    if (planText) {
+      try {
+        // Convert day to month and week context for 6-month plan
+        const month = Math.ceil(day / 30) // Roughly 30 days per month
+        const dayInMonth = ((day - 1) % 30) + 1
+        const weekInMonth = Math.ceil(dayInMonth / 7)
+        
+        // Try multiple parsing strategies for the new 6-month format
+        let tasks: any[] = []
+        
+        // Strategy 1: Look for specific day tasks in Month X format
+        const dayRegex = new RegExp(`###\\s*Day\\s*${day}[^\\n]*\\n([\\s\\S]*?)(?=###\\s*Day\\s*${day + 1}|###\\s*Month|$)`, 'i')
+        const dayMatch = planText.match(dayRegex)
+        console.log(`Day ${day} regex match:`, !!dayMatch)
+        
+        if (dayMatch) {
+          tasks = parseTasks(dayMatch[1], day)
+          console.log(`Parsed ${tasks.length} tasks from Day ${day} section`)
+        } else {
+          // Strategy 2: Look for Month X and extract daily tasks from week content
+          const monthRegex = new RegExp(`###\\s*Month\\s*${month}[^\\n]*\\n([\\s\\S]*?)(?=###\\s*Month\\s*${month + 1}|$)`, 'i')
+          const monthMatch = planText.match(monthRegex)
+          
+          if (monthMatch) {
+            // Look for Week X content within the month
+            const weekRegex = new RegExp(`Week\\s*${week}[^\\n]*([\\s\\S]*?)(?=Week\\s*${week + 1}|###|$)`, 'i')
+            const weekMatch = monthMatch[1].match(weekRegex)
+            
+            if (weekMatch) {
+              tasks = parseTasks(weekMatch[1], day)
+            } else {
+              // Fallback: Extract any tasks from the month content
+              tasks = parseTasks(monthMatch[1], day, 3) // Limit to 3 tasks per day
+            }
+          }
+          console.log(`Parsed ${tasks.length} tasks from Month/Week fallback for day ${day}`)
+        }
+        
+        if (tasks.length > 0) {
+          console.log(`✅ Using ${tasks.length} tasks from plan for day ${day}`)
+          // Persist parsed tasks so future loads use DB
+          try {
+            const rows = tasks.map((t: any) => ({
+              user_id: user.id,
+              title: t.title,
+              description: t.description || null,
+              category: t.category || null,
+              platform: t.platform || null,
+              status: 'pending',
+              metadata: { day, week: Math.ceil(day / 7), month, source: 'plan_parse' }
+            }))
+            const { data: inserted } = await supabase.from('tasks').insert(rows).select('*')
+            const ui = inserted ? mapDbTasksToUi(inserted, day) : tasks
+            setTasksByDay((prev) => ({ ...prev, [day]: ui }))
+            setTodaysTasks(ui)
+          } catch {
+            setTasksByDay((prev) => ({ ...prev, [day]: tasks }))
+            setTodaysTasks(tasks)
+          }
+          return
+        }
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('Plan parse failed, will generate tasks instead:', e)
       }
     }
 
@@ -342,7 +449,13 @@ export default function DashboardView({ user }: DashboardViewProps) {
           .select('goals, data')
           .eq('user_id', user.id)
           .single()
-        contextSignals = { recentTasks: recentTasks || [], content: contentRows || [], goals: ob?.goals || null, milestones }
+        const { data: wr } = await supabase
+          .from('weekly_reviews')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+        contextSignals = { recentTasks: recentTasks || [], content: contentRows || [], goals: ob?.goals || null, milestones, weeklyFeedback: wr && wr.length > 0 ? wr[0] : null }
       } catch {}
 
       const apiEndpoint = user.focusArea ? '/api/generate-enhanced-daily-tasks' : '/api/generate-daily-tasks'
@@ -364,7 +477,7 @@ export default function DashboardView({ user }: DashboardViewProps) {
           category: t.category || null,
           platform: t.platform || null,
           status: 'pending',
-          metadata: { day, week, month, source: 'on_demand' }
+          metadata: t.metadata || { day, week, month, source: 'on_demand', algorithm_version: 'v2_adaptive' }
         }))
         const { data: inserted } = await supabase.from('tasks').insert(rows).select('*')
         const ui = inserted ? mapDbTasksToUi(inserted, day) : generatedTasks

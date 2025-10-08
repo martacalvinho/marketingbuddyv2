@@ -81,8 +81,8 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
     websiteAnalysis: initialData?.websiteAnalysis || null
   })
 
-  // Simplified step flow: only Website Analysis -> Basic Info -> Target Audience
-  const stepMap = flow === 'from-landing' ? [0, 1, 3] : [1, 3]
+  // Simplified step flow: Website Analysis -> Basic Info -> Platform Recommendations -> Target Audience
+  const stepMap = flow === 'from-landing' ? [0, 1, 2, 3] : [1, 2, 3]
   const totalSteps = stepMap.length
   const progress = totalSteps > 1 ? (currentStep / (totalSteps - 1)) * 100 : 100
 
@@ -92,6 +92,8 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
 
   const [analysisInfo, setAnalysisInfo] = useState<any>(null)
   const [analysisError, setAnalysisError] = useState("")
+  const [recommendedPlatforms, setRecommendedPlatforms] = useState<any[]>([])
+  const [isRecommendingPlatforms, setIsRecommendingPlatforms] = useState(false)
 
   const handleWebsiteAnalysis = async () => {
     if (!formData.website) return
@@ -146,6 +148,34 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
     setIsAnalyzing(false)
   }
 
+  const recommendPlatforms = async () => {
+    setIsRecommendingPlatforms(true)
+    try {
+      const response = await fetch('/api/recommend-platforms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          websiteAnalysis: formData.websiteAnalysis,
+          productName: formData.productName,
+          valueProp: formData.valueProp,
+          targetAudience: formData.targetAudience
+        })
+      })
+      const data = await response.json()
+      setRecommendedPlatforms(data.platforms || [])
+      
+      // Auto-select must_have platforms
+      const mustHave = (data.platforms || [])
+        .filter((p: any) => p.category === 'must_have')
+        .map((p: any) => p.id)
+      updateFormData('preferredPlatforms', mustHave)
+    } catch (error) {
+      console.error('Platform recommendation error:', error)
+    } finally {
+      setIsRecommendingPlatforms(false)
+    }
+  }
+
   const generateTargetAudience = async () => {
     setIsGeneratingAudience(true)
     try {
@@ -170,6 +200,14 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
       setIsGeneratingAudience(false)
     }
   }
+
+  // Auto-generate platform recommendations when entering step 2
+  useEffect(() => {
+    const actualStep = stepMap[currentStep]
+    if (actualStep === 2 && recommendedPlatforms.length === 0 && !isRecommendingPlatforms && formData.websiteAnalysis) {
+      recommendPlatforms()
+    }
+  }, [currentStep, stepMap, formData.websiteAnalysis])
 
   // Auto-generate demographics/target audience when entering that step (actual step 3)
   useEffect(() => {
@@ -528,7 +566,79 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
           </div>
         )
 
-      // Skip original case 2 (Marketing Goals) in simplified flow
+      case 2: // Platform Recommendations
+        return (
+          <div className="space-y-6">
+            <div className="text-center">
+              <Target className="h-12 w-12 text-indigo-600 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Recommended Marketing Platforms</h2>
+              <p className="text-gray-600">Based on your website analysis, here are the best platforms for your business.</p>
+            </div>
+
+            {isRecommendingPlatforms && (
+              <div className="text-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto text-indigo-600" />
+                <p className="mt-4 text-gray-600">Analyzing best platforms for your business...</p>
+              </div>
+            )}
+
+            {recommendedPlatforms.length > 0 && (
+              <div className="space-y-6">
+                {/* Must Have Platforms */}
+                <div>
+                  <h3 className="font-semibold text-lg mb-3 flex items-center">
+                    <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
+                    Must-Have Platforms (Pick 2-3)
+                  </h3>
+                  <div className="space-y-3">
+                    {recommendedPlatforms
+                      .filter(p => p.category === 'must_have')
+                      .map(platform => (
+                        <PlatformCard 
+                          key={platform.id}
+                          platform={platform}
+                          selected={formData.preferredPlatforms.includes(platform.id)}
+                          onToggle={() => {
+                            const current = formData.preferredPlatforms
+                            const updated = current.includes(platform.id)
+                              ? current.filter(id => id !== platform.id)
+                              : [...current, platform.id]
+                            updateFormData('preferredPlatforms', updated)
+                          }}
+                        />
+                      ))}
+                  </div>
+                </div>
+
+                {/* Recommended Platforms */}
+                <div>
+                  <h3 className="font-semibold text-lg mb-3 flex items-center">
+                    <Lightbulb className="h-5 w-5 text-yellow-600 mr-2" />
+                    Recommended (Optional)
+                  </h3>
+                  <div className="space-y-3">
+                    {recommendedPlatforms
+                      .filter(p => p.category === 'recommended')
+                      .map(platform => (
+                        <PlatformCard 
+                          key={platform.id}
+                          platform={platform}
+                          selected={formData.preferredPlatforms.includes(platform.id)}
+                          onToggle={() => {
+                            const current = formData.preferredPlatforms
+                            const updated = current.includes(platform.id)
+                              ? current.filter(id => id !== platform.id)
+                              : [...current, platform.id]
+                            updateFormData('preferredPlatforms', updated)
+                          }}
+                        />
+                      ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )
 
       case 3: // Target Audience
         return (
@@ -1105,6 +1215,7 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
     switch (actualStep) {
       case 0: return formData.websiteAnalysis !== null
       case 1: return formData.productName && formData.website && formData.valueProp
+      case 2: return formData.preferredPlatforms.length >= 2 // At least 2 platforms selected
       case 3: return true // Target audience shown; can finish here
       default: return true
     }
@@ -1176,6 +1287,35 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
           </Card>
         </div>
       )}
+    </div>
+  )
+}
+
+// Platform Card Component
+function PlatformCard({ platform, selected, onToggle }: any) {
+  return (
+    <div 
+      className={`border rounded-lg p-4 cursor-pointer transition-all ${
+        selected ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200 hover:border-indigo-300'
+      }`}
+      onClick={onToggle}
+    >
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <div className="flex items-center space-x-2 mb-2">
+            <Checkbox checked={selected} />
+            <h4 className="font-semibold">{platform.name}</h4>
+            <Badge variant={platform.effortLevel === 'low' ? 'secondary' : platform.effortLevel === 'medium' ? 'default' : 'destructive'}>
+              {platform.effortLevel} effort
+            </Badge>
+          </div>
+          <p className="text-sm text-gray-600 mb-2">{platform.reasoning}</p>
+          <div className="flex items-center space-x-4 text-xs text-gray-500">
+            <span>Audience Fit: {platform.audienceFit}/10</span>
+            <span>Content Fit: {platform.contentFit}/10</span>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

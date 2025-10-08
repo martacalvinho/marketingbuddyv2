@@ -64,68 +64,50 @@ export default function OnboardingPage() {
         const n = parseFloat(String(v ?? '').trim())
         return Number.isFinite(n) ? n : null
       }
-      const { data: saveData, error: saveError } = await supabase.from('onboarding').upsert({
+      // 1) Minimal, schema-safe upsert (avoid columns that may not exist yet)
+      const minimalPayload: any = {
         user_id: user.id,
-        data: userData, // Store full data in jsonb column
+        data: userData,
         product_name: userData.productName ?? null,
         website: userData.website ?? null,
         value_prop: userData.valueProp ?? null,
         north_star_goal: userData.northStarGoal ?? null,
-        custom_goal: userData.customGoal ?? null,
         goal_type: userData.goalType ?? null,
         goal_amount: userData.goalAmount ?? null,
-        goal_timeline: toInt(userData.goalTimeline),
         marketing_strategy: userData.marketingStrategy ?? null,
         current_users: toInt(userData.currentUsers),
-        current_mrr: toDecimal(userData.currentMrr),
-        launch_date: userData.launchDate || null,
-        current_platforms: userData.currentPlatforms ?? null,
-        experience_level: userData.experienceLevel ?? null,
-        preferred_platforms: userData.preferredPlatforms ?? null,
-        challenges: userData.challenges ?? null,
-        focus_area: userData.focusArea ?? null,
-        daily_task_count: toInt(userData.dailyTaskCount),
         website_analysis: userData.websiteAnalysis ?? null,
-        // Store plan in jsonb as an object to avoid type mismatch
+        preferred_platforms: userData.preferredPlatforms ?? null,
         plan: userData.plan ? { markdown: userData.plan } : null,
         goals: userData.goals ?? null,
         milestones: userData.milestones ?? null,
         onboarding_completed: true,
-      })
-      
-      if (saveError) {
-        console.error('Supabase save error (will retry without newer columns):', saveError)
-        // Fallback retry without fields that might not exist yet in the remote DB
-        const { data: saveData2, error: saveError2 } = await supabase.from('onboarding').upsert({
+      }
+      const { error: minimalErr } = await supabase.from('onboarding').upsert(minimalPayload)
+      if (minimalErr) {
+        console.error('Supabase minimal upsert error:', minimalErr)
+        throw minimalErr
+      }
+
+      // 2) Best-effort extended update (ignore if columns missing)
+      try {
+        const extended: any = {
           user_id: user.id,
-          data: userData,
-          product_name: userData.productName ?? null,
-          website: userData.website ?? null,
-          value_prop: userData.valueProp ?? null,
-          north_star_goal: userData.northStarGoal ?? null,
           custom_goal: userData.customGoal ?? null,
-          goal_type: userData.goalType ?? null,
-          goal_amount: userData.goalAmount ?? null,
           goal_timeline: toInt(userData.goalTimeline),
-          marketing_strategy: userData.marketingStrategy ?? null,
-          current_users: toInt(userData.currentUsers),
-          // intentionally omit current_mrr and launch_date on fallback
+          current_mrr: toDecimal(userData.currentMrr),
+          launch_date: userData.launchDate || null,
           current_platforms: userData.currentPlatforms ?? null,
           experience_level: userData.experienceLevel ?? null,
           preferred_platforms: userData.preferredPlatforms ?? null,
           challenges: userData.challenges ?? null,
           focus_area: userData.focusArea ?? null,
           daily_task_count: toInt(userData.dailyTaskCount),
-          website_analysis: userData.websiteAnalysis ?? null,
-          plan: userData.plan ? { markdown: userData.plan } : null,
-          goals: userData.goals ?? null,
-          milestones: userData.milestones ?? null,
-          onboarding_completed: true,
-        })
-        if (saveError2) {
-          console.error('Supabase fallback save error:', saveError2)
-          throw saveError2
         }
+        await supabase.from('onboarding').upsert(extended)
+      } catch (extendedErr) {
+        // eslint-disable-next-line no-console
+        console.warn('Supabase extended upsert skipped due to schema mismatch:', extendedErr)
       }
       // Seed Week 1 tasks into Supabase so the dashboard loads from DB
       try {

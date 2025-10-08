@@ -1,5 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// Helper: Get monthly theme based on strategy mode
+function getMonthlyTheme(day: number, strategyMode?: string): string {
+  const month = Math.ceil(day / 30)
+  
+  // Default strategy: Foundation → Content/Community cycle (for 0-50 user stage)
+  if (!strategyMode || strategyMode === 'foundation_content_community') {
+    if (month === 1) return "Month 1: Foundation & Platform Setup"
+    // After Month 1, alternate between Content and Community
+    const cycle = ((month - 2) % 2) + 2 // Cycles between 2 and 3
+    return cycle === 2 
+      ? `Month ${month}: Content Creation & Consistency` 
+      : `Month ${month}: Community Building & Engagement`
+  }
+  
+  // Advanced modes (opt-in only, gated by user count)
+  if (strategyMode === 'growth_acceleration') {
+    return `Month ${month}: Growth Acceleration (50-200 users) - Channel optimization, referral systems, paid experiments`
+  }
+  if (strategyMode === 'scale_systems') {
+    return `Month ${month}: Scale & Systems (200-500 users) - Automation, analytics, team processes`
+  }
+  if (strategyMode === 'revenue_focus') {
+    return `Month ${month}: Revenue Focus (500-1000 users) - Conversion optimization, pricing, upsells`
+  }
+  
+  // Fallback
+  return `Month ${month}: Content & Community`
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { 
@@ -10,7 +39,8 @@ export async function POST(request: NextRequest) {
       monthStrategy,
       focusArea,
       dailyTaskCount,
-      websiteAnalysis 
+      websiteAnalysis,
+      contextSignals 
     } = await request.json()
 
     // Extract website improvement tasks from analysis if focus includes website
@@ -36,36 +66,101 @@ export async function POST(request: NextRequest) {
     const marketingTasksNeeded = taskCount - websiteTasksToInclude
 
     // Generate marketing tasks based on user profile
-    const marketingPrompt = `Generate ${marketingTasksNeeded} personalized daily marketing tasks for:
+    // Summarize optional context signals for better adaptation
+    const recentTasks = Array.isArray(contextSignals?.recentTasks) ? contextSignals.recentTasks : []
+    const completedRecent = recentTasks.filter((t: any) => (t?.status || '').toLowerCase() === 'completed')
+    const categoryCounts: Record<string, number> = {}
+    completedRecent.forEach((t: any) => {
+      const c = (t?.category || 'strategy').toString().toLowerCase()
+      categoryCounts[c] = (categoryCounts[c] || 0) + 1
+    })
+    const contentRows = Array.isArray(contextSignals?.content) ? contextSignals.content : []
+    const topContent = contentRows.slice(0, 5).map((c: any) => ({
+      views: c?.engagement_metrics?.viewsAllTime ?? c?.engagement_metrics?.views ?? 0,
+      likes: c?.engagement_metrics?.likesAllTime ?? c?.engagement_metrics?.likes ?? 0
+    }))
+    const weeklyFeedback = contextSignals?.weeklyFeedback || null
 
-Business: ${user.productName}
-Value Proposition: ${user.valueProp}
-Target Audience: ${user.targetAudience}
-North Star Goal: ${user.northStarGoal}
-Experience Level: ${user.experienceLevel}
-Preferred Platforms: ${user.preferredPlatforms?.join(', ')}
-Current Challenges: ${user.challenges}
-Goal: ${user.goalAmount} ${user.goalType} in ${user.goalTimeline} months
+    // Calculate channel scores (simple engagement per post)
+    const channelScores: Record<string, { posts: number; totalViews: number; totalLikes: number; avgEngagement: number }> = {}
+    contentRows.forEach((c: any) => {
+      const platform = (c?.platform || 'unknown').toLowerCase()
+      if (!channelScores[platform]) channelScores[platform] = { posts: 0, totalViews: 0, totalLikes: 0, avgEngagement: 0 }
+      channelScores[platform].posts += 1
+      channelScores[platform].totalViews += (c?.engagement_metrics?.viewsAllTime ?? c?.engagement_metrics?.views ?? 0)
+      channelScores[platform].totalLikes += (c?.engagement_metrics?.likesAllTime ?? c?.engagement_metrics?.likes ?? 0)
+    })
+    Object.keys(channelScores).forEach(platform => {
+      const s = channelScores[platform]
+      s.avgEngagement = s.posts > 0 ? (s.totalViews + s.totalLikes * 10) / s.posts : 0
+    })
+    const rankedChannels = Object.entries(channelScores)
+      .sort(([, a], [, b]) => b.avgEngagement - a.avgEngagement)
+      .map(([platform, stats]) => `${platform} (${stats.posts} posts, avg engagement: ${Math.round(stats.avgEngagement)})`)
+      .slice(0, 3)
 
-Focus Area: ${focusArea}
-Day: ${day} of Month ${month}
-${monthStrategy ? `Month Strategy Context: ${monthStrategy}` : ''}
+    // Calculate skip patterns
+    const skipPatterns: Record<string, number> = {}
+    recentTasks.forEach((t: any) => {
+      if (t?.status === 'skipped') {
+        const platform = (t?.platform || 'unknown').toLowerCase()
+        skipPatterns[platform] = (skipPatterns[platform] || 0) + 1
+      }
+    })
+    const avoidChannels = Object.entries(skipPatterns)
+      .filter(([, count]) => count >= 3)
+      .map(([platform]) => platform)
 
-Create tasks that are:
-1. Specific and actionable
-2. Appropriate for ${user.experienceLevel} level
-3. Aligned with ${user.northStarGoal} goal
-4. Focused on ${user.preferredPlatforms?.join(', ')} platforms
-5. Address their challenge: ${user.challenges}
+    const contextBlock = `\n\nADAPTIVE CONTEXT (Day ${day}):\n- Completed tasks last 2 weeks: ${completedRecent.length}\n- Categories done: ${Object.keys(categoryCounts).length > 0 ? Object.entries(categoryCounts).map(([k,v])=>`${k}:${v}`).join(', ') : 'n/a'}\n- Channel performance (ranked): ${rankedChannels.join(' > ') || 'No data yet'}\n- Channels to avoid (3+ skips): ${avoidChannels.join(', ') || 'None'}\n- Weekly feedback: ${weeklyFeedback ? (typeof weeklyFeedback === 'string' ? weeklyFeedback.slice(0,180) : JSON.stringify(weeklyFeedback).slice(0,180)) : 'n/a'}\n\n**STRATEGY: Use 2 tasks on top-performing channels (exploit) + 1 task exploring new channel/format (explore).**`
 
-Format each task as:
-**Task X: [Title]**
-[Detailed description with specific steps]
+    const marketingPrompt = `You are generating Day ${day} marketing tasks for a real business. Use the context below to create SPECIFIC, ACTIONABLE tasks (not templates or placeholders).
+
+BUSINESS CONTEXT:
+- Product: ${user.productName}
+- Value Prop: ${user.valueProp}
+- Target Audience: ${typeof user.targetAudience === 'string' ? user.targetAudience : JSON.stringify(user.targetAudience)}
+- Goal: ${user.goalAmount} ${user.goalType} in ${user.goalTimeline} months
+- North Star: ${user.northStarGoal}
+- Experience: ${user.experienceLevel}
+- Platforms: ${user.preferredPlatforms?.join(', ')}
+- Challenge: ${user.challenges}
+
+${websiteAnalysis ? `WEBSITE ANALYSIS (use this to make tasks specific):
+- Industry: ${websiteAnalysis.businessOverview?.industry}
+- Key Strengths: ${websiteAnalysis.marketingStrengths?.slice(0, 3).join(', ')}
+- Top Opportunities: ${websiteAnalysis.marketingOpportunities?.slice(0, 2).map((o: any) => o.title).join(', ')}
+` : ''}
+${contextBlock}
+
+CRITICAL RULES:
+1. NO placeholders like "[Target Audience]" or "[Service 1]" - use actual business details
+2. NO generic strategy tasks like "define your message" - we already did onboarding
+3. Each task must be DOABLE IN 15 MINUTES with a clear deliverable
+4. Focus on EXECUTION, not planning (e.g., "Post on LinkedIn about X" not "Plan LinkedIn strategy")
+5. Use the actual product name, value prop, and target audience in task descriptions
+6. **EXPLORE/EXPLOIT MIX**: Generate ${Math.max(1, marketingTasksNeeded - 1)} tasks on top-performing channels (exploit what works) + ${Math.min(1, marketingTasksNeeded)} task trying something new (explore to learn)
+7. **AVOID** channels with 3+ skips unless exploring
+8. **RESPECT MONTHLY THEMES**: ${getMonthlyTheme(day, user.strategyMode || 'foundation_content_community')}
+
+GOOD TASK EXAMPLES:
+- "Post on LinkedIn: Share how ${user.productName} solves [specific pain point from target audience] in 3 bullet points"
+- "Engage on Reddit: Find 2 threads in r/[relevant subreddit] where your target audience discusses [their challenge] and provide helpful advice"
+- "Create Twitter thread: Write 5 tweets explaining why [specific target audience] should care about [your value prop]"
+
+BAD TASK EXAMPLES (avoid these):
+- "Develop core messaging" (too vague, already done in onboarding)
+- "Define target audience" (already done)
+- "Create content strategy" (too broad for 15min)
+- "Draft ideas for [Target Audience]" (placeholder, not specific)
+
+Generate ${marketingTasksNeeded} tasks in this format:
+**Task X: [Specific Action Title]**
+[2-3 sentences with exact steps using real business details]
 - Category: [content/analytics/community/strategy/engagement]
-- Impact: [How this helps achieve their goal]
-- Tips: [2-3 specific tips for success]
-
-Make tasks progressively build on each other and vary in type (content creation, analytics, community building, etc.)`
+- Platform: [specific platform name]
+- Impact: [One sentence on expected outcome]
+- Tips: [2 specific tips]
+- Type: [exploit/explore] (exploit = proven channel, explore = new experiment)`
 
     let marketingTasks: any[] = []
     
@@ -97,6 +192,10 @@ Make tasks progressively build on each other and vary in type (content creation,
         const data = await response.json()
         const tasksText = data.choices[0]?.message?.content || ''
         marketingTasks = parseMarketingTasks(tasksText, day, marketingTasksNeeded)
+      } else {
+        // Use deterministic fallback if API is unavailable or key missing
+        console.warn('OpenAI returned non-OK status for marketing tasks:', response.status, response.statusText)
+        marketingTasks = generateFallbackMarketingTasks(user, day, marketingTasksNeeded)
       }
     } catch (error) {
       console.error('Marketing task generation failed:', error)
@@ -141,13 +240,27 @@ Make tasks progressively build on each other and vary in type (content creation,
     const completedWebsiteTasks = user.completedTasks?.filter((task: any) => task.type === 'website-improvement') || []
     const allWebsiteTasksCompleted = websiteTasks.length > 0 && completedWebsiteTasks.length >= websiteTasks.length
 
+    // Add metadata to tasks for tracking
+    const tasksWithMetadata = finalTasks.map((task: any) => ({
+      ...task,
+      metadata: {
+        algorithm_version: 'v2_adaptive',
+        day,
+        month: Math.ceil(day / 30),
+        week: Math.ceil(day / 7),
+        channel_scores: rankedChannels.length > 0 ? rankedChannels : undefined,
+        avoid_channels: avoidChannels.length > 0 ? avoidChannels : undefined
+      }
+    }))
+
     return NextResponse.json({
       success: true,
-      tasks: finalTasks,
+      tasks: tasksWithMetadata,
       websiteTasksRemaining: Math.max(0, websiteTasks.length - completedWebsiteTasks.length),
       allWebsiteTasksCompleted,
       focusArea,
-      totalWebsiteTasks: websiteTasks.length
+      totalWebsiteTasks: websiteTasks.length,
+      channelPerformance: rankedChannels
     })
 
   } catch (error) {
@@ -203,46 +316,56 @@ function parseMarketingTasks(tasksText: string, day: number, count: number): any
 }
 
 function generateFallbackMarketingTasks(user: any, day: number, count: number): any[] {
+  const platform = user.preferredPlatforms?.[0] || 'LinkedIn'
+  const productName = user.productName || 'your product'
+  const targetAudience = typeof user.targetAudience === 'string' 
+    ? user.targetAudience 
+    : (user.targetAudience?.professions?.[0] || 'your target audience')
+  
   const fallbackTasks = [
     {
-      title: "Create valuable content for your audience",
-      description: `Write a helpful post about ${user.valueProp} that addresses your target audience's main challenges.`,
+      title: `Post on ${platform} about ${productName}`,
+      description: `Write and publish a short post (3-5 sentences) on ${platform} explaining one specific benefit of ${productName} for ${targetAudience}. Include a question to encourage engagement.`,
       category: 'content',
-      impact: 'Builds audience trust and demonstrates expertise'
+      impact: `Increases visibility and starts conversations with ${targetAudience}`
     },
     {
-      title: "Engage with your community",
-      description: `Spend 15 minutes engaging with potential customers on ${user.preferredPlatforms?.[0] || 'social media'}.`,
+      title: `Engage with ${targetAudience} on ${platform}`,
+      description: `Find and comment on 3 posts from ${targetAudience} on ${platform}. Provide genuine value in your comments (not promotional). Save profiles of engaged users.`,
       category: 'community',
-      impact: 'Increases brand visibility and builds relationships'
+      impact: 'Builds relationships and increases brand awareness organically'
     },
     {
-      title: "Analyze your marketing performance",
-      description: "Review your recent marketing activities and identify what's working best.",
-      category: 'analytics',
-      impact: 'Helps optimize future marketing efforts'
+      title: `Share a quick tip related to ${user.valueProp || 'your value proposition'}`,
+      description: `Create a 1-minute video or carousel post sharing one actionable tip that helps ${targetAudience} solve a common problem. Post on ${platform}.`,
+      category: 'content',
+      impact: 'Demonstrates expertise and provides immediate value to potential customers'
     },
     {
-      title: "Optimize your marketing strategy",
-      description: `Review and refine your approach to achieving ${user.goalAmount} ${user.goalType}.`,
+      title: `Research where ${targetAudience} hang out online`,
+      description: `Spend 15 minutes finding 3 online communities (subreddits, Facebook groups, forums, Discord servers) where ${targetAudience} are active. Join them and observe conversations.`,
       category: 'strategy',
-      impact: 'Ensures you stay on track toward your goals'
+      impact: 'Identifies high-value channels for future outreach and content distribution'
     },
     {
-      title: "Build engagement with your audience",
-      description: "Respond to comments, messages, and engage with your community.",
+      title: `Document your progress building ${productName}`,
+      description: `Write a short "build in public" update sharing one thing you learned or accomplished this week. Post on ${platform} with #buildinpublic.`,
       category: 'engagement',
-      impact: 'Strengthens relationships and builds loyalty'
+      impact: 'Builds authenticity and attracts early adopters who value transparency'
     }
   ]
 
   return fallbackTasks.slice(0, count).map((task, index) => ({
     id: `fallback-${day}-${index + 1}`,
     ...task,
-    tips: ['Focus on providing value', 'Be authentic and genuine', 'Track your results'],
+    tips: [
+      'Be specific and authentic',
+      'Focus on helping, not selling',
+      'Track what gets engagement'
+    ],
     xp: 15,
     completed: false,
-    estimatedTime: "20 min",
+    estimatedTime: "15 min",
     day,
     type: 'marketing'
   }))

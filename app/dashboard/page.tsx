@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation"
 import DashboardView from "@/components/dashboard-view"
 import { supabase } from "@/lib/supabase"
 
+// Force dynamic rendering (don't pre-render at build time)
+export const dynamic = 'force-dynamic'
+
 type UserLike = {
   id: string
   email?: string
@@ -49,12 +52,13 @@ export default function DashboardPage() {
         goalAmount: onboarding.goal_amount ?? "",
         goalTimeline: String(onboarding.goal_timeline ?? "6"),
         marketingStrategy: onboarding.marketing_strategy ?? "6-month",
+        strategyMode: onboarding.strategy_mode ?? "foundation_content_community",
         currentUsers: onboarding.current_users != null ? String(onboarding.current_users) : "",
         currentMrr: onboarding.current_mrr != null ? String(onboarding.current_mrr) : "",
         launchDate: onboarding.launch_date ?? "",
         currentPlatforms: onboarding.current_platforms ?? [],
         experienceLevel: onboarding.experience_level ?? "",
-        preferredPlatforms: onboarding.preferred_platforms ?? [],
+        preferredPlatforms: onboarding.preferred_platforms ?? onboarding.data?.preferredPlatforms ?? [],
         challenges: onboarding.challenges ?? "",
         focusArea: onboarding.focus_area ?? "both",
         dailyTaskCount: String(onboarding.daily_task_count ?? "3"),
