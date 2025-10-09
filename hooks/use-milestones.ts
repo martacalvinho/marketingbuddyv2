@@ -16,6 +16,8 @@ export interface Milestone {
   progress_target?: number
   unit?: string
   unlocked?: boolean
+  sortOrder?: number
+  sort_order?: number
   [key: string]: any
 }
 

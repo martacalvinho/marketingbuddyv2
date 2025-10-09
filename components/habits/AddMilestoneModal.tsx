@@ -1,4 +1,5 @@
 import { Circle } from "lucide-react"
+import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 
@@ -12,7 +13,15 @@ interface AddMilestoneModalProps {
   onClose: () => void
 }
 
+const EMOJI_OPTIONS = [
+  '🚀', '🎯', '💰', '👥', '💵', '🏅', '⭐', '🔥', '💎', '🎉',
+  '✨', '🌟', '🏆', '📈', '💪', '🎊', '🌈', '🎁', '🔔', '📱',
+  '💻', '🌍', '🎨', '📝', '✅', '🎓', '🏃', '🚴', '🎸', '📚'
+]
+
 const AddMilestoneModal = ({ open, value, onChange, onSubmit, onClose }: AddMilestoneModalProps) => {
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  
   if (!open) return null
 
   return (
@@ -38,16 +47,35 @@ const AddMilestoneModal = ({ open, value, onChange, onSubmit, onClose }: AddMile
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="w-24">
+            <div className="w-24 relative">
               <label className="mb-1 block text-sm font-medium text-gray-700">Emoji</label>
-              <input
-                type="text"
-                maxLength={2}
-                value={value.emoji}
-                onChange={(event) => onChange({ ...value, emoji: event.target.value })}
-                className="w-full rounded-md border border-gray-300 px-3 py-2"
-                placeholder="🚀"
-              />
+              <button
+                type="button"
+                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-2xl hover:bg-gray-50 transition-colors"
+              >
+                {value.emoji || '🚀'}
+              </button>
+              
+              {showEmojiPicker && (
+                <div className="absolute z-50 mt-1 w-64 bg-white border border-gray-300 rounded-lg shadow-lg p-3">
+                  <div className="grid grid-cols-6 gap-2">
+                    {EMOJI_OPTIONS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => {
+                          onChange({ ...value, emoji })
+                          setShowEmojiPicker(false)
+                        }}
+                        className="text-2xl hover:bg-gray-100 rounded p-1 transition-colors"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex-1">
               <label className="mb-1 block text-sm font-medium text-gray-700">Description</label>
@@ -62,13 +90,38 @@ const AddMilestoneModal = ({ open, value, onChange, onSubmit, onClose }: AddMile
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Date Achieved</label>
-            <input
-              type="date"
-              value={value.date}
-              onChange={(event) => onChange({ ...value, date: event.target.value })}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <label className="mb-1 block text-sm font-medium text-gray-700">Status</label>
+            <div className="flex gap-4 mb-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  checked={value.isCompleted === true}
+                  onChange={() => onChange({ ...value, isCompleted: true, date: new Date().toISOString().slice(0, 10) })}
+                  className="w-4 h-4 text-blue-600"
+                />
+                <span className="text-sm text-gray-700">Completed (with date)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  checked={value.isCompleted === false}
+                  onChange={() => onChange({ ...value, isCompleted: false, date: '' })}
+                  className="w-4 h-4 text-blue-600"
+                />
+                <span className="text-sm text-gray-700">Goal (not yet achieved)</span>
+              </label>
+            </div>
+            {value.isCompleted && (
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Date Achieved</label>
+                <input
+                  type="date"
+                  value={value.date}
+                  onChange={(event) => onChange({ ...value, date: event.target.value })}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            )}
           </div>
 
           <div>

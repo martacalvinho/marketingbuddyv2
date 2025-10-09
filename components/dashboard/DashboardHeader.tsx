@@ -35,12 +35,12 @@ export default function DashboardHeader({ productName, streak, xp, xpToNextLevel
           </div>
 
           <div className="flex items-center space-x-2">
-            <div className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200">
+            <div className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200 h-[44px]">
               <Flame className="h-4 w-4 text-orange-500" />
               <span className="text-sm font-medium text-gray-700">{streak} day streak</span>
             </div>
 
-            <div className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200">
+            <div className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200 h-[44px]">
               <Zap className="h-4 w-4 text-yellow-500" />
               <div className="text-right">
                 <div className="text-sm font-medium text-gray-700">Level {currentLevel}</div>
@@ -52,7 +52,7 @@ export default function DashboardHeader({ productName, streak, xp, xpToNextLevel
               variant="outline" 
               size="sm" 
               onClick={onOpenLeaderboard}
-              className="flex items-center space-x-2 bg-gray-50 rounded-lg border-gray-200 hover:bg-gray-100 transition-all"
+              className="flex items-center space-x-2 bg-gray-50 rounded-lg border-gray-200 hover:bg-gray-100 transition-all h-[44px]"
             >
               <Trophy className="h-4 w-4 text-gray-600" />
               <span className="text-sm">Leaderboard</span>
