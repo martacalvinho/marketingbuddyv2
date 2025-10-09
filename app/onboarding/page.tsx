@@ -119,6 +119,7 @@ function OnboardingContent() {
           .contains('metadata', { week: 1 })
           .limit(1)
         if (!checkErr && (!existingWeek1 || existingWeek1.length === 0)) {
+          const usedTitles = new Set<string>()
           for (let day = 1; day <= 7; day++) {
             try {
               const resp = await fetch('/api/generate-enhanced-daily-tasks', {
@@ -133,10 +134,22 @@ function OnboardingContent() {
                   focusArea: userData.focusArea || 'growth',
                   dailyTaskCount: userData.dailyTaskCount || '3',
                   websiteAnalysis: userData.websiteAnalysis,
+                  excludeTitles: Array.from(usedTitles)
                 })
               })
               const json = await resp.json()
               let tasks = Array.isArray(json.tasks) ? json.tasks : []
+              // Filter out duplicates across days by title (case-insensitive)
+              const uniqueForDay: any[] = []
+              const seenDay = new Set<string>()
+              for (const t of tasks) {
+                const key = String((t?.title || '').trim()).toLowerCase()
+                if (key && !usedTitles.has(key) && !seenDay.has(key)) {
+                  seenDay.add(key)
+                  uniqueForDay.push(t)
+                }
+              }
+              tasks = uniqueForDay
               if (tasks.length > 0) {
                 const rows = tasks.map((t: any) => ({
                   user_id: user.id,
@@ -148,6 +161,7 @@ function OnboardingContent() {
                   metadata: { day, week: 1, month: 1, source: 'onboarding_seed' }
                 }))
                 await supabase.from('tasks').insert(rows)
+                rows.forEach((r: any) => usedTitles.add(String((r.title || '').trim()).toLowerCase()))
               }
             } catch (seedErr) {
               // eslint-disable-next-line no-console

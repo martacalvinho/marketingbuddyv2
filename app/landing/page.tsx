@@ -123,7 +123,7 @@ export default function LandingPage() {
                 <Card className="rounded-3xl p-6 sm:p-8 max-w-lg mx-auto shadow-2xl border border-blue-100 bg-white">
                   <div className="text-center mb-6">
                     <h3 className="text-xl font-bold text-gray-900 mb-1">The Post-Launch Reality</h3>
-                    <p className="text-sm text-gray-600">Week 1 traffic vs. Week 2</p>
+                    <p className="text-sm text-gray-600"></p>
                   </div>
 
                   {/* Chart showing traffic drop */}

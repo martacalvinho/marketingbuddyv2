@@ -40,7 +40,8 @@ export async function POST(request: NextRequest) {
       focusArea,
       dailyTaskCount,
       websiteAnalysis,
-      contextSignals 
+      contextSignals,
+      excludeTitles 
     } = await request.json()
 
     // Extract website improvement tasks from analysis if focus includes website
@@ -64,6 +65,18 @@ export async function POST(request: NextRequest) {
     const taskCount = parseInt(dailyTaskCount) || 3
     const websiteTasksToInclude = Math.min(websiteTasks.length, focusArea === 'website' ? taskCount : Math.ceil(taskCount / 2))
     const marketingTasksNeeded = taskCount - websiteTasksToInclude
+
+    // Distribute website tasks across days to avoid repeating the same set
+    const rotate = <T,>(arr: T[], start: number) => (arr.length ? [...arr.slice(start), ...arr.slice(0, start)] : arr)
+    const startIndex = websiteTasks.length ? (((day - 1) * Math.max(1, websiteTasksToInclude)) % websiteTasks.length) : 0
+    const rotatedWebsiteTasks = rotate(websiteTasks, startIndex)
+    // For mixed focus, prefer high-priority website tasks first, then the rest
+    const highPriorityRotated = rotatedWebsiteTasks.filter((t: any) => (t.priority || '').toLowerCase() === 'high')
+    const lowPriorityRotated = rotatedWebsiteTasks.filter((t: any) => (t.priority || '').toLowerCase() !== 'high')
+    const highCount = Math.min(Math.ceil(websiteTasksToInclude / 2), highPriorityRotated.length)
+    const websiteHighForDay = highPriorityRotated.slice(0, highCount)
+    const websiteRemainingForDay = lowPriorityRotated.slice(0, Math.max(0, websiteTasksToInclude - highCount))
+    const websiteForDay = rotatedWebsiteTasks.slice(0, websiteTasksToInclude)
 
     // Generate marketing tasks based on user profile
     // Summarize optional context signals for better adaptation
@@ -207,9 +220,9 @@ Generate ${marketingTasksNeeded} tasks in this format:
     let combinedTasks: any[] = []
     
     if (focusArea === 'website') {
-      // Website improvement first, then marketing
+      // Website improvement first (distributed), then marketing
       combinedTasks = [
-        ...websiteTasks.slice(0, websiteTasksToInclude),
+        ...websiteForDay,
         ...marketingTasks
       ]
     } else if (focusArea === 'growth') {
@@ -217,24 +230,44 @@ Generate ${marketingTasksNeeded} tasks in this format:
       combinedTasks = marketingTasks
     } else {
       // Mix both - prioritize high-impact website tasks
-      const highPriorityWebsiteTasks = websiteTasks
-        .filter(task => task.priority === 'high')
-        .slice(0, Math.ceil(websiteTasksToInclude / 2))
-      
-      const remainingWebsiteTasks = websiteTasks
-        .filter(task => task.priority !== 'high')
-        .slice(0, websiteTasksToInclude - highPriorityWebsiteTasks.length)
-      
       combinedTasks = [
-        ...highPriorityWebsiteTasks,
+        ...websiteHighForDay,
         ...marketingTasks.slice(0, Math.ceil(marketingTasksNeeded / 2)),
-        ...remainingWebsiteTasks,
+        ...websiteRemainingForDay,
         ...marketingTasks.slice(Math.ceil(marketingTasksNeeded / 2))
       ]
     }
 
-    // Limit to requested task count
-    const finalTasks = combinedTasks.slice(0, taskCount)
+    // Exclude titles passed by caller (e.g., onboarding week seeding to avoid repeats across days)
+    const excludeSet = new Set<string>((Array.isArray(excludeTitles) ? excludeTitles : []).map((t: string) => String(t).trim().toLowerCase()))
+    const filtered = combinedTasks.filter((t: any) => !excludeSet.has(String(t.title || '').trim().toLowerCase()))
+
+    // De-duplicate by title + description and then limit to requested task count
+    const uniqueCombined: any[] = []
+    const seenKeys = new Set<string>()
+    for (const t of filtered) {
+      const key = `${(t.title || '').trim()}|${(t.description || '').trim()}`.toLowerCase()
+      if (!seenKeys.has(key)) {
+        seenKeys.add(key)
+        uniqueCombined.push(t)
+      }
+    }
+    let finalTasks = uniqueCombined.slice(0, taskCount)
+
+    // If still short, backfill with rotated fallback tasks while respecting exclusions
+    if (finalTasks.length < taskCount) {
+      const needed = taskCount - finalTasks.length
+      const fallbackPool = generateFallbackMarketingTasks(user, day + (uniqueCombined.length || 0), Math.max(needed * 2, needed + 2))
+      for (const ft of fallbackPool) {
+        const key = `${(ft.title || '').trim()}|${(ft.description || '').trim()}`.toLowerCase()
+        const titleKey = String(ft.title || '').trim().toLowerCase()
+        if (!seenKeys.has(key) && !excludeSet.has(titleKey)) {
+          seenKeys.add(key)
+          finalTasks.push(ft)
+          if (finalTasks.length >= taskCount) break
+        }
+      }
+    }
 
     // Check if all website tasks are completed (for future notification)
     const completedWebsiteTasks = user.completedTasks?.filter((task: any) => task.type === 'website-improvement') || []
@@ -355,7 +388,11 @@ function generateFallbackMarketingTasks(user: any, day: number, count: number): 
     }
   ]
 
-  return fallbackTasks.slice(0, count).map((task, index) => ({
+  // Rotate starting point by day to vary tasks across the week
+  const start = (Math.max(0, day - 1)) % fallbackTasks.length
+  const rotated = [...fallbackTasks.slice(start), ...fallbackTasks.slice(0, start)]
+
+  return rotated.slice(0, count).map((task, index) => ({
     id: `fallback-${day}-${index + 1}`,
     ...task,
     tips: [
