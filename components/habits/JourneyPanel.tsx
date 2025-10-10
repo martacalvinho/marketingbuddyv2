@@ -85,9 +85,11 @@ const JourneyPanel = ({
     // Prefer an explicit pending milestone target if one exists; else suggest 100/500/1000
     const current = Number.isFinite(currentUsers) ? currentUsers : parseInt(user?.currentUsers || "0", 10) || 0
     const pending = (milestones || []).find(m => m.type === 'user_added' && (m as any).goal_type === 'users' && !m.unlocked && !((m as any).completed === true))
-    if (pending && (pending as any).progressTarget != null) {
-      return Number((pending as any).progressTarget)
+    if (pending) {
+      const t = (pending as any).progressTarget ?? (pending as any).progress_target
+      if (t != null) return Number(t)
     }
+    if (current < 50) return 50
     if (current < 100) return 100
     if (current < 500) return 500
     if (current < 1000) return 1000
@@ -97,8 +99,9 @@ const JourneyPanel = ({
   const getRevenueGoal = useCallback(() => {
     const current = Number.isFinite(currentRevenue) ? currentRevenue : parseFloat(user?.currentMrr || "0") || 0
     const pending = (milestones || []).find(m => m.type === 'user_added' && ((m as any).goal_type === 'revenue' || (m as any).goal_type === 'mrr') && !m.unlocked && !((m as any).completed === true))
-    if (pending && (pending as any).progressTarget != null) {
-      return Number((pending as any).progressTarget)
+    if (pending) {
+      const t = (pending as any).progressTarget ?? (pending as any).progress_target
+      if (t != null) return Number(t)
     }
     if (current < 100) return 100
     if (current < 500) return 500

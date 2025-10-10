@@ -1,7 +1,8 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Flame, Target, Zap, Trophy } from "lucide-react"
+import { Flame, Zap, Trophy } from "lucide-react"
+import Image from "next/image"
 
 interface DashboardHeaderProps {
   productName?: string
@@ -20,8 +21,8 @@ export default function DashboardHeader({ productName, streak, xp, xpToNextLevel
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-3">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl">
-              <Target className="h-5 w-5 text-white" />
+            <div className="w-8 h-8 rounded-md overflow-hidden">
+              <Image src="/MB.png" alt="Marketing Buddy" width={32} height={32} className="object-contain" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-gray-900">Marketing Buddy</h1>

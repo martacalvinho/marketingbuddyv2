@@ -35,6 +35,7 @@ import {
   MessageSquare
 } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 
 export default function LandingPage() {
   const [email, setEmail] = useState("")
@@ -52,16 +53,8 @@ export default function LandingPage() {
       <nav className="fixed w-full z-50 py-4 px-6 bg-white bg-opacity-90 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center relative overflow-hidden">
-              {/* Custom logo: Rocket with flame trail */}
-              <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4.5 16.5c-1.5 1.25-2 5-2 5s3.75-.5 5-2c.625-.75 1-1.5 1-2.5a2.5 2.5 0 0 0-4-2z"/>
-                <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>
-                <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/>
-                <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>
-              </svg>
-              {/* Flame accent */}
-              <div className="absolute -bottom-0.5 -right-0.5 text-orange-400 text-xs">🔥</div>
+            <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center">
+              <Image src="/MB.png" alt="Marketing Buddy logo" width={40} height={40} className="object-contain" />
             </div>
             <span className="text-xl font-bold text-gray-900">Marketing Buddy</span>
           </div>
@@ -80,7 +73,7 @@ export default function LandingPage() {
             </a>
           </div>
           <div className="flex items-center space-x-4">
-            <Link href="/analyze" className="px-6 py-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg text-white font-semibold shadow-lg hover:shadow-xl transition">
+            <Link href="/analyze" className="px-6 py-2 bg-[#2D68F6] rounded-lg text-white font-semibold shadow-lg hover:opacity-90 transition">
               Analyze My Website
             </Link>
             <Link href="/login" className="px-4 py-2 text-gray-700 font-medium hover:text-indigo-600 transition-colors">
@@ -94,7 +87,7 @@ export default function LandingPage() {
       <section className="pt-28 sm:pt-32 pb-16 sm:pb-20 px-4 sm:px-12">
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center">
           <div className="lg:w-1/2 mb-12 lg:mb-0">
-            <div className="inline-block px-3 sm:px-4 py-1 bg-blue-100 text-blue-700 rounded-full text-xs sm:text-sm font-medium mb-3 sm:mb-4">
+            <div className="inline-block px-3 sm:px-4 py-1 bg-[#2D68F6]/10 text-[#2D68F6] rounded-full text-xs sm:text-sm font-medium mb-3 sm:mb-4">
               AI-POWERED MARKETING ASSISTANT
             </div>
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-gray-900 tracking-tight leading-tight max-w-4xl mb-6">
@@ -104,10 +97,10 @@ export default function LandingPage() {
               Get a marketing plan you'll actually stick to - with daily tasks, content generation, and an accountability partner who keeps you honest.
             </p>
             <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
-              <Link href="/onboarding" className="px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl text-white font-bold text-base sm:text-lg shadow-lg hover:shadow-xl transition text-center">
+              <Link href="/onboarding" className="px-6 sm:px-8 py-3 sm:py-4 bg-[#2D68F6] rounded-xl text-white font-bold text-base sm:text-lg shadow-lg hover:opacity-90 transition text-center">
                 Start Marketing Journey
               </Link>
-              <Link href="/analyze" className="px-6 sm:px-8 py-3 sm:py-4 bg-white rounded-xl border border-blue-200 text-blue-600 font-bold text-base sm:text-lg shadow hover:shadow-md transition text-center">
+              <Link href="/analyze" className="px-6 sm:px-8 py-3 sm:py-4 bg-white rounded-xl border border-[#2D68F6]/30 text-[#2D68F6] font-bold text-base sm:text-lg shadow hover:shadow-md transition text-center">
                 Free Website Analysis
               </Link>
             </div>
@@ -117,7 +110,7 @@ export default function LandingPage() {
           </div>
           <div className="lg:w-1/2 relative">
             <div className="relative">
-              <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+              <div className="absolute top-0 right-0 w-96 h-96 bg-[#2D68F6] rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
               <div className="absolute top-0 left-0 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '2s'}}></div>
               <div className="relative z-10">
                 <Card className="rounded-3xl p-6 sm:p-8 max-w-lg mx-auto shadow-2xl border border-blue-100 bg-white">
@@ -127,11 +120,11 @@ export default function LandingPage() {
                   </div>
 
                   {/* Chart showing traffic drop */}
-                  <div className="mb-6 p-4 bg-gradient-to-b from-blue-50 to-red-50 rounded-xl">
+                  <div className="mb-6 p-4 bg-gradient-to-b from-[#2D68F6]/10 to-red-50 rounded-xl">
                     <div className="flex items-end justify-between h-32 gap-2">
-                      <div className="flex-1 bg-gradient-to-t from-blue-500 to-blue-400 rounded-t" style={{height: '20%'}}></div>
-                      <div className="flex-1 bg-gradient-to-t from-blue-500 to-blue-400 rounded-t" style={{height: '100%'}}></div>
-                      <div className="flex-1 bg-gradient-to-t from-blue-400 to-blue-300 rounded-t" style={{height: '75%'}}></div>
+                      <div className="flex-1 bg-[#2D68F6] rounded-t" style={{height: '20%'}}></div>
+                      <div className="flex-1 bg-[#2D68F6] rounded-t" style={{height: '100%'}}></div>
+                      <div className="flex-1 bg-[#2D68F6] opacity-80 rounded-t" style={{height: '75%'}}></div>
                       <div className="flex-1 bg-gradient-to-t from-red-400 to-red-300 rounded-t" style={{height: '45%'}}></div>
                       <div className="flex-1 bg-gradient-to-t from-red-400 to-red-300 rounded-t" style={{height: '25%'}}></div>
                       <div className="flex-1 bg-gradient-to-t from-red-500 to-red-400 rounded-t" style={{height: '20%'}}></div>
@@ -313,10 +306,10 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section - Dashboard Previews */}
-      <section id="features" className="py-20 bg-gradient-to-b from-white to-blue-50">
+      <section id="features" className="py-20 bg-gradient-to-b from-white to-[#2D68F6]/5">
         <div className="max-w-7xl mx-auto px-6 sm:px-12">
           <div className="text-center max-w-4xl mx-auto mb-16 md:mb-20">
-            <div className="inline-block bg-blue-100 text-blue-800 text-xs sm:text-sm font-medium px-3 py-1 rounded-full mb-3 sm:mb-4">FEATURES</div>
+            <div className="inline-block bg-[#2D68F6]/10 text-[#2D68F6] text-xs sm:text-sm font-medium px-3 py-1 rounded-full mb-3 sm:mb-4">FEATURES</div>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900 mb-4 md:mb-6">Action · Content · Accountability</h2>
             <p className="text-base sm:text-lg md:text-xl text-gray-600 leading-relaxed">Daily tasks, AI content generator, streak tracking, and buddy check-ins—everything you need in one dashboard.</p>
           </div>
@@ -407,20 +400,18 @@ export default function LandingPage() {
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900 mb-4 md:mb-6">Simple, transparent pricing</h2>
             <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
-              Start free. Upgrade when you're ready for advanced features.
+              No contracts. Cancel anytime.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* Free Tier */}
-            <Card className="p-8 border border-gray-200 rounded-xl bg-white">
+          <div className="max-w-xl mx-auto">
+            <Card className="p-8 border border-[#2D68F6]/40 rounded-xl bg-gradient-to-b from-[#2D68F6]/5 to-white relative overflow-hidden">
               <div className="text-center">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Free</h3>
-                <p className="text-6xl font-bold text-gray-900 mb-4">$0</p>
-                <p className="text-gray-600 mb-8">Forever free plan to get started</p>
-                <Link href="/analyze">
-                  <Button variant="outline" className="w-full">
-                    Get Started
+                                <p className="text-6xl font-bold text-gray-900 mb-2">$15/mo</p>
+                <p className="text-sm text-gray-600 mb-8">Billed monthly</p>
+                <Link href="/onboarding">
+                  <Button className="w-full bg-[#2D68F6] hover:opacity-90">
+                    Start 7-day free trial
                   </Button>
                 </Link>
               </div>
@@ -428,64 +419,27 @@ export default function LandingPage() {
               <ul className="mt-8 space-y-4">
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                  <span>Website analysis & 6-month plan</span>
+                  <span>Website analysis</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                  <span>Daily tasks (1–3 per day)</span>
+                  <span>Daily tasks tied to your strategy</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                  <span>Basic AI content generation</span>
+                  <span>AI content generator</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                  <span>Streak tracking & XP</span>
-                </li>
-              </ul>
-            </Card>
-
-            {/* Pro Tier */}
-            <Card className="p-8 border border-indigo-300 rounded-xl bg-gradient-to-b from-indigo-50 to-white relative overflow-hidden">
-              <div className="absolute top-0 right-0 bg-indigo-600 text-white px-6 py-1 transform rotate-45 translate-x-8 -translate-y-2 text-sm font-medium">
-                Most Popular
-              </div>
-              <div className="text-center">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Pro</h3>
-                <p className="text-6xl font-bold text-gray-900 mb-4">$15</p>
-                <p className="text-gray-600 mb-8">Everything in Free, plus:</p>
-                <Link href="/analyze">
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                    Start Free Trial
-                  </Button>
-                </Link>
-                <p className="text-xs text-gray-500 mt-3">Built for solo founders and indie hackers</p>
-              </div>
-
-              <ul className="mt-8 space-y-4">
-                <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                  <span>Multi-platform AI content (6+ channels)</span>
+                  <span>Journey & milestones tracking</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                  <span>Content library with analytics</span>
+                  <span>Streak tracking</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                  <span>Marketing Buddy matching (Q2 2025)</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                  <span>Advanced task customization</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                  <span>Weekly reviews & insights</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                  <span>Priority email support</span>
+                  <span>Match with another human for accountability</span>
                 </li>
               </ul>
             </Card>
@@ -497,12 +451,12 @@ export default function LandingPage() {
       <section id="testimonials" className="py-20 relative">
         {/* soft background accent */}
         <div className="pointer-events-none absolute inset-0 -z-10">
-          <div className="mx-auto max-w-6xl h-56 blur-3xl opacity-25 rounded-full bg-gradient-to-r from-blue-200 to-blue-300" />
+          <div className="mx-auto max-w-6xl h-56 blur-3xl opacity-25 rounded-full bg-[#2D68F6]/20" />
         </div>
         <div className="max-w-7xl mx-auto px-6 sm:px-12">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900 mb-4 md:mb-6">
-              What <span className="text-blue-600">Solo Founders</span> Are Saying
+              What <span className="text-[#2D68F6]">Solo Founders</span> Are Saying
             </h2>
             <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
               Direct quotes pulled from Reddit communities (early‑stage founders starting their marketing)
@@ -512,13 +466,13 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card className="p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all rounded-2xl bg-white/90 flex flex-col">
               <div className="mb-4 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white flex items-center justify-center text-[10px] font-semibold">RU</div>
+                <div className="w-7 h-7 rounded-full bg-[#2D68F6] text-white flex items-center justify-center text-[10px] font-semibold">RU</div>
                 <span className="text-[11px] text-gray-500">r/marketing</span>
               </div>
               <blockquote className="text-gray-900 mb-4 italic leading-relaxed flex-1">
                 "What I really need is something between a $10k/month agency and doing everything myself. A system that gives me a proper strategy and breaks it down into daily actions."
               </blockquote>
-              <Link href="#features" className="group inline-flex items-center gap-1 text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-full px-3 py-1.5 mt-auto">
+              <Link href="#features" className="group inline-flex items-center gap-1 text-sm font-semibold text-[#2D68F6] bg-[#2D68F6]/10 hover:bg-[#2D68F6]/20 rounded-full px-3 py-1.5 mt-auto">
                 Marketing Buddy provides exactly this
                 <svg className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" viewBox="0 0 20 20" fill="currentColor"><path d="M12.293 5.293a1 1 0 011.414 0L18 9.586l-4.293 4.293a1 1 0 01-1.414-1.414L14.586 11H4a1 1 0 110-2h10.586l-2.293-2.293a1 1 0 010-1.414z"/></svg>
               </Link>
@@ -526,13 +480,13 @@ export default function LandingPage() {
 
             <Card className="p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all rounded-2xl bg-white/90 flex flex-col">
               <div className="mb-4 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white flex items-center justify-center text-[10px] font-semibold">RU</div>
+                <div className="w-7 h-7 rounded-full bg-[#2D68F6] text-white flex items-center justify-center text-[10px] font-semibold">RU</div>
                 <span className="text-[11px] text-gray-500">r/Entrepreneur</span>
               </div>
               <blockquote className="text-gray-900 mb-4 italic leading-relaxed flex-1">
                 "I wish there was a tool that could look at my website and tell me specifically what to fix for better conversion rates, not just generic advice."
               </blockquote>
-              <Link href="/analyze" className="group inline-flex items-center gap-1 text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-full px-3 py-1.5 mt-auto">
+              <Link href="/analyze" className="group inline-flex items-center gap-1 text-sm font-semibold text-[#2D68F6] bg-[#2D68F6]/10 hover:bg-[#2D68F6]/20 rounded-full px-3 py-1.5 mt-auto">
                 Our AI website analyzer does exactly this
                 <svg className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" viewBox="0 0 20 20" fill="currentColor"><path d="M12.293 5.293a1 1 0 011.414 0L18 9.586l-4.293 4.293a1 1 0 01-1.414-1.414L14.586 11H4a1 1 0 110-2h10.586l-2.293-2.293a1 1 0 010-1.414z"/></svg>
               </Link>
@@ -540,13 +494,13 @@ export default function LandingPage() {
 
             <Card className="p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all rounded-2xl bg-white/90 flex flex-col">
               <div className="mb-4 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white flex items-center justify-center text-[10px] font-semibold">RU</div>
+                <div className="w-7 h-7 rounded-full bg-[#2D68F6] text-white flex items-center justify-center text-[10px] font-semibold">RU</div>
                 <span className="text-[11px] text-gray-500">r/indiehackers</span>
               </div>
               <blockquote className="text-gray-900 mb-4 italic leading-relaxed flex-1">
                 "I need something to keep me consistent. I always start strong then fall off after a week."
               </blockquote>
-              <Link href="#features" className="group inline-flex items-center gap-1 text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-full px-3 py-1.5 mt-auto">
+              <Link href="#features" className="group inline-flex items-center gap-1 text-sm font-semibold text-[#2D68F6] bg-[#2D68F6]/10 hover:bg-[#2D68F6]/20 rounded-full px-3 py-1.5 mt-auto">
                 Streaks and buddy check-ins solve this
                 <svg className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" viewBox="0 0 20 20" fill="currentColor"><path d="M12.293 5.293a1 1 0 011.414 0L18 9.586l-4.293 4.293a1 1 0 01-1.414-1.414L14.586 11H4a1 1 0 110-2h10.586l-2.293-2.293a1 1 0 010-1.414z"/></svg>
               </Link>
@@ -554,13 +508,13 @@ export default function LandingPage() {
 
             <Card className="p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all rounded-2xl bg-white/90 flex flex-col">
               <div className="mb-4 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white flex items-center justify-center text-[10px] font-semibold">RU</div>
+                <div className="w-7 h-7 rounded-full bg-[#2D68F6] text-white flex items-center justify-center text-[10px] font-semibold">RU</div>
                 <span className="text-[11px] text-gray-500">r/SaaS</span>
               </div>
               <blockquote className="text-gray-900 mb-4 italic leading-relaxed flex-1">
                 "The hardest part is consistency. I need something that gives me small, manageable marketing tasks each day instead of overwhelming me with big projects."
               </blockquote>
-              <Link href="#features" className="group inline-flex items-center gap-1 text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-full px-3 py-1.5 mt-auto">
+              <Link href="#features" className="group inline-flex items-center gap-1 text-sm font-semibold text-[#2D68F6] bg-[#2D68F6]/10 hover:bg-[#2D68F6]/20 rounded-full px-3 py-1.5 mt-auto">
                 Daily task system solves this perfectly
                 <svg className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" viewBox="0 0 20 20" fill="currentColor"><path d="M12.293 5.293a1 1 0 011.414 0L18 9.586l-4.293 4.293a1 1 0 01-1.414-1.414L14.586 11H4a1 1 0 110-2h10.586l-2.293-2.293a1 1 0 010-1.414z"/></svg>
               </Link>
@@ -570,7 +524,7 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-blue-500 to-blue-600">
+      <section className="py-20 bg-[#2D68F6]">
         <div className="max-w-5xl mx-auto px-6 text-center">
           <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">Ready to build marketing momentum?</h2>
           <p className="text-xl text-blue-100 mb-10 max-w-3xl mx-auto">Action · Content · Accountability. Get your 6-month plan, daily tasks, AI content, and streak tracking—all in one place.</p>

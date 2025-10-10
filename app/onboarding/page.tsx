@@ -109,7 +109,156 @@ function OnboardingContent() {
         // eslint-disable-next-line no-console
         console.warn('Supabase extended upsert skipped due to schema mismatch:', extendedErr)
       }
-      // Seed Week 1 tasks into Supabase so the dashboard loads from DB
+
+      // 3) Seed baseline milestones (first user/dollar and launch) and next users target (50)
+      try {
+        const currUsers = toInt(userData.currentUsers) || 0
+        const currMrr = toDecimal(userData.currentMrr) || 0
+        const launch = userData.launchDate || null
+        const today = new Date().toISOString().slice(0, 10)
+
+        // Launch day is rendered directly from onboarding.launch_date in JourneyPanel; no milestone row needed
+
+        // First user achieved
+        if (currUsers >= 1) {
+          const { data: exFirstUser } = await supabase
+            .from('milestones')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('type', 'goal_achieved')
+            .eq('goal_type', 'users')
+            .maybeSingle()
+          if (!exFirstUser) {
+            await supabase.from('milestones').insert([{
+              user_id: user.id,
+              title: 'Reached 1 users',
+              description: null,
+              emoji: '👤',
+              type: 'goal_achieved',
+              goal_type: 'users',
+              progress_current: null,
+              progress_target: null,
+              unit: null,
+              unlocked: true,
+              completed: true,
+              date: (launch || today).slice(0, 10),
+              sort_order: 0,
+            }])
+          }
+        }
+
+        // First dollar (MRR >= $1)
+        if ((currMrr ?? 0) >= 1) {
+          const { data: exFirstDollar } = await supabase
+            .from('milestones')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('type', 'goal_achieved')
+            .eq('goal_type', 'revenue')
+            .maybeSingle()
+          if (!exFirstDollar) {
+            await supabase.from('milestones').insert([{
+              user_id: user.id,
+              title: 'Reached $1 MRR',
+              description: null,
+              emoji: '💵',
+              type: 'goal_achieved',
+              goal_type: 'revenue',
+              progress_current: null,
+              progress_target: null,
+              unit: null,
+              unlocked: true,
+              completed: true,
+              date: (launch || today).slice(0, 10),
+              sort_order: 0,
+            }])
+          }
+        }
+
+        // Pending next target for users: 50 if below 50
+        const userTarget = currUsers < 50 ? 50 : 0
+        if (userTarget > 0) {
+          const { data: existingUsersPending } = await supabase
+            .from('milestones')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('type', 'user_added')
+            .eq('goal_type', 'users')
+            .eq('unlocked', false)
+            .maybeSingle()
+          if (existingUsersPending?.id) {
+            await supabase.from('milestones').update({
+              title: `Reach ${userTarget} users`,
+              emoji: '👥',
+              progress_current: currUsers,
+              progress_target: userTarget,
+              unit: 'users',
+              date: null,
+            }).eq('id', existingUsersPending.id)
+          } else {
+            await supabase.from('milestones').insert([{
+              user_id: user.id,
+              title: `Reach ${userTarget} users`,
+              description: null,
+              emoji: '👥',
+              type: 'user_added',
+              goal_type: 'users',
+              progress_current: currUsers,
+              progress_target: userTarget,
+              unit: 'users',
+              unlocked: false,
+              completed: false,
+              date: null,
+              sort_order: 0,
+            }])
+          }
+        }
+
+        // Pending next target for revenue: $100 if below $100
+        const revTarget = (currMrr ?? 0) < 100 ? 100 : 0
+        if (revTarget > 0) {
+          const { data: existingRevPending } = await supabase
+            .from('milestones')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('type', 'user_added')
+            .in('goal_type', ['revenue', 'mrr'] as any)
+            .eq('unlocked', false)
+            .maybeSingle()
+          if (existingRevPending?.id) {
+            await supabase.from('milestones').update({
+              title: `Reach $${revTarget} MRR`,
+              emoji: '💰',
+              goal_type: 'revenue',
+              progress_current: currMrr,
+              progress_target: revTarget,
+              unit: 'mrr',
+              date: null,
+            }).eq('id', existingRevPending.id)
+          } else {
+            await supabase.from('milestones').insert([{
+              user_id: user.id,
+              title: `Reach $${revTarget} MRR`,
+              description: null,
+              emoji: '💰',
+              type: 'user_added',
+              goal_type: 'revenue',
+              progress_current: currMrr,
+              progress_target: revTarget,
+              unit: 'mrr',
+              unlocked: false,
+              completed: false,
+              date: null,
+              sort_order: 0,
+            }])
+          }
+        }
+      } catch (seedBaselineErr) {
+        // eslint-disable-next-line no-console
+        console.warn('Failed to seed baseline milestones:', seedBaselineErr)
+      }
+
+      // 4) Seed Week 1 tasks into Supabase so the dashboard loads from DB
       try {
         // Skip if week 1 tasks already exist
         const { data: existingWeek1, error: checkErr } = await supabase
