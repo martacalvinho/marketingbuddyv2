@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Twitter, Linkedin, MessageSquare, Instagram, Video, FileText, Zap, Copy, Check, Loader2, CheckCircle2, Circle, BookOpen, Trash2, Edit3, Eye, Heart, BarChart3, ThumbsUp } from "lucide-react"
+import { Twitter, Linkedin, MessageSquare, Instagram, Video, FileText, Zap, Copy, Check, Loader2, CheckCircle2, Circle, BookOpen, Trash2, Edit3, Eye, Heart, BarChart3, ThumbsUp, Rocket } from "lucide-react"
 import InstagramImageDisplay from "@/components/instagram-image-display"
 import { supabase } from "@/lib/supabase"
 
@@ -76,6 +76,20 @@ const contentTypes = [
     description: "Full blog post with SEO optimization",
     color: "text-green-600",
   },
+  {
+    id: "product-hunt-post",
+    name: "Product Hunt Launch",
+    icon: Rocket,
+    description: "Launch post for Product Hunt",
+    color: "text-orange-600",
+  },
+  {
+    id: "indie-hackers-post",
+    name: "Indie Hackers Post",
+    icon: BookOpen,
+    description: "Transparent milestone/learning",
+    color: "text-indigo-700",
+  },
 ]
 
 export default function ContentGenerator({ user, dailyTasks = [], onTaskUpdate, initialPlatformId, initialSelectedTask }: ContentGeneratorProps) {
@@ -110,6 +124,7 @@ export default function ContentGenerator({ user, dailyTasks = [], onTaskUpdate, 
     likesAllTime: 0
   })
   const [expandedContent, setExpandedContent] = useState<Record<string, boolean>>({})
+  const [preferredFilter, setPreferredFilter] = useState<string | null>(null) // platform id filter
 
   // Function to detect platform from task title/description
   const detectPlatformFromTask = (task: any): string[] => {
@@ -124,27 +139,107 @@ export default function ContentGenerator({ user, dailyTasks = [], onTaskUpdate, 
       'instagram': ['instagram', 'ig story', 'ig post', 'insta'],
       'reddit': ['reddit', 'subreddit'],
       'tiktok': ['tiktok', 'tik tok'],
-      'blog': ['blog post', 'article', 'seo content', 'website content']
+      'blog': ['blog post', 'article', 'seo content', 'website content'],
+      'saas_directories': ['product hunt', 'betalist', 'g2', 'capterra', 'appsumo', 'directory', 'directories', 'stackshare', 'alternativeto']
     }
+    // Find the most specific platform match (return only the first match to avoid conflicts)
+    for (const [platform, patterns] of Object.entries(platformPatterns)) {
+      if (patterns.some(pattern => text.includes(pattern))) {
+        return [platform]
+      }
+    }
+    return [] // No platform detected
+  }
 
-  // When navigated from tasks via platform icon
+  // Map explicit platform to a single content type (no auto-detection/override)
+  const mapPlatformToContentType = (pid?: string): string => {
+    const p = String(pid || '').toLowerCase()
+    if (p.includes('linkedin')) return 'linkedin-post'
+    if (p.includes('twitter') || p === 'x' || p.includes('tweet')) return 'twitter-thread'
+    if (p.includes('instagram') || p.includes('ig')) return 'instagram-post'
+    if (p.includes('reddit')) return 'reddit-post'
+    if (p.includes('tiktok')) return 'tiktok-script'
+    if (p.includes('blog') || p.includes('seo')) return 'seo-blog'
+    if (p.includes('product') || p.includes('saas') || p.includes('directory')) return 'product-hunt-post'
+    return 'build-in-public'
+  }
+
+  // Auto-generate content for selected task in daily-habit mode (strictly follow task/platform)
+  const generateForSelectedTask = async () => {
+    if (!selectedDailyTask) return
+    const platformHint = selectedDailyTask.platform || initialPlatformId || ''
+    // If no explicit platform, look for direct cues in the task title/description only (no heuristic prefs)
+    let chosen = mapPlatformToContentType(platformHint)
+    if (!platformHint) {
+      const text = `${selectedDailyTask.title || ''} ${selectedDailyTask.description || ''}`.toLowerCase()
+      if (text.includes('linkedin')) chosen = 'linkedin-post'
+      else if (text.includes('twitter') || text.includes('tweet') || text.includes('x.com')) chosen = 'twitter-thread'
+      else if (text.includes('instagram') || text.includes('ig ')) chosen = 'instagram-post'
+      else if (text.includes('reddit') || text.includes('subreddit')) chosen = 'reddit-post'
+      else if (text.includes('tiktok')) chosen = 'tiktok-script'
+      else if (text.includes('blog') || text.includes('article') || text.includes('seo')) chosen = 'seo-blog'
+      else if (text.includes('product hunt') || text.includes('directory') || text.includes('directories') || text.includes('betalist') || text.includes('g2') || text.includes('capterra')) chosen = 'product-hunt-post'
+      else if (initialPlatformId) chosen = mapPlatformToContentType(initialPlatformId)
+      else chosen = 'build-in-public'
+    }
+    const ct = contentTypes.find(ct => ct.id === chosen) || contentTypes.find(ct => ct.id === 'build-in-public') || null
+    setSelectedType(ct)
+
+    setGenerating(true)
+    setGeneratedContent("")
+    setGeneratedImage(null)
+    setImagePrompt(null)
+    try {
+      const taskDesc = selectedDailyTask.description || `Create content that fulfills this task: ${selectedDailyTask.title}`
+      const resp = await fetch('/api/generate-specific-content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contentType: chosen,
+          product: user.productName,
+          valueProp: user.valueProp,
+          goal: user.northStarGoal,
+          websiteAnalysis: user.websiteAnalysis,
+          dailyTask: { ...selectedDailyTask, description: taskDesc, platform: platformHint },
+          targetAudience: user.targetAudience,
+          preferredPlatforms: user.preferredPlatforms,
+        })
+      })
+      const data = await resp.json()
+      setGeneratedContent(data.content)
+      setMarketingStyle(data.marketingStyle || 'General')
+      if (data.imagePrompt && (chosen === 'instagram-post' || chosen === 'instagram-story')) {
+        setImagePrompt(data.imagePrompt)
+        await generateImage(data.imagePrompt)
+      }
+    } catch (e) {
+      console.error('Daily-habit generation failed:', e)
+      setGeneratedContent('Failed to generate content. Please try again.')
+    }
+    setGenerating(false)
+  }
+
+  // If navigated from Daily Tasks with a selected task, switch to daily-habit and auto-generate once
   useEffect(() => {
     if (initialSelectedTask) {
       setContentMode('daily-habit')
       setSelectedDailyTask(initialSelectedTask)
+      // Reset previous generation to avoid stale content/type carrying over
+      setGeneratedContent("")
+      setGeneratedImage(null)
+      setImagePrompt(null)
+      setSelectedType(null)
+      setGenerating(false)
     }
   }, [initialSelectedTask])
-    
-    // Find the most specific platform match (return only the first match to avoid conflicts)
-    for (const [platform, patterns] of Object.entries(platformPatterns)) {
-      if (patterns.some(pattern => text.includes(pattern))) {
-        return [platform] // Return only the first detected platform
-      }
+
+  useEffect(() => {
+    if (contentMode === 'daily-habit' && selectedDailyTask && !generating && !generatedContent) {
+      void generateForSelectedTask()
     }
-    
-    return [] // No platform detected
-  }
-  
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contentMode, selectedDailyTask])
+
   // Get relevant content types based on detected platforms
   const getRelevantContentTypes = () => {
     if (contentMode !== 'daily-habit' || !selectedDailyTask) {
@@ -184,6 +279,8 @@ export default function ContentGenerator({ user, dailyTasks = [], onTaskUpdate, 
         case 'instagram-story': return 'instagram'
         case 'tiktok-script': return 'tiktok'
         case 'seo-blog': return 'blog'
+        case 'product-hunt-post': return 'producthunt'
+        case 'indie-hackers-post': return 'indiehackers'
         default: return id
       }
     }
@@ -492,6 +589,8 @@ export default function ContentGenerator({ user, dailyTasks = [], onTaskUpdate, 
           websiteAnalysis: user.websiteAnalysis,
           dailyTask: contentMode === 'daily-habit' ? selectedDailyTask : null,
           targetKeywords: selectedKeywords,
+          targetAudience: user.targetAudience,
+          preferredPlatforms: user.preferredPlatforms,
         }),
       })
 
@@ -528,6 +627,8 @@ export default function ContentGenerator({ user, dailyTasks = [], onTaskUpdate, 
           goal: user.northStarGoal,
           websiteAnalysis: user.websiteAnalysis,
           targetKeywords: selectedKeywords,
+          targetAudience: user.targetAudience,
+          preferredPlatforms: user.preferredPlatforms,
         }),
       })
 
@@ -558,6 +659,8 @@ export default function ContentGenerator({ user, dailyTasks = [], onTaskUpdate, 
           goal: user.northStarGoal,
           websiteAnalysis: user.websiteAnalysis,
           threadCount: threadCount,
+          targetAudience: user.targetAudience,
+          preferredPlatforms: user.preferredPlatforms,
         }),
       })
 
@@ -626,6 +729,13 @@ export default function ContentGenerator({ user, dailyTasks = [], onTaskUpdate, 
                 </div>
               ))}
             </div>
+            {contentMode === 'daily-habit' && (
+              <div className="mt-4">
+                <Button className="w-full" disabled={!selectedDailyTask || generating} onClick={generateForSelectedTask}>
+                  {generating ? 'Generating…' : 'Generate content for this task'}
+                </Button>
+              </div>
+            )}
             <div className="flex justify-end space-x-2 mt-4">
               <Button variant="outline" onClick={() => setShowTaskSelection(false)}>
                 Cancel
@@ -721,13 +831,50 @@ export default function ContentGenerator({ user, dailyTasks = [], onTaskUpdate, 
               </div>
             )}
           </div>
+          {contentMode === 'freestyle' && Array.isArray(user?.preferredPlatforms) && user.preferredPlatforms.length > 0 && (
+            <div className="mb-6">
+              <Label className="text-sm font-medium mb-2 block">Your recommended platforms</Label>
+              <div className="flex flex-wrap gap-2">
+                {user.preferredPlatforms.map((pid: string) => {
+                  const pretty = pid.replace(/[-_]/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase())
+                  const isActive = preferredFilter === pid
+                  return (
+                    <Badge
+                      key={pid}
+                      onClick={() => setPreferredFilter(isActive ? null : pid)}
+                      className={`${isActive ? 'bg-indigo-100 text-indigo-800 border-indigo-200' : 'bg-gray-100 text-gray-700'} cursor-pointer`}
+                      variant="secondary"
+                    >
+                      {pretty}
+                    </Badge>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+          {contentMode === 'freestyle' && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {contentTypes.map((type) => {
-              const isDisabled = contentMode === 'daily-habit' && !selectedDailyTask
-              const relevantTypes = getRelevantContentTypes()
-              const isRelevant = relevantTypes.some(t => t.id === type.id)
-              const isHighlighted = (contentMode === 'daily-habit' && selectedDailyTask && isRelevant) || (!!initialPlatformId && type.id === initialPlatformId)
-              const isDimmed = contentMode === 'daily-habit' && selectedDailyTask && !isRelevant
+              const isDisabled = false
+              // If a preferred platform chip is selected, highlight mapped content types
+              const preferredMap: { [key: string]: string[] } = {
+                'linkedin': ['linkedin-post'],
+                'twitter': ['twitter-thread'],
+                'reddit': ['reddit-post'],
+                'instagram': ['instagram-post', 'instagram-story'],
+                'tiktok': ['tiktok-script'],
+                'blog': ['seo-blog', 'build-in-public'],
+                'seo-blog': ['seo-blog'],
+                'producthunt': ['product-hunt-post'],
+                'product_hunt': ['product-hunt-post'],
+                'indiehackers': ['indie-hackers-post'],
+                'indie_hackers': ['indie-hackers-post'],
+              }
+              const key = (preferredFilter || '').toLowerCase()
+              const normalized = key.replace(/[_\s-]/g, '')
+              const preferredMatches = preferredFilter ? (preferredMap[key] || preferredMap[normalized] || []) : []
+              const isHighlighted = (!!initialPlatformId && type.id === initialPlatformId) || (preferredMatches.includes(type.id))
+              const isDimmed = false
               
               return (
                 <Card
@@ -772,20 +919,13 @@ export default function ContentGenerator({ user, dailyTasks = [], onTaskUpdate, 
                           ? 'text-gray-400'
                           : 'text-gray-500'
                     }`}>{type.description}</p>
-                    {contentMode === 'daily-habit' && selectedDailyTask && (
-                      <Badge className={`mt-2 text-xs ${
-                        isHighlighted 
-                          ? 'bg-indigo-100 text-indigo-800 border-indigo-200' 
-                          : 'bg-gray-100 text-gray-600'
-                      }`} variant="secondary">
-                        {isHighlighted ? '✨ Recommended' : `For: ${selectedDailyTask.title.substring(0, 15)}...`}
-                      </Badge>
-                    )}
+                    {/* Badge removed in freestyle grid */}
                   </CardContent>
                 </Card>
               )
             })}
           </div>
+          )}
         </CardContent>
       </Card>
 

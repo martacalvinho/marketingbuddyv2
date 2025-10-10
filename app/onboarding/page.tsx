@@ -260,47 +260,68 @@ function OnboardingContent() {
 
       // 4) Seed Week 1 tasks into Supabase so the dashboard loads from DB
       try {
-        // Skip if week 1 tasks already exist
+        // Skip if week 1 tasks already exist (unless force reseed)
+        const forceReseed = (searchParams.get('reseed') === '1')
         const { data: existingWeek1, error: checkErr } = await supabase
           .from('tasks')
           .select('id')
           .eq('user_id', user.id)
           .contains('metadata', { week: 1 })
           .limit(1)
-        if (!checkErr && (!existingWeek1 || existingWeek1.length === 0)) {
+        if (forceReseed && !checkErr && existingWeek1 && existingWeek1.length > 0) {
+          try {
+            await supabase
+              .from('tasks')
+              .delete()
+              .eq('user_id', user.id)
+              .contains('metadata', { week: 1 })
+          } catch (delErr) {
+            console.warn('Failed deleting existing week 1 tasks before reseed:', delErr)
+          }
+        }
+        if (forceReseed || (!checkErr && (!existingWeek1 || existingWeek1.length === 0))) {
           const usedTitles = new Set<string>()
+          const desiredPerDay = parseInt(String(userData.dailyTaskCount || '3'), 10) || 3
           for (let day = 1; day <= 7; day++) {
             try {
-              const resp = await fetch('/api/generate-enhanced-daily-tasks', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  user: userData,
-                  day,
-                  month: 1,
-                  weekInMonth: 1,
-                  monthStrategy: userData.marketingStrategy || '',
-                  focusArea: userData.focusArea || 'growth',
-                  dailyTaskCount: userData.dailyTaskCount || '3',
-                  websiteAnalysis: userData.websiteAnalysis,
-                  excludeTitles: Array.from(usedTitles)
-                })
-              })
-              const json = await resp.json()
-              let tasks = Array.isArray(json.tasks) ? json.tasks : []
-              // Filter out duplicates across days by title (case-insensitive)
-              const uniqueForDay: any[] = []
+              const dayPicks: any[] = []
               const seenDay = new Set<string>()
-              for (const t of tasks) {
-                const key = String((t?.title || '').trim()).toLowerCase()
-                if (key && !usedTitles.has(key) && !seenDay.has(key)) {
+              // Up to 4 attempts to fill the daily quota with unique titles
+              for (let attempt = 0; attempt < 4 && dayPicks.length < desiredPerDay; attempt++) {
+                const exclude = Array.from(new Set<string>([
+                  ...Array.from(usedTitles),
+                  ...dayPicks.map(t => String((t?.title || '').trim()).toLowerCase())
+                ]))
+                const resp = await fetch('/api/generate-enhanced-daily-tasks', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    user: userData,
+                    day,
+                    month: 1,
+                    weekInMonth: 1,
+                    monthStrategy: userData.marketingStrategy || '',
+                    focusArea: userData.focusArea || 'growth',
+                    dailyTaskCount: desiredPerDay,
+                    websiteAnalysis: userData.websiteAnalysis,
+                    contextSignals: undefined,
+                    excludeTitles: exclude
+                  })
+                })
+                const json = await resp.json()
+                const tasks: any[] = Array.isArray(json.tasks) ? json.tasks : []
+                for (const t of tasks) {
+                  if (dayPicks.length >= desiredPerDay) break
+                  const key = String((t?.title || '').trim()).toLowerCase()
+                  if (!key) continue
+                  if (usedTitles.has(key) || seenDay.has(key)) continue
                   seenDay.add(key)
-                  uniqueForDay.push(t)
+                  dayPicks.push(t)
                 }
               }
-              tasks = uniqueForDay
-              if (tasks.length > 0) {
-                const rows = tasks.map((t: any) => ({
+
+              if (dayPicks.length > 0) {
+                const rows = dayPicks.slice(0, desiredPerDay).map((t: any) => ({
                   user_id: user.id,
                   title: t.title,
                   description: t.description || null,

@@ -229,7 +229,7 @@ export default function DashboardView({ user, onUserRefresh }: DashboardViewProp
       const endDay = prevWeek * 7
       const { data: prevWeekTasks } = await supabase
         .from('tasks')
-        .select('status, category, platform, completed_at, skipped_count')
+        .select('title,status, category, platform, completed_at, skipped_count')
         .eq('user_id', user.id)
         .gte('metadata->>day', String(startDay))
         .lte('metadata->>day', String(endDay))
@@ -246,13 +246,22 @@ export default function DashboardView({ user, onUserRefresh }: DashboardViewProp
         .order('created_at', { ascending: false })
         .limit(1)
 
+      // Only seed the next week after the previous week is fully attempted (completed or skipped)
+      const totalPrev = prevWeekTasks?.length || 0
+      const attemptedPrev = prevWeekTasks?.filter((r: any) => r.status === 'completed' || r.status === 'skipped').length || 0
+      const attemptedPct = totalPrev > 0 ? (attemptedPrev / totalPrev) : 0
+      if (attemptedPct < 1.0) {
+        return // wait until week N-1 is fully attempted before seeding week N
+      }
+
       const weeklyFeedback = wr && wr.length > 0 ? wr[0] : null
       const contextSignals = {
         recentTasks: prevWeekTasks || [],
         content: contentRows || [],
         goals: user.goals || null,
         milestones,
-        weeklyFeedback
+        weeklyFeedback,
+        avoidPlatforms
       }
 
       // Seed the new week days
@@ -262,6 +271,7 @@ export default function DashboardView({ user, onUserRefresh }: DashboardViewProp
         try {
           const month = Math.ceil(day / 30)
           const weekInMonth = Math.ceil((((day - 1) % 30) + 1) / 7)
+          const excludeTitles = (prevWeekTasks || []).map((t: any) => String(t.title || '')).filter(Boolean)
           const resp = await fetch('/api/generate-enhanced-daily-tasks', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -274,7 +284,8 @@ export default function DashboardView({ user, onUserRefresh }: DashboardViewProp
               focusArea: user.focusArea || 'growth',
               dailyTaskCount: user.dailyTaskCount || '3',
               websiteAnalysis: user.websiteAnalysis,
-              contextSignals
+              contextSignals,
+              excludeTitles
             })
           })
           const json = await resp.json()
@@ -306,16 +317,16 @@ export default function DashboardView({ user, onUserRefresh }: DashboardViewProp
     setWeekLockMessage(null)
     // Enforce gating before any DB read or generation
     const week = Math.ceil(day / 7)
+    let unlocked = true
     if (week > 1) {
-      const unlocked = await checkWeekUnlocked(week)
+      unlocked = await checkWeekUnlocked(week)
       if (!unlocked) {
         setWeekLockMessage(`Week ${week} is locked. Requirement: attempt at least 50% of Week ${week - 1} tasks to unlock.`)
-        setTasksByDay((prev) => ({ ...prev, [day]: [] }))
-        setTodaysTasks([])
-        return
+        // Do NOT return early; allow viewing DB/plan tasks for this day
+      } else {
+        // If unlocked and not yet seeded, seed this week adaptively
+        await ensureWeekSeeded(week)
       }
-      // If unlocked and not yet seeded, seed this week adaptively
-      await ensureWeekSeeded(week)
     }
     // Always try to load from DB first for the given day
     const planText = typeof user.plan === 'string' ? user.plan : (user.plan?.markdown || '')
@@ -329,15 +340,38 @@ export default function DashboardView({ user, onUserRefresh }: DashboardViewProp
         .filter('metadata->>day', 'eq', String(day))
         .order('created_at', { ascending: true })
       if (dbRows && dbRows.length > 0) {
-        const ui = mapDbTasksToUi(dbRows, day)
+        const raw = mapDbTasksToUi(dbRows, day)
+        // Normalize: split long titles with hyphen into title + description; ensure description exists
+        const seen = new Set<string>()
+        const ui: any[] = []
+        for (const r of raw) {
+          let title = String(r.title || '').trim()
+          let description = String(r.description || '').trim()
+          if (!description && /[-–—]:?\s+/.test(title)) {
+            const parts = title.split(/[-–—]:?\s+/)
+            if (parts.length >= 2) {
+              title = parts[0].trim()
+              description = parts.slice(1).join(' - ').trim()
+            }
+          }
+          if (!description) {
+            description = `Do this now: ${title}. Keep it specific, helpful, and non-promotional. Timebox to 15 minutes.`
+          }
+          const key = `${title}|${description}`.toLowerCase()
+          if (!seen.has(key)) {
+            seen.add(key)
+            ui.push({ ...r, title, description })
+            if (ui.length >= desiredDailyCount) break
+          }
+        }
         setTasksByDay((prev) => ({ ...prev, [day]: ui }))
         setTodaysTasks(ui)
         return
       }
     } catch {}
     
-    // Try to use plan for first 30 days
-    if (planText) {
+    // Try to use plan for first 30 days (only if explicitly enabled)
+    if (planText && user?.seedFromPlan === true) {
       try {
         // Convert day to month and week context for 6-month plan
         const month = Math.ceil(day / 30) // Roughly 30 days per month
@@ -413,12 +447,12 @@ export default function DashboardView({ user, onUserRefresh }: DashboardViewProp
       }
     }
 
-    // If no tasks found, generate daily tasks (context-aware for week > 1)
+    // If no tasks found, optionally generate (only when unlocked)
     const month = Math.ceil(day / 30)
     const weekInMonth = Math.ceil(((day - 1) % 30 + 1) / 7)
     
-    // Generate tasks for this day and persist to DB
-    try {
+    // Generate tasks for this day and persist to DB only if unlocked
+    if (unlocked) try {
       // Build context signals from recent activity
       let contextSignals: any = {}
       try {
@@ -445,14 +479,27 @@ export default function DashboardView({ user, onUserRefresh }: DashboardViewProp
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(1)
-        contextSignals = { recentTasks: recentTasks || [], content: contentRows || [], goals: ob?.goals || null, milestones, weeklyFeedback: wr && wr.length > 0 ? wr[0] : null }
+        contextSignals = { recentTasks: recentTasks || [], content: contentRows || [], goals: ob?.goals || null, milestones, weeklyFeedback: wr && wr.length > 0 ? wr[0] : null, avoidPlatforms }
       } catch {}
 
-      const apiEndpoint = user.focusArea ? '/api/generate-enhanced-daily-tasks' : '/api/generate-daily-tasks'
+      // Avoid repeats within current week by excluding earlier titles from same week
+      let excludeTitles: string[] = []
+      try {
+        const weekStart = (week - 1) * 7 + 1
+        const { data: earlier } = await supabase
+          .from('tasks')
+          .select('title,metadata')
+          .eq('user_id', user.id)
+          .gte('metadata->>day', String(weekStart))
+          .lt('metadata->>day', String(day))
+        excludeTitles = (earlier || []).map((r: any) => String(r.title || '').trim()).filter(Boolean)
+      } catch {}
+
+      const apiEndpoint = '/api/generate-enhanced-daily-tasks'
       const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user, day, month, weekInMonth, monthStrategy: '', focusArea: user.focusArea || 'growth', dailyTaskCount: user.dailyTaskCount || '3', websiteAnalysis: user.websiteAnalysis, contextSignals })
+        body: JSON.stringify({ user, day, month, weekInMonth, monthStrategy: '', focusArea: user.focusArea || 'growth', dailyTaskCount: user.dailyTaskCount || '3', websiteAnalysis: user.websiteAnalysis, contextSignals, excludeTitles })
       })
       const data = await response.json()
       let generatedTasks = Array.isArray(data.tasks) ? data.tasks : []
@@ -460,7 +507,22 @@ export default function DashboardView({ user, onUserRefresh }: DashboardViewProp
         generatedTasks = parseTasks(String(data.tasks), day)
       }
       // Deduplicate by title+description
-      const uniqueGen = Array.from(new Map(generatedTasks.map((t: any) => [String(t.title) + '|' + String(t.description || ''), t])).values())
+      const normalizedGen = generatedTasks.map((t: any) => {
+        let title = String(t.title || '').trim()
+        let description = String(t.description || '').trim()
+        if (!description && /[-–—]:?\s+/.test(title)) {
+          const parts = title.split(/[-–—]:?\s+/)
+          if (parts.length >= 2) {
+            title = parts[0].trim()
+            description = parts.slice(1).join(' - ').trim()
+          }
+        }
+        if (!description) {
+          description = `Do this now: ${title}. Keep it specific, helpful, and non-promotional. Timebox to 15 minutes.`
+        }
+        return { ...t, title, description }
+      })
+      const uniqueGen = Array.from(new Map(normalizedGen.map((t: any) => [String(t.title) + '|' + String(t.description || ''), t])).values()).slice(0, desiredDailyCount)
       if (uniqueGen.length > 0) {
         const rows = uniqueGen.map((t: any) => ({
           user_id: user.id,
@@ -504,8 +566,26 @@ export default function DashboardView({ user, onUserRefresh }: DashboardViewProp
   }
 
   const deleteTask = (taskId: string | number) => {
+    const findTask = todaysTasks.find((t: any) => t.id === taskId) || (tasksByDay[currentDay] || []).find((t: any) => t.id === taskId)
     setTodaysTasks((prev: any[]) => prev.filter((t) => t.id !== taskId))
     setTasksByDay((prev) => ({ ...prev, [currentDay]: (prev[currentDay] || []).filter((t: any) => t.id !== taskId) }))
+    // Also delete from DB if present, so it doesn't reappear on reload
+    ;(async () => {
+      try {
+        const dbId = (findTask as any)?.db_id
+        if (dbId) {
+          await supabase.from('tasks').delete().eq('id', dbId)
+        } else if (findTask?.title) {
+          // Fallback: delete by title+day for current user
+          await supabase
+            .from('tasks')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('metadata->>day', String(currentDay))
+            .eq('title', findTask.title)
+        }
+      } catch {}
+    })()
   }
 
   const updateTask = (taskId: string | number, updates: Partial<any>) => {

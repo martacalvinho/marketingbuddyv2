@@ -48,10 +48,10 @@ AVAILABLE PLATFORMS:
 6. Pinterest (visual discovery, DIY, design, inspiration)
 7. Medium (long-form writing, thought leadership)
 8. Substack (newsletter, paid community)
-9. Reddit (niche communities, discussions, authenticity)
+9. Reddit (niche communities; pick relevant subreddits for the audience)
 10. Discord (real-time community, gaming/tech)
 11. Facebook Groups (broad communities, local)
-12. Product Hunt (product launches, tech early adopters)
+12. SaaS Directories (launch & listing category that includes Product Hunt, BetaList, AlternativeTo, G2, Capterra, GetApp, SaaSHub, Crozdesk, SourceForge, Software Advice, etc.)
 13. SEO Blog (organic search, evergreen content)
 14. Indie Hackers (startup/maker community)
 15. Behance/Dribbble (design portfolios)
@@ -76,6 +76,8 @@ CRITICAL RULES:
 - Consider BUSINESS MODEL (B2B → LinkedIn, B2C → Instagram/TikTok)
 - Be SPECIFIC to this industry (don't recommend TikTok for B2B SaaS)
 - AVOID platforms that don't match (e.g., Pinterest for developer tools)
+- Treat product-launch sites as a category: use "SaaS Directories" instead of only "Product Hunt". Do not over-index on Product Hunt.
+- For indie hacker/solo founder SaaS audiences, emphasize Reddit (with relevant subreddits) and Indie Hackers alongside LinkedIn/Twitter.
 
 Return ONLY valid JSON in this format:
 {

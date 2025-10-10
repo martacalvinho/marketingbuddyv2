@@ -2,7 +2,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
     console.log('Request body:', body)
-    const { contentType, product, valueProp, goal, websiteAnalysis, remixStyle, originalContent, targetKeywords, threadCount, dailyTask } = body
+    const { contentType, product, valueProp, goal, websiteAnalysis, remixStyle, originalContent, targetKeywords, threadCount, dailyTask, targetAudience, preferredPlatforms } = body
     
     if (!contentType) {
       return Response.json({ error: 'Content type is required' }, { status: 400 })
@@ -13,6 +13,21 @@ export async function POST(request: Request) {
       return Response.json({ error: 'API configuration error' }, { status: 500 })
     }
 
+    const audienceSummary = targetAudience
+      ? (typeof targetAudience === 'string'
+          ? targetAudience
+          : [
+              ...(targetAudience?.demographics?.professions || []),
+              ...(targetAudience?.demographics?.locations || []),
+              targetAudience?.demographics?.ageRange,
+              targetAudience?.demographics?.incomeLevel
+            ].filter(Boolean).join(', '))
+      : ''
+
+    const platformSummary = Array.isArray(preferredPlatforms) && preferredPlatforms.length > 0
+      ? preferredPlatforms.join(', ')
+      : ''
+
     const businessContext = websiteAnalysis
       ? `
 Business Context:
@@ -20,6 +35,8 @@ Business Context:
 - Target Audience: ${websiteAnalysis.businessOverview?.targetAudience?.join(", ")}
 - Key Differentiators: ${websiteAnalysis.competitivePositioning?.differentiators?.join(", ")}
 - Marketing Opportunities: ${websiteAnalysis.marketingOpportunities?.map((op: any) => op.title).join(", ")}
+${audienceSummary ? `- User-Selected Target Audience: ${audienceSummary}` : ''}
+${platformSummary ? `- Preferred Platforms: ${platformSummary}` : ''}
 `
       : ""
 
@@ -41,6 +58,8 @@ Daily Task Context:
       "tiktok-script": `Write a 30-second TikTok/Reels script about ${product}. Structure: Hook (0-3s), Value/Story (3-25s), CTA (25-30s). Write specific actions and dialogue, not scene descriptions.`,
       "build-in-public": `Create a "build in public" tweet sharing a specific milestone, challenge, or lesson from building ${product}. Include exact numbers, metrics, or concrete details. Be transparent and relatable.`,
       "seo-blog": `Write a complete SEO-optimized blog post about ${product}. ${targetKeywords ? `Target these keywords naturally: ${targetKeywords}.` : ''} Structure: Title, Introduction (2-3 paragraphs), 3-4 H2 sections with detailed content, and conclusion. Write the FULL blog post, not just an outline. Make it comprehensive (800+ words) and valuable.`,
+      "product-hunt-post": `Write a Product Hunt launch post for ${product}. Include: a clear one-line value prop, 3-5 bullet highlights, founder story in 2-3 lines, and a friendly call to check it out and share feedback. Keep it authentic and specific.`,
+      "indie-hackers-post": `Write an Indie Hackers post sharing a learning or milestone about ${product}. Tone: transparent, numbers-driven, helpful. Include specific metrics (even small ones), what worked/failed, and one actionable takeaway for fellow indie makers.`,
     }
 
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {

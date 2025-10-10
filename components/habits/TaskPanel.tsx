@@ -328,7 +328,7 @@ const TaskPanel = ({
                               title="Create content for this task"
                             >
                               {PlatformIcon ? <PlatformIcon className="mr-2 h-4 w-4" /> : null}
-                              Content
+                              Create content
                             </Button>
                           )}
                           <Button size="sm" variant="outline" onClick={() => startEditTaskDetails(task)}>
