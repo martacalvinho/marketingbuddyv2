@@ -1,0 +1,13 @@
+app/api/analyze-website/route.ts
+app/api/generate-build-to-5k/route.ts
+app/api/generate-enhanced-daily-tasks/route.ts
+components/build-to-5k.tsx
+docs/ai-powered-channel-research.md
+docs/channel-rotation-system.md
+docs/example-jewelry-shop-tasks.md
+docs/fix-industry-specific-tasks.md
+docs/marketing-buddy-core-analysis.md
+docs/onboarding-improvements-for-reels.md
+docs/social-media-strategy-month-1.md
+docs/task-generation-analysis-summary.md
+docs/to do.md

@@ -59,16 +59,51 @@ IMPORTANT: Return ONLY valid JSON in this exact format (no markdown, no extra te
     "summary": "2-3 sentence description of what this product/service actually does based on the website",
     "targetAudience": ["specific audience 1", "specific audience 2", "specific audience 3"],
     "valueProps": ["actual value prop from site", "another real value prop", "third value prop"],
-    "industry": "specific industry/category",
-    "businessModel": "how they make money based on the site"
+    "industry": "specific industry/category (e.g., 'Handmade Jewelry', 'Crypto Dashboard', 'Local Architecture Firm', 'Freelance Graphic Design')",
+    "businessModel": "how they make money based on the site",
+    "businessType": "specific type (e.g., 'B2C E-commerce', 'B2B SaaS', 'Local Service', 'Freelancer', 'Creator/Influencer', 'Physical Product')"
+  },
+  "marketingChannelResearch": {
+    "recommendedPlatforms": [
+      {
+        "platform": "specific platform name (e.g., Etsy, Instagram, LinkedIn, Product Hunt)",
+        "reasoning": "why this platform works for this specific industry",
+        "priority": "high/medium/low",
+        "contentType": "what type of content performs well (e.g., 'behind-the-scenes videos', 'case studies', 'product demos')",
+        "frequency": "how often to post (daily/3x week/weekly/monthly)"
+      }
+    ],
+    "directories": [
+      {
+        "name": "specific directory (e.g., CoinGecko for crypto, Etsy for handmade, Clutch for agencies)",
+        "reasoning": "why this directory is relevant",
+        "priority": "high/medium/low (high=Week 1-2, medium=Week 3-4, low=Month 2+)",
+        "estimatedTime": "how long to complete listing (e.g., '30 min', '1 hour')",
+        "isRecurring": "true if needs regular updates, false if one-time"
+      }
+    ],
+    "communities": [
+      {
+        "name": "specific community (e.g., r/jewelry, Crypto Twitter, local Chamber of Commerce)",
+        "platform": "Reddit/Twitter/Facebook/Discord/etc",
+        "reasoning": "why this community matters for this business",
+        "priority": "high/medium/low",
+        "frequency": "how often to engage (daily/weekly/monthly)",
+        "engagementTypes": ["post updates", "answer questions", "share insights", "network", "provide feedback"]
+      }
+    ],
+    "contentStrategy": "what type of content this industry typically uses to market (e.g., 'visual content showcasing products', 'educational content about crypto', 'portfolio case studies')",
+    "avoidPlatforms": ["platforms that typically don't work for this industry with reasoning"],
+    "note": "IMPORTANT: Provide 10-15 directories and 10-15 communities with varying priority levels. High priority = Week 1-2, Medium = Week 3-4, Low = Month 2+. This ensures long-term task variety."
   },
   "marketingOpportunities": [
     {
       "title": "Specific opportunity name",
-      "description": "Detailed description of what they should do based on their actual product",
+      "description": "Detailed description of what they should do based on their actual product AND industry best practices",
       "priority": "high",
       "effort": "medium",
-      "reasoning": "Why this opportunity makes sense for their specific business"
+      "reasoning": "Why this opportunity makes sense for their specific business and industry",
+      "channels": ["specific platforms where this opportunity should be executed"]
     }
   ],
   "marketingStrengths": [
@@ -222,14 +257,14 @@ IMPORTANT: Return ONLY valid JSON in this exact format (no markdown, no extra te
         rawAnalysis: analysis, // Include raw analysis for debugging
       })
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Website analysis error:", error)
 
     return Response.json(
       {
         success: false,
-        error: error.message || "Failed to analyze website",
-        details: error.toString(),
+        error: error instanceof Error ? error.message : "Failed to analyze website",
+        details: String(error),
         url: request.url,
       },
       { status: 500 },
