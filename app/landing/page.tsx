@@ -10,582 +10,623 @@ import {
   Target,
   Zap,
   CheckCircle,
-  Star,
-  ArrowRight,
-  Users,
-  TrendingUp,
-  MessageCircle,
   Calendar,
-  BarChart3,
-  Flame,
-  Globe,
-  BookOpen,
-  PieChart,
-  MapPin,
-  ListChecks,
   FileText,
-  Bot,
-  Clock,
-  Monitor,
+  Flame,
   Map,
-  Megaphone,
-  CalendarCheck,
-  Twitter,
+  ArrowRight,
+  LayoutDashboard,
   Sparkles,
-  MessageSquare
+  CheckSquare,
+  BarChart3,
+  Menu,
+  X
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 
 export default function LandingPage() {
-  const [email, setEmail] = useState("")
-  const [isSubmitted, setIsSubmitted] = useState(false)
-
-  const handleWaitlistSignup = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitted(true)
-    setTimeout(() => setIsSubmitted(false), 3000)
-  }
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <div className="min-h-screen bg-slate-950 text-slate-50 font-sans selection:bg-blue-500/30">
+      
+      {/* Background Ambient Glows */}
+      <div className="fixed top-0 left-0 right-0 h-[500px] bg-blue-500/10 blur-[120px] rounded-full pointer-events-none -z-10 transform -translate-y-1/2" />
+      <div className="fixed bottom-0 right-0 w-[500px] h-[500px] bg-purple-500/10 blur-[120px] rounded-full pointer-events-none -z-10 translate-y-1/3" />
+
       {/* Navigation */}
-      <nav className="fixed w-full z-50 py-4 px-6 bg-white bg-opacity-90 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center">
-              <Image src="/MB.png" alt="Marketing Buddy logo" width={40} height={40} className="object-contain" />
+      <nav className="fixed w-full z-50 border-b border-white/5 bg-slate-950/80 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex justify-between items-center">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
+              <Rocket className="w-4 h-4 text-white fill-white" />
             </div>
-            <span className="text-xl font-bold text-gray-900">Marketing Buddy</span>
+            <span className="text-lg font-bold tracking-tight">Marketing Buddy</span>
           </div>
-          <div className="hidden md:flex space-x-8">
-            <a href="#features" className="text-gray-700 font-medium hover:text-indigo-600 transition-colors">
-              Features
-            </a>
-            <a href="#how-it-works" className="text-gray-700 font-medium hover:text-indigo-600 transition-colors">
-              How It Works
-            </a>
-            <a href="#pricing" className="text-gray-700 font-medium hover:text-indigo-600 transition-colors">
-              Pricing
-            </a>
-            <a href="#testimonials" className="text-gray-700 font-medium hover:text-indigo-600 transition-colors">
-              Validation
-            </a>
+
+          {/* Desktop Nav */}
+          <div className="hidden md:flex items-center space-x-8">
+            <a href="#features" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Features</a>
+            <a href="#how-it-works" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">How it Works</a>
+            <a href="#pricing" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">Pricing</a>
           </div>
-          <div className="flex items-center space-x-4">
-            <Link href="/analyze" className="px-6 py-2 bg-[#2D68F6] rounded-lg text-white font-semibold shadow-lg hover:opacity-90 transition">
-              Analyze My Website
-            </Link>
-            <Link href="/login" className="px-4 py-2 text-gray-700 font-medium hover:text-indigo-600 transition-colors">
+
+          <div className="hidden md:flex items-center space-x-4">
+            <Link href="/login" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">
               Login
             </Link>
+            <Link href="/onboarding" className="px-5 py-2 bg-white text-slate-950 hover:bg-blue-50 rounded-full text-sm font-bold transition shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)]">
+              Get Started
+            </Link>
           </div>
+
+          {/* Mobile Menu Button */}
+          <button className="md:hidden text-slate-300" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+            {isMobileMenuOpen ? <X /> : <Menu />}
+          </button>
         </div>
+
+        {/* Mobile Nav */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden bg-slate-900 border-b border-white/10 p-4 space-y-4">
+            <a href="#features" className="block text-slate-300">Features</a>
+            <a href="#pricing" className="block text-slate-300">Pricing</a>
+            <Link href="/onboarding" className="block w-full text-center py-2 bg-blue-600 rounded-lg font-semibold">Get Started</Link>
+          </div>
+        )}
       </nav>
 
-      {/* Hero Section */}
-      <section className="pt-28 sm:pt-32 pb-16 sm:pb-20 px-4 sm:px-12">
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center">
-          <div className="lg:w-1/2 mb-12 lg:mb-0">
-            <div className="inline-block px-3 sm:px-4 py-1 bg-[#2D68F6]/10 text-[#2D68F6] rounded-full text-xs sm:text-sm font-medium mb-3 sm:mb-4">
-              AI-POWERED MARKETING ASSISTANT
+    {/* Hero Section */}
+      <section className="pt-32 pb-24 px-4 sm:px-6 relative overflow-visible">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
+          
+          {/* Hero Copy */}
+          <div className="lg:w-[45%] z-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-medium mb-6">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+              </span>
+              New: AI Content Generator 2.0
             </div>
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-gray-900 tracking-tight leading-tight max-w-4xl mb-6">
-              Launch-day Hype Fading?
+            
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.1] mb-6">
+              Marketing consistency, <br />
+              <span 
+                className="bg-gradient-to-r from-blue-400 to-purple-400"
+                style={{ 
+                  WebkitBackgroundClip: 'text',
+                  backgroundClip: 'text',
+                  color: 'transparent',
+                  display: 'inline-block'
+                }}
+              >
+                on autopilot.
+              </span>
             </h1>
-            <p className="text-xl md:text-2xl text-gray-700 font-medium mt-4 mb-8 max-w-3xl leading-relaxed">
-              Get a marketing plan you'll actually stick to - with daily tasks, content generation, and an accountability partner who keeps you honest.
+            
+            <p className="text-lg text-slate-400 mb-8 leading-relaxed">
+              Marketing Buddy analyzes your website to build a custom weekly plan. It drafts your content, tracks your growth milestones, and pairs you with a buddy so you actually ship.
             </p>
-            <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
-              <Link href="/onboarding" className="px-6 sm:px-8 py-3 sm:py-4 bg-[#2D68F6] rounded-xl text-white font-bold text-base sm:text-lg shadow-lg hover:opacity-90 transition text-center">
-                Start Marketing Journey
+            
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Link href="/onboarding" className="px-8 py-4 bg-blue-600 hover:bg-blue-500 rounded-xl text-white font-bold shadow-[0_0_40px_-10px_rgba(37,99,235,0.5)] transition-all hover:scale-[1.02] flex items-center justify-center gap-2">
+                <Zap className="w-5 h-5 fill-white" />
+                Start My Marketing Plan
               </Link>
-              <Link href="/analyze" className="px-6 sm:px-8 py-3 sm:py-4 bg-white rounded-xl border border-[#2D68F6]/30 text-[#2D68F6] font-bold text-base sm:text-lg shadow hover:shadow-md transition text-center">
-                Free Website Analysis
+              <Link href="/analyze" className="px-8 py-4 bg-white/5 border border-white/10 hover:bg-white/10 rounded-xl text-white font-semibold transition flex items-center justify-center">
+                Free Website Checkup
               </Link>
             </div>
-            <p className="mt-2 sm:mt-3 text-xs sm:text-base text-gray-600">
-              60‑sec setup · no card needed · 7‑day trial
-            </p>
-          </div>
-          <div className="lg:w-1/2 relative">
-            <div className="relative">
-              <div className="absolute top-0 right-0 w-96 h-96 bg-[#2D68F6] rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
-              <div className="absolute top-0 left-0 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '2s'}}></div>
-              <div className="relative z-10">
-                <Card className="rounded-3xl p-6 sm:p-8 max-w-lg mx-auto shadow-2xl border border-blue-100 bg-white">
-                  <div className="text-center mb-6">
-                    <h3 className="text-xl font-bold text-gray-900 mb-1">The Post-Launch Reality</h3>
-                    <p className="text-sm text-gray-600"></p>
-                  </div>
-
-                  {/* Chart showing traffic drop */}
-                  <div className="mb-6 p-4 bg-gradient-to-b from-[#2D68F6]/10 to-red-50 rounded-xl">
-                    <div className="flex items-end justify-between h-32 gap-2">
-                      <div className="flex-1 bg-[#2D68F6] rounded-t" style={{height: '20%'}}></div>
-                      <div className="flex-1 bg-[#2D68F6] rounded-t" style={{height: '100%'}}></div>
-                      <div className="flex-1 bg-[#2D68F6] opacity-80 rounded-t" style={{height: '75%'}}></div>
-                      <div className="flex-1 bg-gradient-to-t from-red-400 to-red-300 rounded-t" style={{height: '45%'}}></div>
-                      <div className="flex-1 bg-gradient-to-t from-red-400 to-red-300 rounded-t" style={{height: '25%'}}></div>
-                      <div className="flex-1 bg-gradient-to-t from-red-500 to-red-400 rounded-t" style={{height: '20%'}}></div>
-                    </div>
-                    <div className="flex justify-between mt-2 text-xs text-gray-500">
-                      <span>Day 1</span>
-                      <span>Day 2</span>
-                      <span>Day 3</span>
-                      <span>Day 4</span>
-                      <span>Day 5</span>
-                      <span>Day 6</span>
-                    </div>
-                    <div className="text-center mt-3">
-                      <div className="text-2xl font-bold text-gray-900">What now? 🤔</div>
-                      <div className="text-sm text-gray-600 mt-1">Traffic drops. Motivation fades. You freeze.</div>
-                    </div>
-                  </div>
-                </Card>
-              </div>
+            <div className="mt-6 flex items-center gap-4 text-sm text-slate-500">
+              <span className="flex items-center gap-1"><CheckCircle className="w-4 h-4 text-emerald-500" /> No credit card required</span>
+              <span className="flex items-center gap-1"><CheckCircle className="w-4 h-4 text-emerald-500" /> 60-second setup</span>
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* You Built It Section */}
-      <section className="py-20 bg-gradient-to-br from-indigo-50 to-blue-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900 mb-4 md:mb-6">
-              You built it. Now what?
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
-              The hardest part isn't building your product—it's consistent, focused marketing that compounds.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
-            <Card className="p-6 text-center bg-white shadow-lg hover:shadow-xl transition-shadow">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Target className="h-8 w-8 text-red-600" />
+          {/* Hero Visual: The "Command Center" */}
+          <div className="lg:w-[55%] w-full relative perspective-1000">
+            
+            {/* Ambient Glows */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-blue-600/20 rounded-full blur-[80px] -z-10"></div>
+            
+            {/* Main Interface Container */}
+            <div className="relative bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden">
+              
+              {/* Header Bar */}
+              <div className="h-10 bg-slate-900 border-b border-slate-800 flex items-center px-4 justify-between">
+                 <div className="flex gap-2">
+                    <div className="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50"></div>
+                    <div className="w-3 h-3 rounded-full bg-yellow-500/20 border border-yellow-500/50"></div>
+                    <div className="w-3 h-3 rounded-full bg-emerald-500/20 border border-emerald-500/50"></div>
+                 </div>
+                 <div className="text-[10px] text-slate-500 font-mono">marketingbuddy.xyz</div>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Marketing Overwhelm</h3>
-              <p className="text-gray-600">
-                Endless tactics, conflicting advice, and no clear path forward. You're stuck in analysis paralysis.
-              </p>
-            </Card>
 
-            <Card className="p-6 text-center bg-white shadow-lg hover:shadow-xl transition-shadow">
-              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Map className="h-8 w-8 text-orange-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Lack of Strategy</h3>
-              <p className="text-gray-600">
-                Random posts here and there won't cut it. You need a systematic approach that builds momentum.
-              </p>
-            </Card>
+              <div className="p-6 grid grid-cols-12 gap-6 min-h-[380px]">
+                
+                {/* Left Col: Strategy & Tasks */}
+                <div className="col-span-7 space-y-4">
+                   {/* Daily Focus Card */}
+                   <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
+                      <div className="text-xs text-slate-500 mb-2 uppercase tracking-wider font-bold">Today's Focus</div>
+                      <div className="flex items-center gap-3 mb-3">
+                         <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center">
+                            <FileText className="w-4 h-4" />
+                         </div>
+                         <div className="text-sm text-white font-medium">Post Case Study</div>
+                      </div>
+                      <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                         <div className="bg-blue-500 w-2/3 h-full rounded-full"></div>
+                      </div>
+                   </div>
 
-            <Card className="p-6 text-center bg-white shadow-lg hover:shadow-xl transition-shadow">
-              <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FileText className="h-8 w-8 text-yellow-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Content Paralysis</h3>
-              <p className="text-gray-600">
-                Stuck staring at a blank screen? You know you should post, but what?
-              </p>
-            </Card>
+                   {/* Analytics Mini-Chart */}
+                   <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
+                      <div className="flex justify-between items-center mb-3">
+                        <div className="text-xs text-slate-500 uppercase tracking-wider font-bold">Engagement</div>
+                        <div className="text-xs text-emerald-400 font-mono">+24%</div>
+                      </div>
+                      <div className="flex items-end justify-between gap-1 h-16">
+                         {[40, 65, 45, 80, 55, 90, 75].map((h, i) => (
+                            <div key={i} style={{height: `${h}%`}} className={`w-full rounded-t-sm ${i === 5 ? 'bg-blue-500' : 'bg-slate-800'}`}></div>
+                         ))}
+                      </div>
+                   </div>
+                </div>
 
-            <Card className="p-6 text-center bg-white shadow-lg hover:shadow-xl transition-shadow">
-              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Calendar className="h-8 w-8 text-purple-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Consistency Problem</h3>
-              <p className="text-gray-600">
-                You start strong, then life happens. Two weeks later, you haven't posted anything.
-              </p>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section id="how-it-works" className="py-20">
-        <div className="max-w-7xl mx-auto px-6 sm:px-12">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900 mb-6">
-              How Marketing Buddy Helps
-            </h2>
-          </div>
-
-          <div className="flex flex-col lg:flex-row items-center">
-            <div className="lg:w-1/2 mb-16 lg:mb-0">
-              <div className="relative">
-                <div className="absolute -top-10 -left-10 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-2xl opacity-30"></div>
-                <div className="relative z-10">
-                  <div className="flex mb-10">
-                    <div className="mr-6">
-                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white text-2xl font-bold">1</div>
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-bold text-gray-900 mb-2">Get Unstuck</h3>
-                      <p className="text-gray-700">AI analyzes your site and gives you a clear starting point—no more guessing what to do first.</p>
-                    </div>
-                  </div>
-
-                  <div className="flex mb-10">
-                    <div className="mr-6">
-                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">2</div>
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-bold text-gray-900 mb-2">Build Momentum</h3>
-                      <p className="text-gray-700">Daily tasks + AI content keep you shipping. No blank screens, no overthinking.</p>
-                    </div>
-                  </div>
-
-                  <div className="flex">
-                    <div className="mr-6">
-                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 flex items-center justify-center text-white text-2xl font-bold">3</div>
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-bold text-gray-900 mb-2">Stay Accountable</h3>
-                      <p className="text-gray-700">Streaks and buddy check-ins prevent drop-off. Real people, real follow-through.</p>
-                    </div>
-                  </div>
+                {/* Right Col: Calendar Grid */}
+                <div className="col-span-5 bg-slate-900 rounded-xl border border-slate-800 p-4 flex flex-col">
+                   <div className="text-xs text-slate-500 mb-3 uppercase tracking-wider font-bold">Schedule</div>
+                   <div className="space-y-2 mb-8">
+                      <div className="bg-slate-800/50 p-2 rounded border border-slate-700/50 text-xs text-slate-300 flex items-center gap-2">
+                         <div className="w-1.5 h-1.5 rounded-full bg-purple-500"></div> LinkedIn
+                      </div>
+                      <div className="bg-slate-800/50 p-2 rounded border border-slate-700/50 text-xs text-slate-300 flex items-center gap-2">
+                         <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div> Twitter
+                      </div>
+                      <div className="bg-slate-800/50 p-2 rounded border border-slate-700/50 text-xs text-slate-300 flex items-center gap-2">
+                         <div className="w-1.5 h-1.5 rounded-full bg-orange-400"></div> Blog
+                      </div>
+                   </div>
+                   <div className="mt-auto pt-4 border-t border-slate-800 text-[10px] text-center text-slate-500">
+                     System Active
+                   </div>
                 </div>
               </div>
             </div>
 
+            {/* FLOATING ELEMENT 1: AI Strategy Engine (Input) */}
+            <div className="absolute -left-4 -top-8 bg-slate-900/95 backdrop-blur-md border border-blue-500/30 p-4 rounded-xl shadow-2xl w-52 animate-bounce-slow" style={{animationDuration: '5s'}}>
+               <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/5">
+                  <div className="text-[10px] font-bold text-blue-400 flex items-center gap-1">
+                    <Zap className="w-3 h-3" />
+                    ANALYZE WEBSITE
+                  </div>
+               </div>
+               {/* Simulated Input */}
+               <div className="bg-slate-950 rounded px-2 py-1.5 mb-3 border border-white/5 flex items-center justify-between">
+                  <span className="text-[10px] text-slate-400 font-mono">yourwebsite.com</span>
+                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+               </div>
+               {/* Simulated Analysis Tags */}
+               <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="text-slate-500">Audience:</span>
+                    <span className="text-slate-200 font-medium">Small businesses</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[10px]">
+                    <span className="text-slate-500">Goal:</span>
+                    <span className="text-slate-200 font-medium">Onboarding</span>
+                  </div>
+               </div>
+            </div>
+
+            {/* FLOATING ELEMENT 2: Buddy Check-In (Support) */}
+            <div className="absolute -bottom-6 left-4 bg-slate-800/90 backdrop-blur-md border border-orange-500/30 p-3 rounded-xl shadow-xl flex items-center gap-3 pr-6 z-20">
+               <div className="relative">
+                  <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold text-xs">JS</div>
+                  <div className="absolute -bottom-1 -right-1 bg-green-500 border border-slate-900 w-3 h-3 rounded-full"></div>
+               </div>
+               <div>
+                  <div className="text-[10px] text-orange-300 font-bold">BUDDY CHECK-IN</div>
+                  <div className="text-xs text-white">"You hit 1k views! 🎉"</div>
+               </div>
+            </div>
+
+            {/* FLOATING ELEMENT 3: AI Content Draft (Output) */}
+            <div className="absolute -right-6 bottom-12 bg-slate-900/95 backdrop-blur-md border border-purple-500/30 p-4 rounded-xl shadow-2xl w-56 transform rotate-1 z-20">
+               <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="w-3 h-3 text-purple-400" />
+                  <div className="text-[10px] font-bold text-purple-300">AI DRAFT READY</div>
+               </div>
+               <div className="space-y-2 mb-3">
+                  <div className="h-1.5 bg-slate-700 rounded w-full"></div>
+                  <div className="h-1.5 bg-slate-700 rounded w-11/12"></div>
+                  <div className="h-1.5 bg-slate-700 rounded w-4/6"></div>
+               </div>
+               <div className="flex justify-between items-center">
+                  <span className="text-[9px] text-slate-500">Generated 2m ago</span>
+                  <div className="bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-md transition-colors cursor-pointer shadow-lg shadow-purple-500/20">
+                    Post Now
+                  </div>
+               </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* Problem Section */}
+      <section className="py-24 bg-slate-900/50 border-y border-white/5">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">The hardest part is showing up.</h2>
+            <p className="text-slate-400 max-w-2xl mx-auto">
+              Most marketing tools give you data. We give you a system to actually get the work done.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <Card className="bg-white/5 border-white/10 p-8 hover:bg-white/10 transition duration-300 group">
+              <div className="w-14 h-14 bg-red-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition">
+                <Target className="w-7 h-7 text-red-400" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">Analysis Paralysis</h3>
+              <p className="text-slate-400 leading-relaxed">
+                Stuck figuring out the "perfect" strategy? Marketing Buddy creates a plan for you so you can stop thinking and start doing.
+              </p>
+            </Card>
+
+            <Card className="bg-white/5 border-white/10 p-8 hover:bg-white/10 transition duration-300 group">
+              <div className="w-14 h-14 bg-purple-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition">
+                <FileText className="w-7 h-7 text-purple-400" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">Blank Screen Syndrome</h3>
+              <p className="text-slate-400 leading-relaxed">
+                Don't know what to write? Our AI reads your website and generates relevant posts for LinkedIn, Twitter, and your blog instantly.
+              </p>
+            </Card>
+
+            <Card className="bg-white/5 border-white/10 p-8 hover:bg-white/10 transition duration-300 group">
+              <div className="w-14 h-14 bg-orange-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition">
+                <Calendar className="w-7 h-7 text-orange-400" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">Inconsistency</h3>
+              <p className="text-slate-400 leading-relaxed">
+                Start strong, then fall off? Our streak tracking and simple daily check-ins gamify your consistency.
+              </p>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Features / How it Works */}
+      <section id="features" className="py-24 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6">
+         {/* Feature 1: The Adaptive Plan */}
+          <div className="flex flex-col lg:flex-row items-center gap-16 mb-32">
             <div className="lg:w-1/2">
-              <Card className="rounded-3xl p-6 max-w-lg mx-auto shadow-2xl">
-                <div className="text-center mb-4">
-                  <h3 className="text-xl sm:text-2xl font-bold text-gray-900">Track Your Journey</h3>
-                  <p className="text-sm text-gray-600">Set goals, hit milestones, celebrate wins</p>
-                </div>
-                
-                {/* Current Progress */}
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 mb-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Rocket className="h-5 w-5 text-indigo-600" />
-                    <span className="font-semibold text-gray-900">My Marketing Journey</span>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-700">👥 Users</span>
-                      <span className="font-semibold text-gray-900">3 / 10</span>
-                    </div>
-                    <div className="w-full bg-white rounded-full h-2">
-                      <div className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full" style={{width: '30%'}}></div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between mt-4">
-                      <span className="text-sm text-gray-700">💰 MRR</span>
-                      <span className="font-semibold text-gray-900">$0 / $1k</span>
-                    </div>
-                    <div className="w-full bg-white rounded-full h-2">
-                      <div className="bg-gradient-to-r from-emerald-500 to-green-600 h-2 rounded-full" style={{width: '0%'}}></div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between mt-4">
-                      <span className="text-sm text-gray-700">🔥 Streak</span>
-                      <span className="font-semibold text-orange-600">7 days</span>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Milestone Celebration */}
-                <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border-2 border-purple-200">
-                  <div className="text-center">
-                    <div className="text-4xl mb-2">🎉</div>
-                    <div className="font-bold text-gray-900 mb-1">Milestone Unlocked!</div>
-                    <div className="text-lg font-semibold text-purple-900">First 10 Users</div>
-                    <div className="text-sm text-gray-600 mt-2">Keep going! Next: $1k MRR</div>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section - Dashboard Previews */}
-      <section id="features" className="py-20 bg-gradient-to-b from-white to-[#2D68F6]/5">
-        <div className="max-w-7xl mx-auto px-6 sm:px-12">
-          <div className="text-center max-w-4xl mx-auto mb-16 md:mb-20">
-            <div className="inline-block bg-[#2D68F6]/10 text-[#2D68F6] text-xs sm:text-sm font-medium px-3 py-1 rounded-full mb-3 sm:mb-4">FEATURES</div>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900 mb-4 md:mb-6">Action · Content · Accountability</h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-600 leading-relaxed">Daily tasks, AI content generator, streak tracking, and buddy check-ins—everything you need in one dashboard.</p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {/* Action Card */}
-            <div className="bg-gradient-to-br from-cyan-100 to-blue-200 rounded-3xl p-6 shadow-2xl h-full">
-              <div className="bg-white rounded-2xl p-6 shadow-lg h-full flex flex-col">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-lg font-bold text-gray-900">Today's Tasks</h4>
-                  <svg width="20" height="20" className="text-cyan-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-                </div>
-                <div className="space-y-3 flex-1">
-                  <div className="flex items-center bg-green-50 rounded-lg p-3 border border-green-200">
-                    <svg width="16" height="16" className="text-green-500 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
-                    <div className="text-sm font-medium text-gray-900">Write blog post</div>
-                  </div>
-                  <div className="flex items-center bg-blue-50 rounded-lg p-3 border border-blue-200">
-                    <div className="h-4 w-4 border-2 border-blue-400 rounded-full mr-2"></div>
-                    <div className="text-sm font-medium text-gray-900">Schedule posts</div>
-                  </div>
-                  <div className="flex items-center bg-gray-50 rounded-lg p-3 border border-gray-200">
-                    <div className="h-4 w-4 border-2 border-gray-300 rounded-full mr-2"></div>
-                    <div className="text-sm text-gray-700">Update CTAs</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Content Card */}
-            <div className="bg-gradient-to-br from-purple-100 to-pink-200 rounded-3xl p-6 shadow-2xl h-full">
-              <div className="bg-white rounded-2xl p-6 shadow-lg h-full flex flex-col">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-lg font-bold text-gray-900">AI Content</h4>
-                  <span className="text-xs font-semibold text-purple-700 bg-purple-100 px-2 py-1 rounded-full">6+ platforms</span>
-                </div>
-                <div className="flex-1">
-                  <div className="grid grid-cols-3 gap-2 mb-4">
-                    <span className="text-xs font-medium text-gray-700 bg-purple-50 border border-purple-200 rounded-lg px-2 py-1 text-center">Blog</span>
-                    <span className="text-xs font-medium text-gray-700 bg-purple-50 border border-purple-200 rounded-lg px-2 py-1 text-center">LinkedIn</span>
-                    <span className="text-xs font-medium text-gray-700 bg-purple-50 border border-purple-200 rounded-lg px-2 py-1 text-center">Twitter</span>
-                    <span className="text-xs font-medium text-gray-700 bg-purple-50 border border-purple-200 rounded-lg px-2 py-1 text-center">Email</span>
-                    <span className="text-xs font-medium text-gray-700 bg-purple-50 border border-purple-200 rounded-lg px-2 py-1 text-center">Instagram</span>
-                    <span className="text-xs font-medium text-gray-700 bg-purple-50 border border-purple-200 rounded-lg px-2 py-1 text-center">YouTube</span>
-                  </div>
-                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-3 border border-purple-200">
-                    <div className="text-sm font-semibold text-gray-900 mb-2">Auto-drafted outline</div>
-                    <div className="text-xs text-gray-600">Ready to edit in seconds</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Accountability Card */}
-            <div className="bg-gradient-to-br from-emerald-100 to-teal-200 rounded-3xl p-6 shadow-2xl h-full">
-              <div className="bg-white rounded-2xl p-6 shadow-lg h-full flex flex-col">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-lg font-bold text-gray-900">Streaks & Buddy</h4>
-                  <Badge variant="outline" className="text-xs">Coming Soon</Badge>
-                </div>
-                <div className="space-y-3 flex-1">
-                  <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <Flame className="h-5 w-5 text-orange-500" />
-                      <span className="text-sm font-medium text-gray-900">12 day streak</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <Zap className="h-5 w-5 text-yellow-500" />
-                      <span className="text-sm font-medium text-gray-900">240 XP earned</span>
-                    </div>
-                  </div>
-                  <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
-                    <div className="text-sm font-medium text-gray-900 mb-1">Weekly check-in</div>
-                    <div className="text-xs text-gray-600">With your buddy</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing */}
-      <section id="pricing" className="py-20 bg-gradient-to-b from-indigo-50 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900 mb-4 md:mb-6">Simple, transparent pricing</h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
-              No contracts. Cancel anytime.
-            </p>
-          </div>
-
-          <div className="max-w-xl mx-auto">
-            <Card className="p-8 border border-[#2D68F6]/40 rounded-xl bg-gradient-to-b from-[#2D68F6]/5 to-white relative overflow-hidden">
-              <div className="text-center">
-                                <p className="text-6xl font-bold text-gray-900 mb-2">$15/mo</p>
-                <p className="text-sm text-gray-600 mb-8">Billed monthly</p>
-                <Link href="/onboarding">
-                  <Button className="w-full bg-[#2D68F6] hover:opacity-90">
-                    Start 7-day free trial
-                  </Button>
-                </Link>
-              </div>
-
-              <ul className="mt-8 space-y-4">
-                <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                  <span>Website analysis</span>
+              <div className="inline-block text-blue-400 font-bold tracking-wider text-sm mb-4">STEP 1</div>
+              <h3 className="text-3xl md:text-4xl font-bold text-white mb-6">
+                A weekly plan that adapts to you.
+              </h3>
+              <p className="text-lg text-slate-400 mb-6 leading-relaxed">
+                Stop guessing what to do next. Marketing Buddy analyzes your website to generate your initial strategy.
+              </p>
+              <p className="text-lg text-slate-400 mb-6 leading-relaxed">
+                Each week, it reads your progress and analytics to generate a fresh checklist for Monday. It keeps your plan relevant so you stay consistent.
+              </p>
+              <ul className="space-y-4">
+                <li className="flex items-center text-slate-300">
+                  <div className="bg-blue-500/20 p-1 rounded mr-3"><CheckCircle className="w-4 h-4 text-blue-400" /></div>
+                  Deep site & niche analysis
                 </li>
-                <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                  <span>Daily tasks tied to your strategy</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                  <span>AI content generator</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                  <span>Journey & milestones tracking</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                  <span>Streak tracking</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                  <span>Match with another human for accountability</span>
+                <li className="flex items-center text-slate-300">
+                  <div className="bg-blue-500/20 p-1 rounded mr-3"><CheckCircle className="w-4 h-4 text-blue-400" /></div>
+                  Context-aware weekly tasks
                 </li>
               </ul>
-            </Card>
+            </div>
+            
+            {/* Visual: The Weekly Sprint Card */}
+            <div className="lg:w-1/2 relative group">
+               {/* Background Glow */}
+               <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+               
+               <div className="relative bg-slate-900 rounded-xl border border-slate-800 p-6 shadow-2xl">
+                  {/* Card Header */}
+                  <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-4">
+                    <div>
+                       <div className="text-xs text-slate-500 font-bold tracking-widest uppercase mb-1">Current Plan</div>
+                       <div className="text-lg font-bold text-white flex items-center gap-2">
+                         Week 4
+                         <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">On Track</span>
+                       </div>
+                    </div>
+                  </div>
+
+                  {/* Dynamic Tasks List */}
+                  <div className="space-y-3">
+                    
+                    {/* Task 1 */}
+                    <div className="bg-slate-950/50 rounded-lg p-3 border border-white/5 hover:border-blue-500/30 transition flex items-center justify-between group/item">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold text-sm">M</div>
+                        <div>
+                           <div className="font-medium text-slate-200 text-sm">Engage with 5 potential leads</div>
+                           <div className="text-[10px] text-slate-500">Reason: You posted content yesterday</div>
+                        </div>
+                      </div>
+                      <div className="w-4 h-4 border-2 border-slate-600 rounded sm:mr-2 group-hover/item:border-blue-500 transition"></div>
+                    </div>
+
+                    {/* Task 2 */}
+                    <div className="bg-slate-950/50 rounded-lg p-3 border border-white/5 hover:border-blue-500/30 transition flex items-center justify-between group/item">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold text-sm">W</div>
+                        <div>
+                           <div className="font-medium text-slate-200 text-sm">Draft Newsletter Issue #4</div>
+                           <div className="text-[10px] text-slate-500">Topic: Based on last week's engagement</div>
+                        </div>
+                      </div>
+                      <div className="w-4 h-4 border-2 border-slate-600 rounded sm:mr-2 group-hover/item:border-blue-500 transition"></div>
+                    </div>
+
+                    {/* Task 3 (Locked) */}
+                    <div className="bg-slate-950/30 rounded-lg p-3 border border-white/5 opacity-60 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-slate-800 text-slate-500 flex items-center justify-center font-bold text-sm">F</div>
+                        <div>
+                           <div className="font-medium text-slate-300 text-sm">Review & Generate Next Week</div>
+                           <div className="text-[10px] text-slate-500">Unlocks Sunday</div>
+                        </div>
+                      </div>
+                      <div className="text-[10px] bg-slate-800 px-2 py-1 rounded text-slate-400">Locked</div>
+                    </div>
+
+                  </div>
+
+                  {/* Insight Footer - Changed from "Wins" to "Logic" */}
+                  <div className="mt-4 pt-3 border-t border-white/5 flex items-start gap-2">
+                     <Sparkles className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
+                     <p className="text-xs text-slate-400 leading-snug">
+                       <span className="text-blue-400 font-semibold">AI Context:</span> Since you completed all LinkedIn tasks last week, we are shifting focus to your newsletter to balance your growth.
+                     </p>
+                  </div>
+
+               </div>
+            </div>
           </div>
+
+          {/* Feature 2: AI Content Engine */}
+          <div className="flex flex-col lg:flex-row-reverse items-center gap-16 mb-32">
+            <div className="lg:w-1/2">
+              <div className="inline-block text-purple-400 font-bold tracking-wider text-sm mb-4">STEP 2</div>
+              <h3 className="text-3xl md:text-4xl font-bold text-white mb-6">
+                Turn 1 idea into 3 posts.
+              </h3>
+              <p className="text-lg text-slate-400 mb-6 leading-relaxed">
+                Staring at a blinking cursor is painful. Marketing Buddy takes your weekly tasks and drafts the actual content for you.
+              </p>
+              <p className="text-lg text-slate-400 mb-6 leading-relaxed">
+                It knows your tone. It formats for LinkedIn carousels or Twitter threads automatically. You just polish and hit publish.
+              </p>
+              <div className="flex gap-3">
+                <Badge variant="outline" className="border-purple-500/30 text-purple-300 bg-purple-500/10 px-3 py-1">LinkedIn</Badge>
+                <Badge variant="outline" className="border-purple-500/30 text-purple-300 bg-purple-500/10 px-3 py-1">Twitter / X</Badge>
+                <Badge variant="outline" className="border-purple-500/30 text-purple-300 bg-purple-500/10 px-3 py-1">Blog</Badge>
+              </div>
+            </div>
+
+            {/* Visual: The Content Studio */}
+            <div className="lg:w-1/2 relative group">
+                {/* Glow */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+                
+                <div className="relative bg-slate-900 border border-slate-800 rounded-xl shadow-2xl overflow-hidden">
+                    {/* Editor Header */}
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-slate-950">
+                        <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-red-500/50"></div>
+                            <div className="w-2 h-2 rounded-full bg-yellow-500/50"></div>
+                            <div className="text-xs text-slate-500 ml-2 font-mono">Drafting...</div>
+                        </div>
+                        <div className="flex gap-2">
+                             <div className="text-[10px] bg-purple-600 text-white px-2 py-0.5 rounded cursor-pointer hover:bg-purple-500 transition">Regenerate</div>
+                        </div>
+                    </div>
+
+                    {/* Context Input */}
+                    <div className="p-4 border-b border-white/5 bg-slate-900/50">
+                        <div className="text-[10px] text-slate-500 uppercase font-bold mb-1">Topic from Weekly Plan</div>
+                        <div className="text-sm text-white flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4 text-blue-500" />
+                            "Share a mistake you made early in your startup journey"
+                        </div>
+                    </div>
+
+                    {/* Generated Output */}
+                    <div className="p-6 space-y-4">
+                        <div className="flex items-start gap-3">
+                            <div className="w-8 h-8 rounded-full bg-slate-700 flex-shrink-0"></div>
+                            <div className="space-y-2 w-full">
+                                <div className="h-2 bg-slate-700 rounded w-24"></div>
+                                <div className="text-sm text-slate-300 leading-relaxed">
+                                    <span className="text-purple-400 font-semibold">Hook:</span> I lost my first 3 clients because I was too afraid to ask for feedback.<br/><br/>
+                                    Here is what I learned about transparency in B2B sales...
+                                </div>
+                                <div className="flex gap-2 mt-2">
+                                    <div className="h-16 w-full bg-slate-800 rounded border border-white/5"></div>
+                                    <div className="h-16 w-full bg-slate-800 rounded border border-white/5"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+          </div>
+
+           {/* Feature 3: Accountability */}
+           <div className="flex flex-col lg:flex-row items-center gap-16">
+            <div className="lg:w-1/2">
+              <div className="inline-block text-orange-400 font-bold tracking-wider text-sm mb-4">STEP 3</div>
+              <h3 className="text-3xl md:text-4xl font-bold text-white mb-6">
+                The only "hack" is showing up.
+              </h3>
+              <p className="text-lg text-slate-400 mb-6 leading-relaxed">
+                Marketing fails when you stop. We gamify your consistency so you don't break the chain.
+              </p>
+              <p className="text-lg text-slate-400 mb-6 leading-relaxed">
+                Track your streak, visualize your effort on a heatmap, and get nudged by your accountability buddy when you're about to slack off.
+              </p>
+            </div>
+            
+            {/* Visual: The Consistency Heatmap */}
+            <div className="lg:w-1/2 relative">
+               <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-2xl relative overflow-hidden">
+                   
+                   {/* Main Heatmap Visual */}
+                   <div className="mb-6">
+                       <div className="flex justify-between items-end mb-2">
+                           <div>
+                               <div className="text-4xl font-bold text-white">12 <span className="text-sm text-slate-500 font-normal">days</span></div>
+                               <div className="text-xs text-orange-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                                   <Flame className="w-3 h-3" /> Current Streak
+                               </div>
+                           </div>
+                           <div className="text-right">
+                               <div className="text-sm text-slate-400">Nov 2025</div>
+                           </div>
+                       </div>
+                       
+                       {/* The Grid */}
+                       <div className="grid grid-cols-7 gap-1.5">
+                           {[...Array(28)].map((_, i) => {
+                               // Simulating a realistic streak (randomized active states)
+                               const opacity = [0.1, 0.2, 0.6, 0.8, 1][Math.floor(Math.random() * 5)];
+                               const isActive = i > 5 && i < 20; // Make the middle chunk active for visual appeal
+                               return (
+                                   <div 
+                                       key={i} 
+                                       className={`aspect-square rounded-sm ${isActive ? 'bg-orange-500' : 'bg-slate-800'}`}
+                                       style={{ opacity: isActive ? Math.random() * 0.5 + 0.5 : 1 }}
+                                   ></div>
+                               )
+                           })}
+                       </div>
+                   </div>
+
+                   {/* Buddy Notification Overlay */}
+                   <div className="absolute bottom-4 right-4 left-4 bg-slate-800 border border-slate-700 p-3 rounded-xl shadow-lg flex items-center gap-3 animate-bounce-slow">
+                       <div className="relative shrink-0">
+                           <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold">
+                               AI
+                           </div>
+                           <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-slate-800 rounded-full"></div>
+                       </div>
+                       <div>
+                           <div className="text-xs font-bold text-white flex justify-between w-full">
+                               Marketing Buddy
+                               <span className="text-slate-500 font-normal text-[10px]">Just now</span>
+                           </div>
+                           <div className="text-xs text-slate-300 leading-snug">
+                               "Don't break the streak! You just need 1 more post to hit your weekly goal. 🚀"
+                           </div>
+                       </div>
+                   </div>
+
+               </div>
+            </div>
+          </div>
+
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section id="testimonials" className="py-20 relative">
-        {/* soft background accent */}
-        <div className="pointer-events-none absolute inset-0 -z-10">
-          <div className="mx-auto max-w-6xl h-56 blur-3xl opacity-25 rounded-full bg-[#2D68F6]/20" />
-        </div>
-        <div className="max-w-7xl mx-auto px-6 sm:px-12">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900 mb-4 md:mb-6">
-              What <span className="text-[#2D68F6]">Solo Founders</span> Are Saying
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
-              Direct quotes pulled from Reddit communities (early‑stage founders starting their marketing)
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all rounded-2xl bg-white/90 flex flex-col">
-              <div className="mb-4 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-full bg-[#2D68F6] text-white flex items-center justify-center text-[10px] font-semibold">RU</div>
-                <span className="text-[11px] text-gray-500">r/marketing</span>
+      {/* Simple Pricing */}
+      <section id="pricing" className="py-24 bg-slate-950 relative">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-4xl bg-blue-900/10 blur-[100px] -z-10"></div>
+        
+        <div className="max-w-3xl mx-auto px-6 text-center">
+          <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">Simple, transparent pricing.</h2>
+          <p className="text-slate-400 mb-12">Join the waitlist for early access and lock in the founder rate.</p>
+          
+          <Card className="relative bg-slate-900/80 backdrop-blur-xl border border-blue-500/30 p-10 rounded-3xl shadow-2xl overflow-hidden">
+            {/* Glow Effect */}
+            <div className="absolute top-0 right-0 -mr-10 -mt-10 w-32 h-32 bg-blue-500/20 blur-3xl rounded-full"></div>
+            
+            <div className="flex flex-col items-center">
+              <div className="inline-block px-4 py-1 bg-blue-500/10 text-blue-400 rounded-full text-sm font-semibold mb-4">
+                Early Access Offer
               </div>
-              <blockquote className="text-gray-900 mb-4 italic leading-relaxed flex-1">
-                "What I really need is something between a $10k/month agency and doing everything myself. A system that gives me a proper strategy and breaks it down into daily actions."
-              </blockquote>
-              <Link href="#features" className="group inline-flex items-center gap-1 text-sm font-semibold text-[#2D68F6] bg-[#2D68F6]/10 hover:bg-[#2D68F6]/20 rounded-full px-3 py-1.5 mt-auto">
-                Marketing Buddy provides exactly this
-                <svg className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" viewBox="0 0 20 20" fill="currentColor"><path d="M12.293 5.293a1 1 0 011.414 0L18 9.586l-4.293 4.293a1 1 0 01-1.414-1.414L14.586 11H4a1 1 0 110-2h10.586l-2.293-2.293a1 1 0 010-1.414z"/></svg>
-              </Link>
-            </Card>
-
-            <Card className="p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all rounded-2xl bg-white/90 flex flex-col">
-              <div className="mb-4 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-full bg-[#2D68F6] text-white flex items-center justify-center text-[10px] font-semibold">RU</div>
-                <span className="text-[11px] text-gray-500">r/Entrepreneur</span>
+              <div className="flex items-baseline gap-2 mb-2">
+                <span className="text-6xl font-extrabold text-white">$15</span>
+                <span className="text-slate-500">/month</span>
               </div>
-              <blockquote className="text-gray-900 mb-4 italic leading-relaxed flex-1">
-                "I wish there was a tool that could look at my website and tell me specifically what to fix for better conversion rates, not just generic advice."
-              </blockquote>
-              <Link href="/analyze" className="group inline-flex items-center gap-1 text-sm font-semibold text-[#2D68F6] bg-[#2D68F6]/10 hover:bg-[#2D68F6]/20 rounded-full px-3 py-1.5 mt-auto">
-                Our AI website analyzer does exactly this
-                <svg className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" viewBox="0 0 20 20" fill="currentColor"><path d="M12.293 5.293a1 1 0 011.414 0L18 9.586l-4.293 4.293a1 1 0 01-1.414-1.414L14.586 11H4a1 1 0 110-2h10.586l-2.293-2.293a1 1 0 010-1.414z"/></svg>
+              <p className="text-slate-400 mb-8 text-sm">Cancel anytime. No contracts.</p>
+              
+              <Link href="/onboarding" className="w-full sm:w-auto min-w-[200px]">
+                <Button size="lg" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold h-12 rounded-xl shadow-lg shadow-blue-500/25">
+                  Get Started Now
+                </Button>
               </Link>
-            </Card>
+            </div>
 
-            <Card className="p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all rounded-2xl bg-white/90 flex flex-col">
-              <div className="mb-4 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-full bg-[#2D68F6] text-white flex items-center justify-center text-[10px] font-semibold">RU</div>
-                <span className="text-[11px] text-gray-500">r/indiehackers</span>
-              </div>
-              <blockquote className="text-gray-900 mb-4 italic leading-relaxed flex-1">
-                "I need something to keep me consistent. I always start strong then fall off after a week."
-              </blockquote>
-              <Link href="#features" className="group inline-flex items-center gap-1 text-sm font-semibold text-[#2D68F6] bg-[#2D68F6]/10 hover:bg-[#2D68F6]/20 rounded-full px-3 py-1.5 mt-auto">
-                Streaks and buddy check-ins solve this
-                <svg className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" viewBox="0 0 20 20" fill="currentColor"><path d="M12.293 5.293a1 1 0 011.414 0L18 9.586l-4.293 4.293a1 1 0 01-1.414-1.414L14.586 11H4a1 1 0 110-2h10.586l-2.293-2.293a1 1 0 010-1.414z"/></svg>
-              </Link>
-            </Card>
-
-            <Card className="p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all rounded-2xl bg-white/90 flex flex-col">
-              <div className="mb-4 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-full bg-[#2D68F6] text-white flex items-center justify-center text-[10px] font-semibold">RU</div>
-                <span className="text-[11px] text-gray-500">r/SaaS</span>
-              </div>
-              <blockquote className="text-gray-900 mb-4 italic leading-relaxed flex-1">
-                "The hardest part is consistency. I need something that gives me small, manageable marketing tasks each day instead of overwhelming me with big projects."
-              </blockquote>
-              <Link href="#features" className="group inline-flex items-center gap-1 text-sm font-semibold text-[#2D68F6] bg-[#2D68F6]/10 hover:bg-[#2D68F6]/20 rounded-full px-3 py-1.5 mt-auto">
-                Daily task system solves this perfectly
-                <svg className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" viewBox="0 0 20 20" fill="currentColor"><path d="M12.293 5.293a1 1 0 011.414 0L18 9.586l-4.293 4.293a1 1 0 01-1.414-1.414L14.586 11H4a1 1 0 110-2h10.586l-2.293-2.293a1 1 0 010-1.414z"/></svg>
-              </Link>
-            </Card>
-          </div>
+            <div className="mt-10 pt-10 border-t border-white/10 grid sm:grid-cols-2 gap-4 text-left">
+                <div className="flex items-center gap-3 text-slate-300">
+                    <CheckCircle className="w-5 h-5 text-blue-500 shrink-0" />
+                    <span>Website Audit</span>
+                </div>
+                <div className="flex items-center gap-3 text-slate-300">
+                    <CheckCircle className="w-5 h-5 text-blue-500 shrink-0" />
+                    <span>AI Content Generator</span>
+                </div>
+                <div className="flex items-center gap-3 text-slate-300">
+                    <CheckCircle className="w-5 h-5 text-blue-500 shrink-0" />
+                    <span>Weekly Marketing Plan</span>
+                </div>
+                <div className="flex items-center gap-3 text-slate-300">
+                    <CheckCircle className="w-5 h-5 text-blue-500 shrink-0" />
+                    <span>Streak Tracking</span>
+                </div>
+            </div>
+          </Card>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-[#2D68F6]">
-        <div className="max-w-5xl mx-auto px-6 text-center">
-          <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">Ready to build marketing momentum?</h2>
-          <p className="text-xl text-blue-100 mb-10 max-w-3xl mx-auto">Action · Content · Accountability. Get your 6-month plan, daily tasks, AI content, and streak tracking—all in one place.</p>
-          
+      <section className="py-24 border-t border-white/5">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+            Ready to build marketing momentum?
+          </h2>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link href="/analyze" className="px-8 py-4 bg-white text-indigo-600 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition">
-              Analyze My Website Free
-            </Link>
-            <Link href="#how-it-works" className="px-8 py-4 border-2 border-white text-white rounded-xl font-bold text-lg hover:bg-white hover:text-indigo-600 transition">
-              See How It Works
+            <Link href="/onboarding" className="px-8 py-4 bg-white text-slate-950 rounded-xl font-bold hover:bg-blue-50 transition shadow-lg shadow-white/10">
+              Get My Marketing Plan
             </Link>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-12 bg-gray-900 text-gray-400">
-        <div className="max-w-7xl mx-auto px-6 sm:px-12">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center space-x-3 mb-6">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center relative overflow-hidden">
-                  <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M4.5 16.5c-1.5 1.25-2 5-2 5s3.75-.5 5-2c.625-.75 1-1.5 1-2.5a2.5 2.5 0 0 0-4-2z"/>
-                    <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>
-                    <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/>
-                    <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>
-                  </svg>
-                  <div className="absolute -bottom-0.5 -right-0.5 text-orange-400 text-[8px]">🔥</div>
-                </div>
-                <span className="text-xl font-bold text-white">Marketing Buddy</span>
-              </div>
-              <p className="text-gray-400 mb-4">Your AI-powered marketing accountability partner for solo founders and indie hackers.</p>
+      <footer className="py-12 bg-slate-950 border-t border-white/5 text-slate-400 text-sm">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center">
+              <Rocket className="w-4 h-4 text-white" />
             </div>
-            <div>
-              <h4 className="text-white font-semibold mb-4">Product</h4>
-              <ul className="space-y-2">
-                <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
-                <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
-                <li><a href="/analyze" className="hover:text-white transition-colors">Website Analysis</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-white font-semibold mb-4">Company</h4>
-              <ul className="space-y-2">
-                <li><a href="/about" className="hover:text-white transition-colors">About</a></li>
-                <li><a href="/contact" className="hover:text-white transition-colors">Contact</a></li>
-                <li><a href="/privacy" className="hover:text-white transition-colors">Privacy</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-white font-semibold mb-4">Resources</h4>
-              <ul className="space-y-2">
-                <li><a href="/blog" className="hover:text-white transition-colors">Blog</a></li>
-                <li><a href="/help" className="hover:text-white transition-colors">Help Center</a></li>
-                <li><a href="/community" className="hover:text-white transition-colors">Community</a></li>
-              </ul>
-            </div>
+            <span className="font-bold text-white">Marketing Buddy</span>
           </div>
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center">
-            <p>&copy; 2024 Marketing Buddy. All rights reserved.</p>
+          
+          <div className="flex gap-8">
+            <a href="#" className="hover:text-white transition">Twitter</a>
+            <a href="#" className="hover:text-white transition">Email</a>
+            <a href="/privacy" className="hover:text-white transition">Privacy</a>
+          </div>
+          
+          <div className="text-slate-600">
+            &copy; {new Date().getFullYear()} Marketing Buddy.
           </div>
         </div>
       </footer>
