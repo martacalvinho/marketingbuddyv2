@@ -1,30 +1,31 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { motion } from "framer-motion"
 import {
   Globe,
   ArrowRight,
-  Building,
-  Users,
-  CheckCircle,
-  AlertCircle,
-  Lightbulb,
+  CheckCircle2,
   Target,
   TrendingUp,
   MessageSquare,
   Zap,
   Loader2,
-  AlertTriangle,
-  Info,
+  LayoutDashboard,
+  Rocket,
+  ChevronRight,
+  Users,
+  Briefcase,
+  Layers,
+  Lightbulb,
+  ArrowUpRight,
+  ShieldAlert,
+  Search,
+  Sparkles
 } from "lucide-react"
 import Link from "next/link"
 
@@ -34,16 +35,25 @@ export default function AnalyzePage() {
   const [analyzing, setAnalyzing] = useState(false)
   const [analysis, setAnalysis] = useState<any>(null)
   const [error, setError] = useState("")
-  const [analysisInfo, setAnalysisInfo] = useState<any>(null)
+  const [loadingStep, setLoadingStep] = useState(0)
+
+  useEffect(() => {
+    if (analyzing) {
+        const interval = setInterval(() => {
+            setLoadingStep(prev => (prev < 4 ? prev + 1 : prev))
+        }, 1500)
+        return () => clearInterval(interval)
+    }
+  }, [analyzing])
 
   const handleAnalyze = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!website.trim()) return
 
     setAnalyzing(true)
+    setLoadingStep(0)
     setError("")
     setAnalysis(null)
-    setAnalysisInfo(null)
 
     try {
       const response = await fetch("/api/analyze-website", {
@@ -56,458 +66,490 @@ export default function AnalyzePage() {
 
       if (!data.success) {
         setError(data.error || "Analysis failed")
+        setAnalyzing(false)
         return
       }
-
-      // Extract analysis info
-      setAnalysisInfo({
-        url: data.url,
-        contentLength: data.contentLength,
-        extractedAt: data.extractedAt,
-      })
-
-      // Set the analysis data
-      setAnalysis({
-        businessOverview: data.businessOverview,
-        marketingOpportunities: data.marketingOpportunities,
-        marketingStrengths: data.marketingStrengths,
-        contentMessagingAnalysis: data.contentMessagingAnalysis,
-        competitivePositioning: data.competitivePositioning,
-        actionableRecommendations: data.actionableRecommendations,
-      })
+      setAnalysis(data)
     } catch (err) {
-      setError("Failed to analyze website. Please try again.")
+      setError("Failed to analyze website. Please check the URL and try again.")
       console.error("Analysis error:", err)
     }
-
     setAnalyzing(false)
   }
 
-  const validateUrl = (url: string) => {
-    try {
-      new URL(url)
-      return true
-    } catch {
-      return false
-    }
-  }
-
   const formatUrl = (url: string) => {
-    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    if (!url.startsWith("http://") && !url.startsWith("https://") && url.length > 0) {
       return "https://" + url
     }
     return url
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <header className="border-b border-gray-200 bg-white/95 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <Link href="/landing" className="flex items-center space-x-2">
-              <Target className="h-8 w-8 text-indigo-600" />
-              <span className="text-xl font-bold text-gray-900">Marketing Buddy</span>
+    <div className="min-h-screen bg-slate-950 text-slate-50 font-sans selection:bg-blue-500/30">
+      
+      {/* Ambient Background Glows (Matching Landing Page) */}
+      <div className="fixed top-0 left-0 right-0 h-[500px] bg-blue-600/10 blur-[120px] rounded-full pointer-events-none -z-10 transform -translate-y-1/2 opacity-60" />
+      <div className="fixed bottom-0 right-0 w-[500px] h-[500px] bg-purple-500/10 blur-[120px] rounded-full pointer-events-none -z-10 translate-y-1/3" />
+
+      {/* Navigation */}
+      <header className="sticky top-0 z-50 border-b border-white/5 bg-slate-950/80 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex justify-between items-center">
+          <div className="flex items-center gap-6">
+            <Link href="/landing" className="flex items-center space-x-3 hover:opacity-80 transition">
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <Rocket className="w-4 h-4 text-white fill-white" />
+              </div>
+              <span className="text-lg font-bold tracking-tight text-white hidden sm:block">Marketing Buddy</span>
             </Link>
-            <Link href="/">
-              <Button variant="outline">Back to App</Button>
-            </Link>
+            
+            <div className="hidden md:flex items-center text-sm text-slate-500 border-l border-white/10 pl-6 h-6">
+                {analysis ? (
+                    <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                        <span className="text-slate-400 font-mono">{analysis.url}</span>
+                    </div>
+                ) : (
+                    <span className="text-slate-600">Analysis Tool</span>
+                )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+             <Link href="/landing" className="text-sm font-medium text-slate-400 hover:text-white transition">Exit</Link>
+            {analysis && (
+                 <Button 
+                    className="bg-white text-slate-950 hover:bg-blue-50 rounded-full font-bold px-6"
+                    onClick={() => {
+                        const analysisData = {
+                          productName: analysis?.businessOverview?.summary?.split(' ')[0] || '',
+                          website: website || '',
+                          valueProp: analysis?.businessOverview?.valueProps?.[0] || '',
+                          websiteAnalysis: analysis
+                        }
+                        const encodedAnalysis = encodeURIComponent(JSON.stringify(analysisData))
+                        router.push(`/onboarding?flow=post-analysis&analysis=${encodedAnalysis}&website=${encodeURIComponent(website || '')}`)
+                    }}
+                 >
+                    Build My Plan
+                 </Button>
+            )}
           </div>
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <main className="max-w-7xl mx-auto px-6 py-12">
+        
+        {/* STATE 1: INPUT (Hero Style) */}
         {!analysis && !analyzing && (
-          <div className="text-center mb-12">
-            <Globe className="h-16 w-16 text-indigo-600 mx-auto mb-6" />
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">Free Website Analysis</h1>
-            <p className="text-xl text-gray-600 mb-8">
-              Get AI-powered insights into your marketing opportunities, strengths, and actionable recommendations.
-            </p>
+          <div className="min-h-[70vh] flex flex-col items-center justify-center relative">
+             <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="w-full max-w-3xl text-center z-10"
+            >
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-slate-300 text-xs font-medium mb-8 backdrop-blur-md">
+                  <Sparkles className="w-3 h-3 text-blue-400" /> AI Strategy Engine 2.0
+                </div>
 
-            <Card className="max-w-md mx-auto">
-              <CardHeader>
-                <CardTitle>Analyze Your Website</CardTitle>
-                <CardDescription>Enter your website URL to get started</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleAnalyze} className="space-y-4">
-                  <div>
-                    <Label htmlFor="website">Website URL</Label>
-                    <Input
-                      id="website"
-                      type="url"
-                      value={website}
-                      onChange={(e) => {
-                        const formattedUrl = formatUrl(e.target.value)
-                        setWebsite(formattedUrl)
-                      }}
-                      placeholder="https://yourwebsite.com"
-                      required
-                    />
-                    {website && !validateUrl(website) && (
-                      <p className="text-sm text-red-600 mt-1">Please enter a valid URL</p>
-                    )}
-                  </div>
-                  <Button type="submit" className="w-full" disabled={analyzing || !validateUrl(website)}>
-                    {analyzing ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Analyzing...
-                      </>
-                    ) : (
-                      <>
-                        <Globe className="mr-2 h-4 w-4" />
-                        Analyze Website
-                      </>
-                    )}
-                  </Button>
-                </form>
+                <h1 className="text-5xl md:text-7xl font-extrabold text-white mb-8 tracking-tight leading-tight">
+                  Identify your <br />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">unfair advantage.</span>
+                </h1>
+                
+                <div className="relative max-w-xl mx-auto mb-16">
+                    {/* Glow behind input */}
+                    <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur opacity-40"></div>
+                    <div className="relative bg-slate-900 border border-white/10 p-2 rounded-xl flex gap-2 shadow-2xl">
+                        <div className="relative flex-1">
+                            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                                <Search className="h-5 w-5 text-slate-500" />
+                            </div>
+                            <Input 
+                                className="bg-transparent border-none text-white pl-10 h-12 focus-visible:ring-0 text-base placeholder:text-slate-600"
+                                placeholder="marketingbuddy.ai"
+                                value={website}
+                                onChange={(e) => setWebsite(formatUrl(e.target.value))}
+                                autoFocus
+                            />
+                        </div>
+                        <Button 
+                            onClick={handleAnalyze}
+                            size="lg" 
+                            className="h-12 px-8 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition-all hover:scale-105"
+                            disabled={!website}
+                        >
+                            Run Audit
+                        </Button>
+                    </div>
+                </div>
 
                 {error && (
-                  <Alert className="mt-4">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
+                  <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm mb-8 inline-block">
+                    {error}
+                  </div>
                 )}
 
-                <Alert className="mt-4">
-                  <Info className="h-4 w-4" />
-                  <AlertDescription>
-                    <strong>Tips for best results:</strong>
-                    <ul className="list-disc list-inside mt-1 space-y-1 text-sm">
-                      <li>Use your main website URL (not subpages)</li>
-                      <li>Ensure your site has clear value propositions</li>
-                      <li>Make sure your website loads quickly</li>
-                    </ul>
-                  </AlertDescription>
-                </Alert>
-              </CardContent>
-            </Card>
+                {/* Teaser Grid */}
+                <div className="grid grid-cols-3 gap-px bg-white/10 rounded-2xl overflow-hidden border border-white/10">
+                    <div className="bg-slate-950 p-6 hover:bg-slate-900 transition duration-500 group">
+                        <Target className="w-6 h-6 text-blue-500 mb-3 group-hover:scale-110 transition" />
+                        <h3 className="text-white font-bold text-sm mb-1">Action Plan</h3>
+                        <p className="text-xs text-slate-500">Specific tactics to grow.</p>
+                    </div>
+                    <div className="bg-slate-950 p-6 hover:bg-slate-900 transition duration-500 group">
+                        <MessageSquare className="w-6 h-6 text-purple-500 mb-3 group-hover:scale-110 transition" />
+                        <h3 className="text-white font-bold text-sm mb-1">Messaging</h3>
+                        <p className="text-xs text-slate-500">Tone & clarity audit.</p>
+                    </div>
+                    <div className="bg-slate-900/50 p-6 hover:bg-slate-900 transition duration-500 group">
+                        <ArrowUpRight className="w-6 h-6 text-emerald-500 mb-3 group-hover:scale-110 transition" />
+                        <h3 className="text-white font-bold text-sm mb-1">Opportunities</h3>
+                        <p className="text-xs text-slate-500">Low-hanging fruit.</p>
+                    </div>
+                </div>
+            </motion.div>
           </div>
         )}
 
+        {/* STATE 2: LOADING */}
         {analyzing && (
-          <div className="text-center py-20">
-            <Loader2 className="h-16 w-16 text-indigo-600 mx-auto mb-6 animate-spin" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Analyzing Your Website...</h2>
-            <p className="text-gray-600 mb-4">This may take a few moments while we extract and analyze your content.</p>
-            <div className="max-w-md mx-auto">
-              <div className="space-y-2 text-sm text-gray-500">
-                <p>✓ Fetching website content with Jina AI</p>
-                <p>✓ Extracting key information</p>
-                <p>⏳ Analyzing marketing opportunities</p>
-                <p>⏳ Generating recommendations</p>
-              </div>
+            <div className="min-h-[60vh] flex flex-col items-center justify-center">
+                <div className="relative mb-8">
+                    <div className="w-24 h-24 bg-blue-500/20 rounded-full animate-ping absolute inset-0"></div>
+                    <div className="w-24 h-24 bg-slate-950 border border-blue-500/50 rounded-full flex items-center justify-center relative z-10 shadow-[0_0_50px_-10px_rgba(59,130,246,0.5)]">
+                        <Loader2 className="w-10 h-10 text-blue-400 animate-spin" />
+                    </div>
+                </div>
+                <div className="space-y-2 text-center">
+                    <h3 className="text-2xl font-bold text-white">Analyzing Strategy...</h3>
+                    <div className="flex gap-2 justify-center">
+                         <span className={`w-2 h-2 rounded-full ${loadingStep >= 0 ? 'bg-blue-500' : 'bg-slate-800'}`}></span>
+                         <span className={`w-2 h-2 rounded-full ${loadingStep >= 1 ? 'bg-blue-500' : 'bg-slate-800'}`}></span>
+                         <span className={`w-2 h-2 rounded-full ${loadingStep >= 2 ? 'bg-blue-500' : 'bg-slate-800'}`}></span>
+                    </div>
+                    <p className="text-slate-500 text-sm font-mono mt-4">Extraction: {website}</p>
+                </div>
             </div>
-          </div>
         )}
 
+        {/* STATE 3: DASHBOARD RESULTS */}
         {analysis && (
-          <div className="space-y-8">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">Website Analysis Complete! 🎉</h1>
-              <p className="text-gray-600">Here's what we found about your website and marketing opportunities.</p>
-              {analysisInfo && (
-                <div className="mt-4 flex justify-center space-x-4 text-sm text-gray-500">
-                  <span>📊 {analysisInfo.contentLength.toLocaleString()} characters analyzed</span>
-                  <span>🕒 {new Date(analysisInfo.extractedAt).toLocaleTimeString()}</span>
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="space-y-16 pb-20"
+          >
+            
+            {/* 1. EXECUTIVE SUMMARY (Bento Layout) */}
+            <section>
+                <div className="flex items-end justify-between mb-8 border-b border-white/5 pb-4">
+                    <div>
+                        <div className="text-blue-400 font-bold tracking-wider text-xs mb-2 uppercase">Section 01</div>
+                        <h2 className="text-4xl font-bold text-white">Executive Summary</h2>
+                    </div>
+                    <div className="hidden md:block text-right">
+                        <div className="text-xs text-slate-500 uppercase font-bold">Industry Segment</div>
+                        <div className="text-slate-200 font-medium">{analysis.businessOverview?.industry}</div>
+                    </div>
                 </div>
-              )}
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+                    {/* Main Intelligence Card */}
+                    <div className="lg:col-span-8 bg-slate-900/50 border border-white/10 rounded-3xl p-8 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition duration-1000">
+                            <Briefcase className="w-40 h-40 text-white" />
+                        </div>
+                        <div className="relative z-10">
+                             <h3 className="text-xl font-bold text-white mb-4">{analysis.businessOverview?.summary}</h3>
+                             
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+                                <div>
+                                    <div className="text-xs text-slate-500 uppercase font-bold mb-3 flex items-center gap-2">
+                                        <Target className="w-3 h-3" /> Who it's for
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {(analysis.businessOverview?.targetAudience || []).map((t: string, i: number) => (
+                                            <div key={i} className="px-3 py-1.5 bg-slate-950 border border-white/10 rounded-lg text-sm text-slate-300">
+                                                {t}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="text-xs text-slate-500 uppercase font-bold mb-3 flex items-center gap-2">
+                                        <Layers className="w-3 h-3" /> Revenue Model
+                                    </div>
+                                    <div className="px-3 py-1.5 bg-slate-950 border border-white/10 rounded-lg text-sm text-slate-300 inline-block">
+                                        {analysis.businessOverview?.businessModel}
+                                    </div>
+                                </div>
+                             </div>
+                        </div>
+                    </div>
+
+                    {/* Key Strengths Stack */}
+                    <div className="lg:col-span-4 flex flex-col gap-4">
+                        <div className="bg-emerald-900/10 border border-emerald-500/20 rounded-3xl p-6 flex-1">
+                            <div className="flex items-center gap-2 mb-6">
+                                <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                                    <TrendingUp className="w-4 h-4 text-emerald-400" />
+                                </div>
+                                <h3 className="font-bold text-white">Winning Factors</h3>
+                            </div>
+                            <ul className="space-y-4">
+                                {(analysis.marketingStrengths || []).slice(0,3).map((s: string, i: number) => (
+                                    <li key={i} className="flex gap-3 items-start">
+                                        <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                                        <span className="text-sm text-slate-300 font-medium">{s}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                        
+                        {/* Core Value Prop Teaser */}
+                        <div className="bg-slate-900 border border-white/10 rounded-3xl p-6 flex-1 flex flex-col justify-center">
+                             <div className="text-xs text-slate-500 uppercase font-bold mb-2">Core Value Proposition</div>
+                             <div className="text-white font-medium">
+                                "{analysis.businessOverview?.valueProps?.[0]}"
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* SECTION 2: GROWTH OPPORTUNITIES (Cards with visual weight) */}
+            <section>
+                 <div className="flex items-end justify-between mb-8 border-b border-white/5 pb-4">
+                    <div>
+                        <div className="text-orange-400 font-bold tracking-wider text-xs mb-2 uppercase">Section 02</div>
+                        <h2 className="text-4xl font-bold text-white">Strategic Opportunities</h2>
+                    </div>
+                    <div className="text-right">
+                         <div className="text-xs text-slate-500 uppercase font-bold">Generated by GPT-4o</div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {(analysis.marketingOpportunities || []).map((opp: any, i: number) => (
+                        <div key={i} className="group relative bg-slate-900 border border-white/10 hover:border-blue-500/50 p-6 rounded-3xl transition duration-300 flex flex-col h-full">
+                            {/* Number Watermark */}
+                            <div className="absolute top-4 right-6 text-[60px] font-bold text-white/5 group-hover:text-white/10 transition">
+                                0{i+1}
+                            </div>
+
+                            <div className="relative z-10">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <div className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide ${
+                                        (opp.priority || '').toLowerCase() === 'high' 
+                                        ? 'bg-orange-500/20 text-orange-400' 
+                                        : 'bg-blue-500/20 text-blue-400'
+                                    }`}>
+                                        {opp.priority} Priority
+                                    </div>
+                                    <span className="text-[10px] text-slate-500 font-bold uppercase">{opp.effort} Effort</span>
+                                </div>
+                                
+                                <h3 className="text-xl font-bold text-white mb-3 group-hover:text-blue-400 transition">{opp.title}</h3>
+                                <p className="text-sm text-slate-400 leading-relaxed mb-6">{opp.description}</p>
+                                
+                                {/* Footer: Why & Where */}
+                                <div className="mt-auto pt-6 border-t border-white/5">
+                                    <div className="flex items-start gap-2 mb-3">
+                                        <Lightbulb className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+                                        <p className="text-xs text-slate-300 italic">"{opp.reasoning}"</p>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {(opp.channels || []).map((c: string, idx: number) => (
+                                            <span key={idx} className="text-[10px] text-slate-500 bg-white/5 px-2 py-1 rounded border border-white/5">
+                                                {c}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </section>
+
+            {/* SECTION 3: MESSAGING & COMPETITION (Split Layout) */}
+            <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                {/* Messaging */}
+                <div className="bg-slate-900 border border-white/10 rounded-3xl overflow-hidden flex flex-col">
+                     <div className="p-8 border-b border-white/5 flex justify-between items-center bg-slate-950/50">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                                <MessageSquare className="w-4 h-4 text-purple-400" />
+                            </div>
+                            <h3 className="text-xl font-bold text-white">Messaging Audit</h3>
+                        </div>
+                        <div className="px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full text-[10px] text-purple-300 font-bold uppercase tracking-wide">
+                            {analysis.contentMessagingAnalysis?.toneOfVoice}
+                        </div>
+                    </div>
+
+                    <div className="p-8 flex flex-col gap-8 flex-grow">
+                        {/* Current */}
+                        <div className="bg-slate-950 p-6 rounded-2xl border border-white/5 relative">
+                            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-2">Current Hook</div>
+                            <p className="text-lg text-slate-300 font-serif italic">"{analysis.contentMessagingAnalysis?.currentMessaging}"</p>
+                        </div>
+
+                        {/* Gaps & Fixes Grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <div>
+                                <div className="flex items-center gap-2 text-rose-400 text-xs font-bold uppercase mb-4">
+                                    <ShieldAlert className="w-4 h-4" /> Blind Spots
+                                </div>
+                                <ul className="space-y-3">
+                                    {(analysis.contentMessagingAnalysis?.messagingGaps || []).map((g: string, i: number) => (
+                                        <li key={i} className="text-sm text-slate-400 leading-snug flex gap-2">
+                                            <span className="text-rose-500/50 text-lg leading-none">•</span> {g}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold uppercase mb-4">
+                                    <Sparkles className="w-4 h-4" /> Quick Wins
+                                </div>
+                                <ul className="space-y-3">
+                                    {(analysis.contentMessagingAnalysis?.improvementSuggestions || []).map((g: string, i: number) => (
+                                        <li key={i} className="text-sm text-slate-400 leading-snug flex gap-2">
+                                            <span className="text-emerald-500/50 text-lg leading-none">•</span> {g}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Competition */}
+                <div className="bg-slate-900 border border-white/10 rounded-3xl overflow-hidden flex flex-col">
+                     <div className="p-8 border-b border-white/5 bg-slate-950/50">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                                <Target className="w-4 h-4 text-blue-400" />
+                            </div>
+                            <h3 className="text-xl font-bold text-white">Market Position</h3>
+                        </div>
+                    </div>
+
+                    <div className="p-8 flex flex-col gap-8 flex-grow">
+                        <div className="p-6 bg-gradient-to-br from-blue-900/20 to-slate-900 border border-blue-500/20 rounded-2xl">
+                             <div className="text-[10px] text-blue-400 font-bold uppercase tracking-widest mb-2">Positioning Statement</div>
+                             <p className="text-sm text-blue-100 leading-relaxed font-medium">
+                                {analysis.competitivePositioning?.marketPosition}
+                             </p>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div>
+                                <div className="text-xs text-slate-500 font-bold uppercase mb-3">Key Differentiators</div>
+                                <div className="flex flex-wrap gap-2">
+                                    {(analysis.competitivePositioning?.differentiators || []).map((diff: string, i: number) => (
+                                        <div key={i} className="px-3 py-1.5 bg-slate-950 border border-white/10 rounded-lg text-xs text-slate-300 flex items-center gap-2">
+                                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div> {diff}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                             <div>
+                                <div className="text-xs text-slate-500 font-bold uppercase mb-3">Vulnerabilities</div>
+                                <ul className="space-y-2">
+                                    {(analysis.competitivePositioning?.improvements || []).map((imp: string, i: number) => (
+                                        <li key={i} className="text-sm text-slate-400 flex items-start gap-2">
+                                            <ArrowUpRight className="w-4 h-4 text-orange-500 shrink-0" /> {imp}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+            {/* SECTION 4: ACTION PLAN (Timeline Style) */}
+            <section className="pt-8">
+                 <div className="flex items-end justify-between mb-12">
+                    <div className="w-full">
+                        <div className="text-emerald-400 font-bold tracking-wider text-xs mb-2 uppercase">Section 03</div>
+                        <h2 className="text-4xl font-bold text-white flex items-center gap-4">
+                            Execution Roadmap
+                            <div className="h-px flex-grow bg-white/10 ml-4"></div>
+                        </h2>
+                    </div>
+                </div>
+
+                <div className="space-y-8">
+                    {(analysis.actionableRecommendations || []).map((rec: any, i: number) => (
+                        <div key={i} className="relative pl-8 group">
+                            {/* Vertical Line */}
+                            <div className="absolute left-[11px] top-8 bottom-[-32px] w-px bg-gradient-to-b from-white/20 to-transparent group-last:hidden"></div>
+                            
+                            {/* Dot */}
+                            <div className="absolute left-0 top-2 w-6 h-6 rounded-full bg-slate-950 border-2 border-emerald-500 flex items-center justify-center z-10">
+                                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                            </div>
+
+                            <div className="bg-slate-900/50 border border-white/10 hover:border-emerald-500/30 p-6 rounded-2xl transition duration-300 flex flex-col md:flex-row gap-6 items-start">
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Step 0{i+1}</div>
+                                        <div className="w-1 h-1 bg-slate-600 rounded-full"></div>
+                                        <div className="text-xs font-bold text-slate-500 uppercase">{rec.timeframe}</div>
+                                    </div>
+                                    <h3 className="text-lg font-bold text-white mb-2">{rec.title}</h3>
+                                    <p className="text-sm text-slate-400 leading-relaxed">{rec.description}</p>
+                                </div>
+                                
+                                <div className="md:w-1/3 w-full bg-slate-950 p-4 rounded-xl border border-white/5">
+                                    <div className="text-[10px] text-slate-500 font-bold uppercase mb-2 flex items-center gap-1">
+                                        <Zap className="w-3 h-3" /> Implementation
+                                    </div>
+                                    <p className="text-xs text-slate-300 leading-relaxed">
+                                        {rec.implementation}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </section>
+
+            {/* FOOTER CTA */}
+            <div className="flex flex-col items-center justify-center pt-20 pb-10 text-center">
+                <h2 className="text-3xl font-bold text-white mb-6">Turn this audit into action.</h2>
+                <p className="text-slate-400 max-w-xl mb-8 text-lg">
+                    Marketing Buddy can auto-generate the content for every step in this roadmap. Don't do it manually.
+                </p>
+                 <Button 
+                    size="lg"
+                    className="bg-white text-slate-950 hover:bg-blue-50 font-bold h-16 px-12 rounded-full text-lg shadow-[0_0_50px_-10px_rgba(255,255,255,0.3)] transition-all hover:scale-105"
+                    onClick={() => {
+                        const analysisData = {
+                            productName: analysis?.businessOverview?.summary?.split(' ')[0] || '',
+                            website: website || '',
+                            valueProp: analysis?.businessOverview?.valueProps?.[0] || '',
+                            websiteAnalysis: analysis
+                        }
+                        const encodedAnalysis = encodeURIComponent(JSON.stringify(analysisData))
+                        router.push(`/onboarding?flow=post-analysis&analysis=${encodedAnalysis}&website=${encodeURIComponent(website || '')}`)
+                    }}
+                >
+                    Create Free Account
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+                <p className="text-xs text-slate-600 mt-6">No credit card required • Cancel anytime</p>
             </div>
 
-            {/* Business Overview */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Building className="h-5 w-5" />
-                  <span>Business Overview</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-2">What You Do</h4>
-                    <p className="text-gray-700">{analysis.businessOverview?.summary}</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <h4 className="font-medium text-gray-900 mb-2">Industry</h4>
-                      <Badge variant="outline">{analysis.businessOverview?.industry || "Not specified"}</Badge>
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-gray-900 mb-2">Business Model</h4>
-                      <Badge variant="outline">{analysis.businessOverview?.businessModel || "Not specified"}</Badge>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Target Audience</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {(analysis.businessOverview?.targetAudience || []).map((audience: string, index: number) => (
-                        <Badge key={index} variant="secondary" className="flex items-center space-x-1">
-                          <Users className="h-3 w-3" />
-                          <span>{audience}</span>
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Key Value Propositions</h4>
-                    <ul className="space-y-2">
-                      {(analysis.businessOverview?.valueProps || []).map((prop: string, index: number) => (
-                        <li key={index} className="flex items-start space-x-2">
-                          <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                          <span className="text-gray-700">{prop}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Marketing Opportunities */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Lightbulb className="h-5 w-5" />
-                  <span>Marketing Opportunities</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {(analysis.marketingOpportunities || []).map((opportunity: any, index: number) => (
-                    <div key={index} className="p-4 border rounded-lg bg-blue-50 border-blue-200">
-                      <div className="flex items-start justify-between mb-3">
-                        <h4 className="font-medium text-blue-900">{opportunity.title}</h4>
-                        <div className="flex space-x-1">
-                          <Badge
-                            variant={
-                              opportunity.priority === "high"
-                                ? "destructive"
-                                : opportunity.priority === "medium"
-                                  ? "default"
-                                  : "secondary"
-                            }
-                            className="text-xs"
-                          >
-                            {opportunity.priority} priority
-                          </Badge>
-                          <Badge variant="outline" className="text-xs">
-                            {opportunity.effort} effort
-                          </Badge>
-                        </div>
-                      </div>
-                      <p className="text-sm text-blue-800 mb-2">{opportunity.description}</p>
-                      {opportunity.reasoning && (
-                        <p className="text-xs text-blue-700 italic">Why: {opportunity.reasoning}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Marketing Strengths */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <CheckCircle className="h-5 w-5" />
-                  <span>Marketing Strengths</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {(analysis.marketingStrengths || []).map((strength: string, index: number) => (
-                    <div key={index} className="flex items-start space-x-2 p-3 bg-green-50 rounded-lg">
-                      <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span className="text-green-800">{strength}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Content & Messaging Analysis */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <MessageSquare className="h-5 w-5" />
-                  <span>Content & Messaging Analysis</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Current Messaging</h4>
-                    <p className="text-gray-700 text-sm bg-gray-50 p-3 rounded">
-                      {analysis.contentMessagingAnalysis?.currentMessaging || "No messaging analysis available"}
-                    </p>
-                  </div>
-
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Tone of Voice</h4>
-                    <Badge variant="outline">{analysis.contentMessagingAnalysis?.toneOfVoice || "Not analyzed"}</Badge>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <h4 className="font-medium text-gray-900 mb-2">Messaging Gaps</h4>
-                      <ul className="space-y-1">
-                        {(analysis.contentMessagingAnalysis?.messagingGaps || []).map((gap: string, index: number) => (
-                          <li key={index} className="flex items-start space-x-2">
-                            <AlertCircle className="h-3 w-3 text-orange-500 mt-1 flex-shrink-0" />
-                            <span className="text-sm text-gray-700">{gap}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div>
-                      <h4 className="font-medium text-gray-900 mb-2">Improvement Suggestions</h4>
-                      <ul className="space-y-1">
-                        {(analysis.contentMessagingAnalysis?.improvementSuggestions || []).map(
-                          (suggestion: string, index: number) => (
-                            <li key={index} className="flex items-start space-x-2">
-                              <Zap className="h-3 w-3 text-blue-500 mt-1 flex-shrink-0" />
-                              <span className="text-sm text-gray-700">{suggestion}</span>
-                            </li>
-                          ),
-                        )}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Competitive Positioning */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <TrendingUp className="h-5 w-5" />
-                  <span>Competitive Positioning</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Market Position</h4>
-                    <p className="text-gray-700 text-sm bg-blue-50 p-3 rounded border-l-4 border-blue-500">
-                      {analysis.competitivePositioning?.marketPosition || "Market position analysis not available"}
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <h4 className="font-medium text-gray-900 mb-2">Unique Differentiators</h4>
-                      <ul className="space-y-2">
-                        {(analysis.competitivePositioning?.differentiators || []).map((diff: string, index: number) => (
-                          <li key={index} className="flex items-start space-x-2 p-2 bg-green-50 rounded">
-                            <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                            <span className="text-sm text-green-800">{diff}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div>
-                      <h4 className="font-medium text-gray-900 mb-2">Areas for Improvement</h4>
-                      <ul className="space-y-2">
-                        {(analysis.competitivePositioning?.improvements || []).map(
-                          (improvement: string, index: number) => (
-                            <li key={index} className="flex items-start space-x-2 p-2 bg-orange-50 rounded">
-                              <AlertCircle className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" />
-                              <span className="text-sm text-orange-800">{improvement}</span>
-                            </li>
-                          ),
-                        )}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Actionable Recommendations */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Target className="h-5 w-5" />
-                  <span>Actionable Recommendations</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {(analysis.actionableRecommendations || []).map((rec: any, index: number) => (
-                    <div key={index} className="p-4 bg-indigo-50 rounded-lg border-l-4 border-indigo-500">
-                      <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-medium text-indigo-900">{rec.title}</h4>
-                        <div className="flex space-x-1">
-                          <Badge variant="outline" className="text-xs">
-                            {rec.timeframe}
-                          </Badge>
-                          <Badge
-                            variant={
-                              rec.impact === "High" ? "destructive" : rec.impact === "Medium" ? "default" : "secondary"
-                            }
-                            className="text-xs"
-                          >
-                            {rec.impact} impact
-                          </Badge>
-                        </div>
-                      </div>
-                      <p className="text-sm text-indigo-800 mb-3">{rec.description}</p>
-                      {rec.implementation && (
-                        <div className="bg-white p-3 rounded border">
-                          <h5 className="text-xs font-medium text-gray-900 mb-1">How to implement:</h5>
-                          <p className="text-xs text-gray-700">{rec.implementation}</p>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* CTA Section */}
-            <Card className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white">
-              <CardContent className="p-8 text-center">
-                <h2 className="text-2xl font-bold mb-4">Ready to turn these insights into action?</h2>
-                <p className="text-indigo-100 mb-6">
-                  Get started on your marketing journey with personalized daily tasks based on this analysis.
-                </p>
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  className="px-8 py-3"
-                  onClick={() => {
-                    // Extract basic info from analysis for pre-filling
-                    const analysisData = {
-                      productName: analysis?.businessOverview?.summary?.split(' ')[0] || '',
-                      website: website || '',
-                      valueProp: analysis?.businessOverview?.valueProps?.[0] || '',
-                      websiteAnalysis: analysis
-                    }
-                    
-                    // Encode the analysis data for URL
-                    const encodedAnalysis = encodeURIComponent(JSON.stringify(analysisData))
-                    
-                    // Redirect to onboarding with post-analysis flow
-                    router.push(`/onboarding?flow=post-analysis&analysis=${encodedAnalysis}&website=${encodeURIComponent(website || '')}`)
-                  }}
-                >
-                  Start Your Marketing Journey
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+          </motion.div>
         )}
-      </div>
+
+      </main>
     </div>
   )
 }

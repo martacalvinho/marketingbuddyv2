@@ -17,7 +17,7 @@ function OnboardingContent() {
     const ensureAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
-        router.replace('/login?redirect=/onboarding')
+        router.replace('/signup?redirect=/onboarding')
         return
       }
       setCheckingAuth(false)
@@ -52,7 +52,7 @@ function OnboardingContent() {
     // Persist onboarding to Supabase (table: onboarding)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-      router.replace('/login?redirect=/onboarding')
+      router.replace('/signup?redirect=/onboarding')
       return
     }
     try {

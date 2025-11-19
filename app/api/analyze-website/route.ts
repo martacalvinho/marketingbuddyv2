@@ -1,273 +1,188 @@
-export const runtime = "nodejs"
+import { NextResponse } from "next/server"
 
-export async function POST(request: Request) {
+export const maxDuration = 60
+
+export async function POST(req: Request) {
   try {
-    const { website } = await request.json()
+    const { website } = await req.json()
 
     if (!website) {
-      return Response.json({ error: "Website URL is required" }, { status: 400 })
+      return NextResponse.json({ error: "Website URL is required" }, { status: 400 })
     }
 
-    console.log(`Analyzing website: ${website}`)
+    // 1. SCRAPE CONTENT
+    console.log(`Fetching content for: ${website}`)
+    
+    const jinaHeaders: Record<string, string> = {
+      "X-Target-Selector": "body",
+      "User-Agent": "Marketing-Buddy-Bot/2.0"
+    }
+    if (process.env.JINA_API_KEY) {
+      jinaHeaders["Authorization"] = `Bearer ${process.env.JINA_API_KEY}`
+    }
 
-    // Step 1: Extract website content using Jina AI Reader
-    console.log("Fetching content with Jina AI Reader...")
     const jinaResponse = await fetch(`https://r.jina.ai/${website}`, {
-      headers: {
-        Accept: "application/json",
-        "User-Agent": "Marketing-Buddy-Analysis/1.0",
-      },
+      headers: jinaHeaders,
     })
 
     if (!jinaResponse.ok) {
-      throw new Error(`Jina AI Reader failed: ${jinaResponse.status} ${jinaResponse.statusText}`)
+      throw new Error(`Jina Extraction Failed: ${jinaResponse.statusText}`)
     }
 
-    const jinaData = await jinaResponse.json()
-    console.log("Jina AI Response received successfully")
+    const text = await jinaResponse.text()
+    const cleanedContent = text.slice(0, 6000);
 
-    // Extract content from Jina AI's nested response structure
-    let websiteContent = ""
-    if (jinaData.data && jinaData.data.content) {
-      websiteContent = jinaData.data.content
-    } else if (jinaData.content) {
-      websiteContent = jinaData.content
-    } else if (typeof jinaData === "string") {
-      websiteContent = jinaData
-    } else {
-      throw new Error("Unexpected response format from Jina AI")
-    }
+    // 2. THE PROMPT
+    const systemPrompt = `
+      You are a cynical, Tier-1 Growth Marketing Strategist.
+      Analyze the provided website content critically.
+      
+      CRITICAL RULES:
+      1. NO GENERIC ADVICE. Be specific to the product type.
+      2. OUTPUT ONLY RAW JSON.
+      3. If using reasoning, keep it internal. output ONLY the JSON object.
+    `
 
-    if (!websiteContent || websiteContent.trim() === "") {
-      throw new Error("No content extracted from website")
-    }
+    const userPrompt = `
+      Analyze this website: "${website}"
+      Content:
+      """
+      ${cleanedContent}
+      """
 
-    console.log(`Extracted ${websiteContent.length} characters of content`)
-    console.log("Content preview:", websiteContent.substring(0, 500) + "...")
-
-    // Step 2: Analyze with OpenRouter AI
-    const analysisPrompt = `You are a marketing expert analyzing a website. Based on the website content below, provide a comprehensive marketing analysis in JSON format.
-
-Website URL: ${website}
-Website Content:
-${websiteContent}
-
-IMPORTANT: Return ONLY valid JSON in this exact format (no markdown, no extra text):
-
-{
-  "businessOverview": {
-    "summary": "2-3 sentence description of what this product/service actually does based on the website",
-    "targetAudience": ["specific audience 1", "specific audience 2", "specific audience 3"],
-    "valueProps": ["actual value prop from site", "another real value prop", "third value prop"],
-    "industry": "specific industry/category (e.g., 'Handmade Jewelry', 'Crypto Dashboard', 'Local Architecture Firm', 'Freelance Graphic Design')",
-    "businessModel": "how they make money based on the site",
-    "businessType": "specific type (e.g., 'B2C E-commerce', 'B2B SaaS', 'Local Service', 'Freelancer', 'Creator/Influencer', 'Physical Product')"
-  },
-  "marketingChannelResearch": {
-    "recommendedPlatforms": [
+      Return a JSON object with this EXACT structure:
       {
-        "platform": "specific platform name (e.g., Etsy, Instagram, LinkedIn, Product Hunt)",
-        "reasoning": "why this platform works for this specific industry",
-        "priority": "high/medium/low",
-        "contentType": "what type of content performs well (e.g., 'behind-the-scenes videos', 'case studies', 'product demos')",
-        "frequency": "how often to post (daily/3x week/weekly/monthly)"
+        "businessOverview": {
+          "summary": "2 sentence summary of what they actually do",
+          "targetAudience": ["Specific Persona 1", "Specific Persona 2"],
+          "valueProps": ["Prop 1", "Prop 2"],
+          "industry": "Specific Niche (e.g. B2B SaaS, E-com)",
+          "businessModel": "How they make money (e.g. Freemium, Ads)"
+        },
+        "marketingOpportunities": [
+          {
+            "title": "Specific Growth Tactic",
+            "description": "Detailed tactic",
+            "priority": "High" | "Medium",
+            "effort": "Low" | "Medium" | "High",
+            "reasoning": "Why this works",
+            "channels": ["Platform 1"]
+          },
+          {
+            "title": "Specific Growth Tactic 2",
+            "description": "Detailed tactic",
+            "priority": "Medium",
+            "effort": "Low",
+            "reasoning": "Why",
+            "channels": ["Platform 2"]
+          },
+          {
+            "title": "Specific Growth Tactic 3",
+            "description": "Detailed tactic",
+            "priority": "High",
+            "effort": "High",
+            "reasoning": "Why",
+            "channels": ["Platform 3"]
+          }
+        ],
+        "marketingStrengths": [
+          "Specific strength 1",
+          "Specific strength 2",
+          "Specific strength 3"
+        ],
+        "contentMessagingAnalysis": {
+          "currentMessaging": "Summary of their current headline/hook",
+          "toneOfVoice": "Current tone",
+          "messagingGaps": [
+            "Specific angle they are missing", 
+            "Objection they aren't addressing"
+          ],
+          "improvementSuggestions": [
+            "Specific copy change idea"
+          ]
+        },
+        "competitivePositioning": {
+          "marketPosition": "Where they sit vs competitors",
+          "differentiators": ["Unique feature 1", "Unique feature 2"],
+          "improvements": ["Where they are weak vs competitors"]
+        },
+        "actionableRecommendations": [
+          {
+            "title": "Immediate Action Item",
+            "description": "Specific task",
+            "timeframe": "This Week",
+            "impact": "High",
+            "implementation": "How to execute"
+          },
+          {
+            "title": "Secondary Action Item",
+            "description": "Specific task",
+            "timeframe": "Next Week",
+            "impact": "Medium",
+            "implementation": "How to execute"
+          }
+        ]
       }
-    ],
-    "directories": [
-      {
-        "name": "specific directory (e.g., CoinGecko for crypto, Etsy for handmade, Clutch for agencies)",
-        "reasoning": "why this directory is relevant",
-        "priority": "high/medium/low (high=Week 1-2, medium=Week 3-4, low=Month 2+)",
-        "estimatedTime": "how long to complete listing (e.g., '30 min', '1 hour')",
-        "isRecurring": "true if needs regular updates, false if one-time"
-      }
-    ],
-    "communities": [
-      {
-        "name": "specific community (e.g., r/jewelry, Crypto Twitter, local Chamber of Commerce)",
-        "platform": "Reddit/Twitter/Facebook/Discord/etc",
-        "reasoning": "why this community matters for this business",
-        "priority": "high/medium/low",
-        "frequency": "how often to engage (daily/weekly/monthly)",
-        "engagementTypes": ["post updates", "answer questions", "share insights", "network", "provide feedback"]
-      }
-    ],
-    "contentStrategy": "what type of content this industry typically uses to market (e.g., 'visual content showcasing products', 'educational content about crypto', 'portfolio case studies')",
-    "avoidPlatforms": ["platforms that typically don't work for this industry with reasoning"],
-    "note": "IMPORTANT: Provide 10-15 directories and 10-15 communities with varying priority levels. High priority = Week 1-2, Medium = Week 3-4, Low = Month 2+. This ensures long-term task variety."
-  },
-  "marketingOpportunities": [
-    {
-      "title": "Specific opportunity name",
-      "description": "Detailed description of what they should do based on their actual product AND industry best practices",
-      "priority": "high",
-      "effort": "medium",
-      "reasoning": "Why this opportunity makes sense for their specific business and industry",
-      "channels": ["specific platforms where this opportunity should be executed"]
-    }
-  ],
-  "marketingStrengths": [
-    "Actual strength observed on the website",
-    "Another real strength from their current setup",
-    "Third genuine strength"
-  ],
-  "contentMessagingAnalysis": {
-    "currentMessaging": "Summary of their current messaging approach",
-    "toneOfVoice": "Description of their current tone",
-    "messagingGaps": ["gap 1", "gap 2"],
-    "improvementSuggestions": ["suggestion 1", "suggestion 2"]
-  },
-  "competitivePositioning": {
-    "differentiators": ["actual differentiator from site", "another real differentiator"],
-    "improvements": ["specific improvement needed", "another improvement"],
-    "marketPosition": "Where they sit in the market based on their positioning"
-  },
-  "actionableRecommendations": [
-    {
-      "title": "Specific recommendation title",
-      "description": "Detailed action they should take based on their actual website",
-      "timeframe": "This week",
-      "impact": "High",
-      "implementation": "Step-by-step how to implement this"
-    }
-  ]
-}`
+    `
 
-    // Debug: log whether API key is loaded
-    console.log("OpenRouter API Key Loaded:", process.env.OPENROUTER_API_KEY ? "YES" : "NO")
-
-    console.log("Sending content to OpenRouter for analysis...")
-    const aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    // 3. CALL OPENROUTER
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://marketing-buddy.vercel.app",
-        "X-Title": "Marketing Buddy Website Analysis",
+        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "HTTP-Referer": "https://marketingbuddy.ai",
+        "X-Title": "Marketing Buddy",
       },
       body: JSON.stringify({
-        model: "deepseek/deepseek-r1-0528-qwen3-8b:free",
+        // Updated to the model you requested
+        model: "openai/gpt-oss-20b:free", 
         messages: [
-          {
-            role: "user",
-            content: analysisPrompt,
-          },
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
         ],
-        max_tokens: 4000,
         temperature: 0.7,
+        max_tokens: 4000,
       }),
     })
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text()
-      throw new Error(`OpenRouter API failed: ${aiResponse.status} ${errorText}`)
+    if (!response.ok) {
+        const err = await response.text()
+        throw new Error(`OpenRouter Error: ${err}`)
     }
 
-    const aiData = await aiResponse.json()
-    const analysis = aiData.choices?.[0]?.message?.content
+    const data = await response.json()
+    let content = data.choices[0].message.content || ""
+    
+    // 4. ROBUST CLEANING
+    content = content.replace(/<think>[\s\S]*?<\/think>/g, "");
+    content = content.replace(/```json/g, "").replace(/```/g, "");
 
-    if (!analysis) {
-      throw new Error("No analysis generated by AI")
+    const firstBrace = content.indexOf("{");
+    const lastBrace = content.lastIndexOf("}");
+
+    if (firstBrace !== -1 && lastBrace !== -1) {
+        content = content.substring(firstBrace, lastBrace + 1);
     }
 
-    console.log("Analysis completed successfully")
-
+    let analysis;
     try {
-      // Clean up the response - remove any markdown formatting
-      const cleanedAnalysis = analysis
-        .replace(/```json\n?/g, "")
-        .replace(/```\n?/g, "")
-        .trim()
-
-      const parsedAnalysis = JSON.parse(cleanedAnalysis)
-      console.log("Analysis parsed successfully")
-
-      return Response.json({
-        success: true,
-        url: website,
-        contentLength: websiteContent.length,
-        extractedAt: new Date().toISOString(),
-        ...parsedAnalysis,
-      })
-    } catch (parseError) {
-      console.error("Analysis parsing error:", parseError)
-      console.error("Raw analysis content:", analysis)
-
-      // Return structured fallback if JSON parsing fails
-      return Response.json({
-        success: true,
-        url: website,
-        contentLength: websiteContent.length,
-        extractedAt: new Date().toISOString(),
-        businessOverview: {
-          summary: "Website analysis completed successfully. The content has been analyzed for marketing insights.",
-          targetAudience: ["Website visitors", "Potential customers", "Target market"],
-          valueProps: ["Primary value proposition", "Secondary benefit", "Key differentiator"],
-          industry: "Technology/Software",
-          businessModel: "Based on website analysis",
-        },
-        marketingOpportunities: [
-          {
-            title: "Content Marketing Enhancement",
-            description: "Improve website content clarity and marketing messaging based on analysis",
-            priority: "high",
-            effort: "medium",
-            reasoning: "Analysis shows opportunities to strengthen marketing messaging",
-          },
-          {
-            title: "SEO and Discoverability",
-            description: "Optimize website content for better search engine visibility",
-            priority: "medium",
-            effort: "medium",
-            reasoning: "Website content can be optimized for better discoverability",
-          },
-        ],
-        marketingStrengths: [
-          "Website is live and accessible",
-          "Has established web presence",
-          "Content successfully analyzed",
-        ],
-        contentMessagingAnalysis: {
-          currentMessaging: "Website messaging has been analyzed and insights generated",
-          toneOfVoice: "Professional and engaging",
-          messagingGaps: ["Clarity could be improved", "Value proposition could be stronger"],
-          improvementSuggestions: ["Strengthen primary messaging", "Add clear call-to-actions"],
-        },
-        competitivePositioning: {
-          differentiators: ["Unique product offering", "Specific market focus"],
-          improvements: ["Strengthen competitive messaging", "Highlight unique advantages"],
-          marketPosition: "Positioned in market with growth opportunities",
-        },
-        actionableRecommendations: [
-          {
-            title: "Improve Website Messaging",
-            description: "Strengthen primary value proposition and key messaging throughout the site",
-            timeframe: "This week",
-            impact: "High",
-            implementation: "Review homepage copy, strengthen headlines, and clarify value propositions",
-          },
-          {
-            title: "Add Social Proof",
-            description: "Include customer testimonials, case studies, or usage statistics",
-            timeframe: "Next week",
-            impact: "Medium",
-            implementation: "Collect customer feedback and add testimonials to key pages",
-          },
-        ],
-        rawAnalysis: analysis, // Include raw analysis for debugging
-      })
+        analysis = JSON.parse(content)
+    } catch (e) {
+        console.error("JSON Parse Error. Raw content:", content)
+        throw new Error("The AI model failed to generate valid JSON. Please try again.");
     }
-  } catch (error: unknown) {
-    console.error("Website analysis error:", error)
 
-    return Response.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : "Failed to analyze website",
-        details: String(error),
-        url: request.url,
-      },
-      { status: 500 },
-    )
+    return NextResponse.json({
+      success: true,
+      url: website,
+      contentLength: cleanedContent.length,
+      extractedAt: new Date().toISOString(),
+      ...analysis,
+    })
+
+  } catch (error: any) {
+    console.error("Analysis failed:", error)
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 })
   }
 }
