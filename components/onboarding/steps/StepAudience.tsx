@@ -55,9 +55,9 @@ export default function StepAudience({ formData, updateFormData }: any) {
 
       {/* EMPTY STATE */}
       {!audienceData && !isGenerating && (
-          <div className="flex flex-col items-center justify-center py-12 bg-slate-900/50 border border-white/10 rounded-3xl space-y-6 hover:border-indigo-500/30 transition-colors">
-              <div className="w-20 h-20 bg-indigo-500/10 rounded-full flex items-center justify-center border border-indigo-500/20">
-                  <Users className="w-10 h-10 text-indigo-400" />
+          <div className="flex flex-col items-center justify-center py-12 bg-slate-900/50 border border-white/10 rounded-3xl space-y-6 hover:border-lime-500/40 transition-colors">
+              <div className="w-20 h-20 bg-lime-500/10 rounded-full flex items-center justify-center border border-lime-500/30">
+                  <Users className="w-10 h-10 text-lime-400" />
               </div>
               <div className="text-center max-w-md px-4">
                   <h3 className="text-xl font-bold text-white mb-2">Let AI Build Your Persona</h3>
@@ -67,7 +67,7 @@ export default function StepAudience({ formData, updateFormData }: any) {
                   <Button 
                     onClick={generateAudience}
                     size="lg"
-                    className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-full px-8 h-12 shadow-lg shadow-indigo-500/20 font-bold transition-all hover:scale-105"
+                    className="bg-lime-400 hover:bg-lime-300 text-black rounded-full px-8 h-12 shadow-[0_0_25px_rgba(163,230,53,0.35)] font-bold transition-all hover:scale-105"
                   >
                     <BrainCircuit className="w-4 h-4 mr-2" /> Generate Persona
                   </Button>
@@ -79,9 +79,9 @@ export default function StepAudience({ formData, updateFormData }: any) {
       {isGenerating && (
           <div className="flex flex-col items-center justify-center py-20 space-y-6">
               <div className="relative">
-                  <div className="w-16 h-16 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>
+                  <div className="w-16 h-16 border-4 border-lime-500/30 border-t-lime-400 rounded-full animate-spin"></div>
                   <div className="absolute inset-0 flex items-center justify-center">
-                      <BrainCircuit className="w-6 h-6 text-indigo-500" />
+                      <BrainCircuit className="w-6 h-6 text-lime-400" />
                   </div>
               </div>
               <div className="text-center space-y-2">
@@ -100,7 +100,7 @@ export default function StepAudience({ formData, updateFormData }: any) {
                   
                   {/* Demographics */}
                   <div className="bg-slate-900 border border-white/10 p-6 rounded-3xl">
-                      <div className="flex items-center gap-2 text-indigo-400 font-bold uppercase text-xs mb-6">
+                      <div className="flex items-center gap-2 text-emerald-400 font-bold uppercase text-xs mb-6">
                           <Users className="w-4 h-4" /> Demographics
                       </div>
                       <div className="space-y-6">
@@ -108,7 +108,7 @@ export default function StepAudience({ formData, updateFormData }: any) {
                               <div className="text-xs text-slate-500 mb-2 font-medium uppercase tracking-wider">Role / Title</div>
                               <div className="flex flex-wrap gap-2">
                                   {(audienceData.demographics?.professions || []).map((p: string, i: number) => (
-                                      <Badge key={i} variant="secondary" className="bg-indigo-950/30 border-indigo-500/20 text-indigo-200 hover:bg-indigo-900/50 px-3 py-1">
+                                      <Badge key={i} variant="secondary" className="bg-emerald-950/20 border-emerald-500/30 text-emerald-200 hover:bg-emerald-900/40 px-3 py-1">
                                         {p}
                                       </Badge>
                                   ))}
@@ -128,7 +128,7 @@ export default function StepAudience({ formData, updateFormData }: any) {
                           {/* NEW: Locations */}
                           {audienceData.demographics?.locations && (
                             <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-950/50 p-2 rounded-lg">
-                                <MapPin className="w-3 h-3 text-indigo-400" />
+                                <MapPin className="w-3 h-3 text-emerald-400" />
                                 <span>{audienceData.demographics.locations.join(", ")}</span>
                             </div>
                           )}
@@ -137,7 +137,7 @@ export default function StepAudience({ formData, updateFormData }: any) {
 
                   {/* Psychographics */}
                   <div className="bg-slate-900 border border-white/10 p-6 rounded-3xl">
-                       <div className="flex items-center gap-2 text-purple-400 font-bold uppercase text-xs mb-6">
+                       <div className="flex items-center gap-2 text-emerald-400 font-bold uppercase text-xs mb-6">
                           <BrainCircuit className="w-4 h-4" /> Psychographics
                       </div>
                       <div className="space-y-6">
@@ -160,9 +160,9 @@ export default function StepAudience({ formData, updateFormData }: any) {
                               </div>
                           </div>
 
-                          <div className="bg-purple-950/10 p-4 rounded-xl border border-purple-500/10">
-                              <div className="text-xs text-purple-300 mb-1 font-bold uppercase">Lifestyle Snapshot</div>
-                              <p className="text-sm text-purple-100/80 leading-relaxed italic">"{audienceData.psychographics?.lifestyle}"</p>
+                          <div className="bg-emerald-950/10 p-4 rounded-xl border border-emerald-500/15">
+                              <div className="text-xs text-emerald-300 mb-1 font-bold uppercase">Lifestyle Snapshot</div>
+                              <p className="text-sm text-emerald-100/80 leading-relaxed italic">"{audienceData.psychographics?.lifestyle}"</p>
                           </div>
                       </div>
                   </div>

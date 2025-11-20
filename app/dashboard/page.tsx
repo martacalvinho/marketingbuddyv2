@@ -60,7 +60,7 @@ export default function DashboardPage() {
       focusArea: onboarding.focus_area ?? "both",
       dailyTaskCount: String(onboarding.daily_task_count ?? "3"),
       websiteAnalysis: onboarding.website_analysis ?? onboarding.data?.websiteAnalysis ?? null,
-      targetAudience: onboarding.data?.targetAudience ?? "",
+      targetAudience: onboarding.target_audience ?? onboarding.data?.targetAudience ?? null,
       plan: typeof onboarding.plan === 'string' ? onboarding.plan : (onboarding.plan?.markdown ?? null),
       goals: onboarding.goals ?? null,
       milestones: onboarding.milestones ?? [],

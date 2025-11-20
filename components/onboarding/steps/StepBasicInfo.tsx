@@ -14,7 +14,7 @@ export default function StepBasicInfo({ formData, updateFormData }: any) {
         <div>
           <Label className="text-slate-300">Product Name</Label>
           <Input 
-            className="bg-slate-950 border-slate-800 text-white h-12 mt-1.5 focus:ring-indigo-500/50 focus:border-indigo-500/50"
+            className="bg-slate-950 border-slate-800 text-white h-12 mt-1.5 focus:ring-lime-500/40 focus:border-lime-400/60"
             placeholder="e.g. Marketing Buddy"
             value={formData.productName}
             onChange={(e) => updateFormData('productName', e.target.value)}
@@ -24,11 +24,22 @@ export default function StepBasicInfo({ formData, updateFormData }: any) {
         <div>
           <Label className="text-slate-300">One-Sentence Value Prop</Label>
           <Textarea 
-             className="bg-slate-950 border-slate-800 text-white min-h-[100px] mt-1.5 focus:ring-indigo-500/50 focus:border-indigo-500/50 resize-none leading-relaxed"
+             className="bg-slate-950 border-slate-800 text-white min-h-[100px] mt-1.5 focus:ring-lime-500/40 focus:border-lime-400/60 resize-none leading-relaxed"
             placeholder="Who is it for and what problem does it solve?"
             value={formData.valueProp}
             onChange={(e) => updateFormData('valueProp', e.target.value)}
           />
+        </div>
+
+        <div>
+          <Label className="text-slate-300">Launch Date</Label>
+          <Input 
+            type="date"
+            className="bg-slate-950 border-slate-800 text-white h-12 mt-1.5 focus:ring-lime-500/40 focus:border-lime-400/60"
+            value={formData.launchDate || ''}
+            onChange={(e) => updateFormData('launchDate', e.target.value)}
+          />
+          <p className="text-xs text-slate-500 mt-1.5">When did (or will) you launch? Helps us tailor your tasks to your stage.</p>
         </div>
       </div>
     </div>

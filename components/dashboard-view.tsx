@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Calendar, CheckCircle2, Users } from "lucide-react"
 import TaskPanel from "@/components/habits/TaskPanel"
@@ -28,6 +28,7 @@ export default function DashboardView({ user, onUserRefresh }: DashboardViewProp
   const [tasksByDay, setTasksByDay] = useState<Record<number, any[]>>({})
   const [todaysTasks, setTodaysTasks] = useState<any[]>([])
   const [currentDay, setCurrentDay] = useState(1)
+  const latestDayRef = useRef<number | null>(null)
   const [streak, setStreak] = useState(user.streak || 0)
   const [xp, setXp] = useState(user.xp || 0)
   const [showProfileModal, setShowProfileModal] = useState(false)
@@ -51,12 +52,63 @@ export default function DashboardView({ user, onUserRefresh }: DashboardViewProp
   const [goalTimeline, setGoalTimeline] = useState<string>(String(user.goalTimeline || '6'))
   const [weekLockMessage, setWeekLockMessage] = useState<string | null>(null)
   const [contentHint, setContentHint] = useState<{ platformId: string; task: any } | null>(null)
+  const [isRegenerating, setIsRegenerating] = useState(false)
+
+  const regenerateWeek1Tasks = async () => {
+    if (isRegenerating) return
+    setIsRegenerating(true)
+    try {
+      // Delete existing Week 1 tasks
+      await supabase
+        .from('tasks')
+        .delete()
+        .eq('user_id', user.id)
+        .gte('metadata->>day', '1')
+        .lte('metadata->>day', '7')
+      
+      // Clear cached tasks
+      setTasksByDay({})
+      
+      // Regenerate tasks for days 1-7, accumulating titles to avoid repetition
+      const generatedTitles: string[] = []
+      for (let day = 1; day <= 7; day++) {
+        // Fetch tasks from DB for this day (loadTasksForDay will generate if missing)
+        await loadTasksForDay(day)
+        
+        // Get the newly generated tasks to add to exclusion list
+        const { data: newTasks } = await supabase
+          .from('tasks')
+          .select('title')
+          .eq('user_id', user.id)
+          .eq('metadata->>day', String(day))
+        
+        if (newTasks) {
+          generatedTitles.push(...newTasks.map(t => t.title))
+        }
+        
+        // Small delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 800))
+      }
+      
+      // Reload current day
+      await loadTasksForDay(currentDay)
+      
+      alert(`✅ Week 1 tasks regenerated successfully! Generated ${generatedTitles.length} unique tasks.`)
+    } catch (error) {
+      console.error('Failed to regenerate tasks:', error)
+      alert('❌ Failed to regenerate tasks. Check console for details.')
+    } finally {
+      setIsRegenerating(false)
+    }
+  }
 
   useEffect(() => {
     if (user?.id) {
+      // Always update latestDayRef when currentDay changes to ensure correct state
+      latestDayRef.current = currentDay
       loadTasksForDay(currentDay)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentDay, user?.id])
 
   // Prompt for goals if not set yet (post-onboarding simplification)
@@ -284,6 +336,7 @@ export default function DashboardView({ user, onUserRefresh }: DashboardViewProp
               focusArea: user.focusArea || 'growth',
               dailyTaskCount: user.dailyTaskCount || '3',
               websiteAnalysis: user.websiteAnalysis,
+              targetAudience: user.targetAudience,
               contextSignals,
               excludeTitles
             })
@@ -314,6 +367,7 @@ export default function DashboardView({ user, onUserRefresh }: DashboardViewProp
   }
 
   const loadTasksForDay = async (day: number) => {
+    latestDayRef.current = day
     setWeekLockMessage(null)
     // Enforce gating before any DB read or generation
     const week = Math.ceil(day / 7)
@@ -365,7 +419,9 @@ export default function DashboardView({ user, onUserRefresh }: DashboardViewProp
           }
         }
         setTasksByDay((prev) => ({ ...prev, [day]: ui }))
-        setTodaysTasks(ui)
+        if (latestDayRef.current === day) {
+          setTodaysTasks(ui)
+        }
         return
       }
     } catch {}
@@ -435,10 +491,14 @@ export default function DashboardView({ user, onUserRefresh }: DashboardViewProp
             const { data: inserted } = await supabase.from('tasks').insert(rows).select('*')
             const ui = inserted ? mapDbTasksToUi(inserted, day) : uniqueLocal
             setTasksByDay((prev) => ({ ...prev, [day]: ui }))
-            setTodaysTasks(ui)
+            if (latestDayRef.current === day) {
+              setTodaysTasks(ui)
+            }
           } catch {
             setTasksByDay((prev) => ({ ...prev, [day]: uniqueLocal }))
-            setTodaysTasks(uniqueLocal)
+            if (latestDayRef.current === day) {
+              setTodaysTasks(uniqueLocal)
+            }
           }
           return
         }
@@ -499,7 +559,7 @@ export default function DashboardView({ user, onUserRefresh }: DashboardViewProp
       const response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user, day, month, weekInMonth, monthStrategy: '', focusArea: user.focusArea || 'growth', dailyTaskCount: user.dailyTaskCount || '3', websiteAnalysis: user.websiteAnalysis, contextSignals, excludeTitles })
+        body: JSON.stringify({ user, day, month, weekInMonth, monthStrategy: '', focusArea: user.focusArea || 'growth', dailyTaskCount: user.dailyTaskCount || '3', websiteAnalysis: user.websiteAnalysis, targetAudience: user.targetAudience, contextSignals, excludeTitles })
       })
       const data = await response.json()
       let generatedTasks = Array.isArray(data.tasks) ? data.tasks : []
@@ -536,7 +596,9 @@ export default function DashboardView({ user, onUserRefresh }: DashboardViewProp
         const { data: inserted } = await supabase.from('tasks').insert(rows).select('*')
         const ui = inserted ? mapDbTasksToUi(inserted, day) : uniqueGen
         setTasksByDay((prev) => ({ ...prev, [day]: ui }))
-        setTodaysTasks(ui)
+        if (latestDayRef.current === day) {
+          setTodaysTasks(ui)
+        }
         return
       }
     } catch (e) {
@@ -545,7 +607,9 @@ export default function DashboardView({ user, onUserRefresh }: DashboardViewProp
 
     // fallback empty
     setTasksByDay((prev) => ({ ...prev, [day]: [] }))
-    setTodaysTasks([])
+    if (latestDayRef.current === day) {
+      setTodaysTasks([])
+    }
   }
 
 
@@ -724,6 +788,32 @@ export default function DashboardView({ user, onUserRefresh }: DashboardViewProp
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Regenerate Button */}
+        <div className="mb-4 flex justify-end">
+          <button
+            onClick={regenerateWeek1Tasks}
+            disabled={isRegenerating}
+            className="px-4 py-2 bg-lime-500 hover:bg-lime-600 disabled:bg-gray-400 text-white rounded-lg font-medium text-sm shadow-sm transition-colors flex items-center gap-2"
+          >
+            {isRegenerating ? (
+              <>
+                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Regenerating...
+              </>
+            ) : (
+              <>
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Regenerate Week 1
+              </>
+            )}
+          </button>
+        </div>
+        
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           {/* Simplified MVP Navigation */}
           <TabsList className="grid w-full grid-cols-4 max-w-3xl mx-auto bg-white rounded-3xl p-1.5 shadow-sm border border-gray-100">

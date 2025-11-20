@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS public.onboarding (
   focus_area text NULL,
   daily_task_count integer NULL,
   website_analysis jsonb NULL,
+  target_audience jsonb NULL,
   plan jsonb NULL,
   goals jsonb NULL,
   milestones jsonb NULL,
@@ -66,6 +67,7 @@ CREATE INDEX IF NOT EXISTS idx_onboarding_user_id ON public.onboarding USING btr
 CREATE INDEX IF NOT EXISTS idx_onboarding_current_platforms ON public.onboarding USING gin (current_platforms);
 CREATE INDEX IF NOT EXISTS idx_onboarding_preferred_platforms ON public.onboarding USING gin (preferred_platforms);
 CREATE INDEX IF NOT EXISTS idx_onboarding_website_analysis ON public.onboarding USING gin (website_analysis jsonb_path_ops);
+CREATE INDEX IF NOT EXISTS idx_onboarding_target_audience ON public.onboarding USING gin (target_audience jsonb_path_ops);
 
 -- ============================================
 -- 3. TASKS TABLE

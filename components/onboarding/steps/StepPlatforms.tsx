@@ -135,19 +135,19 @@ export default function StepPlatforms({ formData, updateFormData }: any) {
               className={`
                 relative cursor-pointer p-6 rounded-3xl border-2 transition-all duration-200 group flex flex-col gap-4 h-32 justify-center
                 ${isSelected 
-                  ? 'bg-indigo-600/10 border-indigo-500 shadow-[0_0_30px_-10px_rgba(99,102,241,0.3)]' 
+                  ? 'bg-lime-500/10 border-lime-400 shadow-[0_0_30px_-10px_rgba(132,204,22,0.4)]' 
                   : 'bg-slate-900/50 border-slate-800 hover:border-slate-600 hover:bg-slate-800'
                 }
               `}
             >
               <div className="flex items-center justify-between w-full">
-                 <div className={`p-3 rounded-2xl bg-slate-950 border border-white/5 ${isSelected ? 'text-indigo-400' : 'text-slate-500'} ${p.color} transition-colors`}>
+                 <div className={`p-3 rounded-2xl bg-slate-950 border border-white/5 ${isSelected ? 'text-lime-400' : 'text-slate-500'} ${p.color} transition-colors`}>
                     <Icon className="w-6 h-6" />
                  </div>
                  
                  {isSelected ? (
-                    <div className="bg-indigo-500 rounded-full p-1">
-                        <CheckCircle2 className="w-4 h-4 text-white fill-indigo-500" />
+                    <div className="bg-lime-400 rounded-full p-1">
+                        <CheckCircle2 className="w-4 h-4 text-black fill-lime-400" />
                     </div>
                  ) : (
                     <div className="w-6 h-6 rounded-full border-2 border-slate-800 group-hover:border-slate-600" />

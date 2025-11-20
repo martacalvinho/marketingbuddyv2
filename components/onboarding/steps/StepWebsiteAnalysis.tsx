@@ -54,19 +54,19 @@ export default function StepWebsiteAnalysis({ formData, updateFormData, onNext }
   return (
     <div className="space-y-8 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
       
-      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-medium">
+      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lime-500/10 border border-lime-500/30 text-lime-300 text-xs font-medium">
         <Sparkles className="w-3 h-3" /> Step 1 of 4
       </div>
 
       <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight">
         Let's calibrate your <br />
-        <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">marketing engine.</span>
+        <span className="text-transparent bg-clip-text bg-gradient-to-r from-lime-300 to-emerald-400">marketing engine.</span>
       </h1>
 
       <div className="max-w-md mx-auto space-y-4">
         <div className="relative group">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-xl blur opacity-30 group-hover:opacity-50 transition duration-500"></div>
-            <div className="relative bg-slate-900 border border-white/10 p-2 rounded-xl flex gap-2">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-lime-400 to-emerald-400 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-500"></div>
+            <div className="relative bg-slate-950/80 border border-white/10 p-2 rounded-xl flex gap-2">
                 <div className="relative flex-1">
                     <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
                         <Globe className="h-5 w-5 text-slate-500" />
@@ -86,7 +86,7 @@ export default function StepWebsiteAnalysis({ formData, updateFormData, onNext }
         <Button 
             onClick={handleAnalyze}
             disabled={!formData.website || isAnalyzing}
-            className="w-full h-12 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/25 transition-all"
+            className="w-full h-12 bg-lime-400 hover:bg-lime-300 text-black font-bold rounded-xl shadow-[0_0_25px_rgba(163,230,53,0.35)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
             {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Analyze Website"}
             {!isAnalyzing && <ArrowRight className="w-4 h-4 ml-2" />}

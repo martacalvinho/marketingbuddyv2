@@ -344,6 +344,7 @@ export async function POST(request: NextRequest) {
       focusArea,
       dailyTaskCount,
       websiteAnalysis,
+      targetAudience,
       contextSignals,
       excludeTitles 
     } = await request.json()
@@ -436,13 +437,15 @@ export async function POST(request: NextRequest) {
     // Determine platform preferences
     const preferred = Array.isArray(user?.preferredPlatforms) ? user.preferredPlatforms.map((p: string) => String(p).toLowerCase()) : []
     const avoidList = new Set<string>([...(Array.isArray(contextSignals?.avoidPlatforms) ? contextSignals.avoidPlatforms : [] as string[])].map((p: string) => p.toLowerCase()))
-    // If user specified preferred platforms, strongly constrain suggestions to them + SaaS Directories + Reddit (common for SaaS)
-    const allowedNote = preferred.length > 0 ? `ALLOWED_PLATFORMS: ${Array.from(new Set([...preferred, 'saas directories', 'reddit'])).join(', ')}` : ''
-    const disallowedNote = preferred.length > 0 ? `DISALLOWED_PLATFORMS: ${['linkedin','instagram','tiktok','twitter','blog','indie hackers','youtube','medium','substack','discord','facebook groups']
-      .filter(p => !preferred.includes(p))
-      .concat(Array.from(avoidList))
-      .filter((v, i, a) => a.indexOf(v) === i)
-      .join(', ')}` : (avoidList.size > 0 ? `DISALLOWED_PLATFORMS: ${Array.from(avoidList).join(', ')}` : '')
+    // If user specified preferred platforms, strongly constrain suggestions to them
+    const allowedNote = preferred.length > 0 ? `✅ ONLY USE THESE PLATFORMS: ${preferred.join(', ').toUpperCase()}` : ''
+    const disallowedPlatforms = preferred.length > 0 
+      ? ['linkedin','instagram','tiktok','twitter','x','blog','indie hackers','youtube','medium','substack','discord','facebook groups', 'facebook', 'email']
+          .filter(p => !preferred.includes(p))
+          .concat(Array.from(avoidList))
+          .filter((v, i, a) => a.indexOf(v) === i)
+      : Array.from(avoidList)
+    const disallowedNote = disallowedPlatforms.length > 0 ? `❌ NEVER USE THESE PLATFORMS: ${disallowedPlatforms.join(', ').toUpperCase()}` : ''
 
     const currentUsersMetric = parseMetric(user?.currentUsers ?? user?.current_users)
     const currentMrrMetric = parseMetric(user?.currentMrr ?? user?.current_mrr)
@@ -457,10 +460,43 @@ export async function POST(request: NextRequest) {
     const websiteValueProps = formatList(websiteAnalysis?.businessOverview?.valueProps?.slice(0, 3), 'Not specified')
     const websiteAudienceFromAnalysis = formatList(websiteAnalysis?.businessOverview?.targetAudience, 'Not specified')
     const strengthsSummary = formatList(websiteAnalysis?.marketingStrengths?.slice(0, 3), 'Not specified')
-    const topOpportunitiesSummary = formatList(
-      (websiteAnalysis?.marketingOpportunities || []).slice(0, 2).map((o: any) => o.title),
-      'Not specified'
-    )
+    
+    // Extract full opportunity details with ALL fields
+    const topOpportunities = (websiteAnalysis?.marketingOpportunities || []).slice(0, 5)
+    const topOpportunitiesSummary = topOpportunities.length > 0 
+      ? topOpportunities.map((o: any, i: number) => {
+          const parts = [`${i + 1}. **${o.title}**`]
+          if (o.description) parts.push(`\n   Description: ${o.description}`)
+          if (o.reasoning) parts.push(`\n   Why this works: ${o.reasoning}`)
+          if (o.channels?.length) parts.push(`\n   Channels: ${o.channels.join(', ')}`)
+          if (o.priority) parts.push(`\n   Priority: ${o.priority}`)
+          if (o.effort) parts.push(`\n   Effort: ${o.effort}`)
+          return parts.join('')
+        }).join('\n\n')
+      : 'Not specified'
+    
+    // Extract actionable recommendations with full implementation details
+    const actionableRecs = (websiteAnalysis?.actionableRecommendations || []).slice(0, 5)
+    const actionableRecsSummary = actionableRecs.length > 0
+      ? actionableRecs.map((rec: any, i: number) => {
+          const parts = [`${i + 1}. **${rec.title}**`]
+          if (rec.description) parts.push(`\n   Task: ${rec.description}`)
+          if (rec.implementation) parts.push(`\n   How to execute: ${rec.implementation}`)
+          if (rec.timeframe) parts.push(`\n   Timeframe: ${rec.timeframe}`)
+          if (rec.impact) parts.push(`\n   Impact: ${rec.impact}`)
+          return parts.join('')
+        }).join('\n\n')
+      : 'Not specified'
+    
+    // Extract messaging gaps and improvements
+    const messagingGaps = websiteAnalysis?.contentMessagingAnalysis?.messagingGaps || []
+    const messagingImprovements = websiteAnalysis?.contentMessagingAnalysis?.improvementSuggestions || []
+    const messagingInsights = [...messagingGaps, ...messagingImprovements].slice(0, 4).join('; ')
+    
+    // Extract competitive differentiators
+    const differentiators = websiteAnalysis?.competitivePositioning?.differentiators || []
+    const competitiveImprovements = websiteAnalysis?.competitivePositioning?.improvements || []
+    const competitiveInsights = [...differentiators.map((d: string) => `Strength: ${d}`), ...competitiveImprovements.map((i: string) => `Improve: ${i}`)].slice(0, 4).join('; ')
     const preferredPlatformsSummary = formatList(user?.preferredPlatforms, 'None specified')
     const focusAreaSummary = safeString(focusArea, 'growth')
     const challengeSummary = safeString(user?.challenges, 'None specified')
@@ -520,6 +556,37 @@ export async function POST(request: NextRequest) {
       goalMetric
     }
 
+    // Extract detailed target audience info if available
+    const targetAudienceData = targetAudience || user?.targetAudience
+    let audienceDeepDive = ''
+    if (targetAudienceData && typeof targetAudienceData === 'object') {
+      const parts: string[] = []
+      if (targetAudienceData.demographics) {
+        const demo = targetAudienceData.demographics
+        if (demo.professions?.length) parts.push(`Professions: ${demo.professions.slice(0, 3).join(', ')}`)
+        if (demo.ageRange) parts.push(`Age: ${demo.ageRange}`)
+        if (demo.locations?.length) parts.push(`Locations: ${demo.locations.slice(0, 3).join(', ')}`)
+      }
+      if (targetAudienceData.painPoints?.length) {
+        parts.push(`Pain Points: ${targetAudienceData.painPoints.slice(0, 3).join('; ')}`)
+      }
+      if (targetAudienceData.goals?.length) {
+        parts.push(`Goals/Aspirations: ${targetAudienceData.goals.slice(0, 3).join('; ')}`)
+      }
+      if (targetAudienceData.psychographics) {
+        const psycho = targetAudienceData.psychographics
+        if (psycho.interests?.length) parts.push(`Interests: ${psycho.interests.slice(0, 4).join(', ')}`)
+        if (psycho.values?.length) parts.push(`Values: ${psycho.values.slice(0, 3).join(', ')}`)
+        if (psycho.behaviors?.length) parts.push(`Behaviors: ${psycho.behaviors.slice(0, 3).join('; ')}`)
+      }
+      if (targetAudienceData.whereTheyHangOut?.length) {
+        parts.push(`Where They Hang Out: ${targetAudienceData.whereTheyHangOut.slice(0, 4).join(', ')}`)
+      }
+      if (parts.length > 0) {
+        audienceDeepDive = `\n\nTARGET AUDIENCE DEEP DIVE (Use these specifics in every task):\n${parts.map(p => `- ${p}`).join('\n')}`
+      }
+    }
+
     const marketingPrompt = `You are generating Day ${day} marketing tasks for a real business. Use the context below to create SPECIFIC, ACTIONABLE tasks (not templates or placeholders).
 
 BUSINESS SNAPSHOT:
@@ -531,7 +598,7 @@ BUSINESS SNAPSHOT:
 - North Star Goal: ${northStarDisplay}
 - Experience Level: ${experienceLevelDisplay}
 - Focus Area: ${focusAreaSummary}
-- Key Challenge Shared: ${challengeSummary}
+- Key Challenge Shared: ${challengeSummary}${audienceDeepDive}
 
 STARTUP TYPE & POSITIONING:
 - Website Summary: ${websiteSummary}
@@ -540,7 +607,19 @@ STARTUP TYPE & POSITIONING:
 - Differentiators / Value Props from Site: ${websiteValueProps}
 - Audience cues from site: ${websiteAudienceFromAnalysis}
 - Strengths to leverage: ${strengthsSummary}
-- Top Opportunities flagged: ${topOpportunitiesSummary}
+
+WEBSITE ANALYSIS INSIGHTS (Use these to create hyper-specific tasks):
+**Top Marketing Opportunities:**
+${topOpportunitiesSummary}
+
+**Actionable Recommendations from Analysis:**
+${actionableRecsSummary}
+
+**Messaging Gaps & Improvements:**
+${messagingInsights || 'Not specified'}
+
+**Competitive Positioning:**
+${competitiveInsights || 'Not specified'}
 
 TRACTION & STAGE:
 - Current Users: ${formattedUsers}
@@ -552,7 +631,6 @@ TRACTION & STAGE:
 - Strategy Mode: ${strategyModeDisplay}
 
 ${contextBlock}
-${platformNotes ? `\nPLATFORM GUARDRAILS:\n${platformNotes}\n` : ''}
 
 MARKETING CHANNEL RESEARCH (Based on ${websiteIndustry} industry analysis):
 - **Recommended Platforms:** ${recommendedPlatforms}
@@ -560,103 +638,138 @@ MARKETING CHANNEL RESEARCH (Based on ${websiteIndustry} industry analysis):
 - **Directories to List On:** ${industryDirectories}
 - **Subreddits to Engage:** ${industrySubreddits}
 - **Communities to Join:** ${industryCommunities}${avoidPlatformsNote}
-
+${excludeTitles && excludeTitles.length > 0 ? `
+ALREADY GENERATED TASKS (DO NOT REPEAT):
+${excludeTitles.map((t: string) => `- ${t}`).join('\n')}
+` : ''}
 CRITICAL RULES:
-1. NO placeholders like "[Target Audience]" or "[Service 1]" - use actual business details
-2. NO generic strategy tasks like "define your message" - we already did onboarding
-3. Each task must be DOABLE IN 15 MINUTES with a clear deliverable
-4. Focus on EXECUTION, not planning (for example, "Post on LinkedIn about X" not "Plan LinkedIn strategy")
-5. Use the actual product name, value prop, and target audience in task descriptions
-6. **EXPLORE/EXPLOIT MIX**: Generate ${Math.max(1, marketingTasksTarget - 1)} tasks on top-performing channels (exploit what works) + ${Math.min(1, marketingTasksTarget)} task trying something new (explore to learn)
-7. **AVOID** channels with 3+ skips unless exploring
-8. **RESPECT MONTHLY THEMES**: ${monthlyTheme}
-9. **USE RESEARCHED CHANNELS**: The marketing channel research above is based on what actually works for ${websiteIndustry} businesses. Prioritize these platforms and content types.
-10. **MATCH CONTENT TO INDUSTRY**: Use the content strategy specified above. Don't suggest video content for text-based industries or vice versa.
-11. Do not repeat the same platform twice in the same day.
-12. Tailor channel choices, communities, and examples to the startup's specific industry/type (crypto, SaaS, AI, indie hacker tools, local services, etc.) and reference niche-specific hooks.
-13. Match every task to the traction stage above: pre-launch or pre-revenue tasks focus on validation and direct outreach; growth or scaling stages focus on leverage, compounding, and optimisation.
-14. At least one task must explicitly reference a unique detail from the website summary, value props, or target audience narrative so the founder sees it is personalised.
-15. Keep outcomes aligned with the user's primary goal metric (users versus MRR) when describing impact or success criteria.
+${platformNotes ? `1. **PLATFORM CONSTRAINTS (MUST FOLLOW):**\n   ${platformNotes.split('\n').join('\n   ')}\n   Every task MUST use only the allowed platforms. Do not suggest tasks for disallowed platforms under any circumstances.\n` : ''}2. NO placeholders like "[Target Audience]" or "[Service 1]" - use actual business details
+3. NO generic strategy tasks like "define your message" - we already did onboarding
+4. Each task must be DOABLE IN 15 MINUTES with a clear deliverable
+5. Focus on EXECUTION, not planning (for example, "Post on LinkedIn about X" not "Plan LinkedIn strategy")
+6. Use the actual product name, value prop, and target audience in task descriptions
+7. **EXPLORE/EXPLOIT MIX**: Generate ${Math.max(1, marketingTasksTarget - 1)} tasks on top-performing channels (exploit what works) + ${Math.min(1, marketingTasksTarget)} task trying something new (explore to learn)
+8. **AVOID** channels with 3+ skips unless exploring
+9. **RESPECT MONTHLY THEMES**: ${monthlyTheme}
+10. **USE RESEARCHED CHANNELS**: The marketing channel research above is based on what actually works for ${websiteIndustry} businesses. Prioritize these platforms and content types.
+11. **MATCH CONTENT TO INDUSTRY**: Use the content strategy specified above. Don't suggest video content for text-based industries or vice versa.
+12. Do not repeat the same platform twice in the same day.
+13. Tailor channel choices, communities, and examples to the startup's specific industry/type (crypto, SaaS, AI, indie hacker tools, local services, etc.) and reference niche-specific hooks.
+14. Match every task to the traction stage above: pre-launch or pre-revenue tasks focus on validation and direct outreach; growth or scaling stages focus on leverage, compounding, and optimisation.
+15. At least one task must explicitly reference a unique detail from the website summary, value props, or target audience narrative so the founder sees it is personalised.
+16. **USE TARGET AUDIENCE DEEP DIVE**: If provided above, weave in specific professions, pain points, interests, behaviors, and hangout spots into task descriptions. This is your secret weapon for hyper-targeted tasks that feel custom-built.
+17. **BALANCED USE OF ANALYSIS**: The "Actionable Recommendations" and "Top Marketing Opportunities" above are insights to INSPIRE tasks, not dominate them. For Week 1 (Days 1-7), include 1-2 tasks TOTAL (not per day) that directly implement a specific recommendation. The rest should be a well-rounded marketing strategy: content creation, community engagement, audience research, social proof building, and channel experiments. Don't repeat the same recommendation multiple times in different forms.
+18. **VARIETY IS KEY**: Each day should feel different. Mix content types (posts, threads, videos), platforms, and objectives (awareness, engagement, conversion, learning). Avoid suggesting the same initiative more than once per week.
+19. Keep outcomes aligned with the user's primary goal metric (users versus MRR) when describing impact or success criteria.
+20. Tone: write like an experienced marketing coach talking to a busy founder—clear, friendly, and conversational, not corporate or robotic.
+21. Titles: keep them short and natural (ideally under 70 characters) with no "Task 1" or "#3" labels—make them sound like simple to-dos a human would write.
+22. Every task should feel like a small, confidence-boosting step the founder can actually do today, not a big vague project.
+23. **GENERATE EXACTLY ${marketingTasksTarget} TASKS** - no more, no less. This is critical.
+24. **KEEP DESCRIPTIONS CONCISE**: Maximum 1-2 short sentences (under 100 chars total). Be direct and actionable, not verbose.
 
-GOOD TASK EXAMPLES:
-- "Post on LinkedIn: Share how ${productNameDisplay} helps ${targetAudienceSummary} achieve ${productValueProp} and invite one quick reply about ${goalTypeDisplay} progress."
-- "Engage in a ${websiteIndustry} community: Join a conversation where ${targetAudienceSummary} discuss a pain point and add a practical tip referencing ${productNameDisplay}."
-- "Create a Twitter thread: Break down a real outcome or insight from ${productNameDisplay} for ${targetAudienceSummary} and link to a ${goalTypeDisplay}-driving CTA."
+Return ONLY valid JSON in this exact format (no markdown, no code blocks):
 
-BAD TASK EXAMPLES (avoid these):
-- "Develop core messaging" (too vague, already done in onboarding)
-- "Define target audience" (already done)
-- "Create content strategy" (too broad for 15min)
-- "Draft ideas for [Target Audience]" (placeholder, not specific)
+{
+  "tasks": [
+    {
+      "title": "Short, natural task title (under 70 chars)",
+      "description": "1-2 short sentences with exact steps (under 100 chars total)",
+      "category": "content|analytics|community|strategy|engagement",
+      "platform": "specific platform name (lowercase)",
+      "impact": "One sentence on expected outcome",
+      "tips": ["Tip 1", "Tip 2"],
+      "type": "exploit|explore"
+    }
+  ]
+}
 
-Generate ${marketingTasksTarget} tasks in this format:
-**Task X: [Specific Action Title]**
-[2-3 sentences with exact steps using real business details]
-- Category: [content/analytics/community/strategy/engagement]
-- Platform: [specific platform name]
-- Impact: [One sentence on expected outcome]
-- Tips: [2 specific tips]
-- Type: [exploit/explore] (exploit = proven channel, explore = new experiment)`
+Generate exactly ${marketingTasksTarget} tasks.`
 
     let marketingTasks: any[] = []
     
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
           'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://marketingbuddy.ai',
         },
         body: JSON.stringify({
-          model: 'gpt-4',
+          model: "openai/gpt-oss-20b:free",
           messages: [
             {
               role: 'system',
-              content: 'You are a marketing expert who creates personalized daily tasks based on user goals, experience level, and business context.'
+              content: 'You are a marketing expert who creates personalized daily tasks. Return ONLY valid JSON, no markdown formatting.'
             },
             {
               role: 'user',
               content: marketingPrompt
             }
           ],
-          max_tokens: 1500,
+          max_tokens: 3000,
           temperature: 0.7,
+          response_format: { type: "json_object" }
         }),
       })
 
       if (response.ok) {
         const data = await response.json()
-        const tasksText = data.choices[0]?.message?.content || ''
-        marketingTasks = parseMarketingTasks(tasksText, day, marketingTasksTarget)
+        const content = data.choices[0]?.message?.content || ''
+        console.log('✅ AI Response received for Day', day, '- Length:', content.length, 'chars')
+        
+        try {
+          // Parse JSON response
+          const parsed = JSON.parse(content)
+          const tasksArray = Array.isArray(parsed) ? parsed : (parsed.tasks || [])
+          
+          marketingTasks = tasksArray.map((task: any, index: number) => ({
+            id: `marketing-${day}-${index + 1}`,
+            title: task.title || 'Untitled task',
+            description: task.description || '',
+            category: task.category || 'strategy',
+            platform: task.platform?.toLowerCase() || undefined,
+            impact: task.impact || 'Builds marketing momentum',
+            tips: Array.isArray(task.tips) ? task.tips.slice(0, 3) : [],
+            type: task.type || 'exploit',
+            xp: 15,
+            completed: false,
+            estimatedTime: "15 min",
+            day
+          })).slice(0, marketingTasksTarget)
+          
+          console.log('✅ Parsed', marketingTasks.length, 'tasks from JSON response')
+        } catch (parseError) {
+          console.error('❌ JSON parsing failed:', parseError)
+          console.error('Raw content:', content.substring(0, 500))
+          marketingTasks = []
+        }
       } else {
-        // Use deterministic fallback if API is unavailable or key missing
-        console.warn('OpenAI returned non-OK status for marketing tasks:', response.status, response.statusText)
-        marketingTasks = generateFallbackMarketingTasks(user, day, marketingTasksTarget, fallbackContext)
+        const errorText = await response.text()
+        console.error('❌ OpenRouter API failed:', response.status, response.statusText, errorText.substring(0, 500))
+        return NextResponse.json({ 
+          error: 'AI task generation failed', 
+          details: `${response.status}: ${response.statusText}`,
+          tasks: [] 
+        }, { status: 500 })
       }
     } catch (error) {
-      console.error('Marketing task generation failed:', error)
-      // Fallback marketing tasks
-      marketingTasks = generateFallbackMarketingTasks(user, day, marketingTasksTarget, fallbackContext)
+      console.error('❌ Marketing task generation failed:', error)
+      return NextResponse.json({ 
+        error: 'Task generation error', 
+        details: error instanceof Error ? error.message : 'Unknown error',
+        tasks: [] 
+      }, { status: 500 })
     }
 
-    // Enforce disallowed platforms after parsing (e.g., user opted out of LinkedIn)
+    // Log platform distribution for debugging
     try {
-      const disallowed = new Set<string>((preferred.length > 0 ? ['linkedin','instagram','tiktok','twitter','blog','indie hackers','youtube','medium','substack','discord','facebook groups']
-        .filter(p => !preferred.includes(p)) : []).concat(Array.from(avoidList)).map(s => s.toLowerCase()))
-      if (disallowed.size > 0) {
-        const allowedTasks = marketingTasks.filter((t: any) => {
-          const title = String(t?.title || '').toLowerCase()
-          const plat = String(t?.platform || '').toLowerCase()
-          return !(plat && disallowed.has(plat)) && !Array.from(disallowed).some(k => k.length > 2 && title.includes(k))
-        })
-        const removedCount = Math.max(0, marketingTasksTarget - allowedTasks.length)
-        if (removedCount > 0) {
-          const backfill = generateFallbackMarketingTasks(user, day, removedCount, fallbackContext)
-          marketingTasks = [...allowedTasks, ...backfill].slice(0, marketingTasksTarget)
-        } else {
-          marketingTasks = allowedTasks.slice(0, marketingTasksTarget)
-        }
-      }
+      const platformCounts: Record<string, number> = {}
+      marketingTasks.forEach((t: any) => {
+        const plat = String(t?.platform || 'unknown').toLowerCase()
+        platformCounts[plat] = (platformCounts[plat] || 0) + 1
+      })
+      console.log('📊 Day', day, 'platform distribution:', platformCounts)
     } catch {}
 
     // Combine and prioritize tasks
@@ -696,25 +809,10 @@ Generate ${marketingTasksTarget} tasks in this format:
       }
     }
     let finalTasks = uniqueCombined.slice(0, taskCount)
-
-    // If still short, backfill with rotated fallback tasks while respecting exclusions
+    
+    // Log if we're short on tasks
     if (finalTasks.length < taskCount) {
-      const needed = taskCount - finalTasks.length
-      const fallbackPool = generateFallbackMarketingTasks(
-        user,
-        day + (uniqueCombined.length || 0),
-        Math.max(needed * 2, needed + 2),
-        fallbackContext
-      )
-      for (const ft of fallbackPool) {
-        const key = `${(ft.title || '').trim()}|${(ft.description || '').trim()}`.toLowerCase()
-        const titleKey = String(ft.title || '').trim().toLowerCase()
-        if (!seenKeys.has(key) && !excludeSet.has(titleKey)) {
-          seenKeys.add(key)
-          finalTasks.push(ft)
-          if (finalTasks.length >= taskCount) break
-        }
-      }
+      console.warn(`⚠️ Only generated ${finalTasks.length} tasks for Day ${day}, requested ${taskCount}`)
     }
 
     // Check if all website tasks are completed (for future notification)
@@ -759,19 +857,23 @@ function parseMarketingTasks(tasksText: string, day: number, count: number): any
   let match
 
   while ((match = taskPattern.exec(tasksText)) !== null && tasks.length < count) {
-    const title = match[1].trim()
+    let title = match[1].trim()
     const content = match[2].trim()
     
-    // Extract category, impact, and tips
+    // Extract category, impact, tips, and optional platform line
     const categoryMatch = content.match(/- Category:\s*(.+)/i)
     const impactMatch = content.match(/- Impact:\s*(.+)/i)
     const tipsMatch = content.match(/- Tips:\s*([\s\S]*?)(?=\n-|\n\*\*|$)/i)
-    
+    const platformMatch = content.match(/- Platform:\s*(.+)/i)
+
     const category = categoryMatch ? categoryMatch[1].trim().toLowerCase() : 'strategy'
     const impact = impactMatch ? impactMatch[1].trim() : 'Builds marketing momentum'
     const tips = tipsMatch ? tipsMatch[1].split('\n').map(tip => tip.replace(/^-\s*/, '').trim()).filter(tip => tip) : []
+
+    const rawPlatform = platformMatch ? platformMatch[1].trim().toLowerCase() : ''
+    const normPlatform = rawPlatform || undefined
     
-    // Clean description (remove category, impact, tips lines)
+    // Clean description (remove metadata lines that we parsed above)
     let description = content
       .replace(/- Category:.*$/gm, '')
       .replace(/- Impact:.*$/gm, '')
@@ -798,7 +900,7 @@ function parseMarketingTasks(tasksText: string, day: number, count: number): any
       category: ['content', 'analytics', 'community', 'strategy', 'engagement'].includes(category) ? category : 'strategy',
       impact,
       tips: tips.slice(0, 3), // Limit to 3 tips
-      platform: normPlatform || undefined,
+      platform: normPlatform,
       xp: 15,
       completed: false,
       estimatedTime: "20 min",
@@ -808,314 +910,4 @@ function parseMarketingTasks(tasksText: string, day: number, count: number): any
   }
 
   return tasks
-}
-
-function generateFallbackMarketingTasks(user: any, day: number, count: number, context?: FallbackContext): any[] {
-  const productName = normaliseContextValue(context?.productName ?? user?.productName, 'your product')
-  const valueProp = normaliseContextValue(context?.valueProp ?? user?.valueProp, 'your main benefit')
-  const audienceSummaryRaw = normaliseContextValue(context?.targetAudienceSummary ?? summariseTargetAudience(user?.targetAudience), 'your target audience')
-  const audienceSummary = audienceSummaryRaw.length > 180 ? `${audienceSummaryRaw.slice(0, 177)}...` : audienceSummaryRaw
-  const audienceShort = audienceSummary.split('|')[0]?.replace(/^[^:]*:\s*/i, '').trim() || audienceSummary
-  const industry = normaliseContextValue(context?.industry, 'your market')
-  const challenge = normaliseContextValue(context?.challengeSummary ?? user?.challenges, 'their biggest headache right now')
-  const monthlyTheme = normaliseContextValue(context?.monthlyTheme, getMonthlyTheme(day, context?.strategyMode || user?.strategyMode || 'foundation_content_community'))
-  const goalTypeRaw = (context?.goalType ?? user?.goalType ?? '').toString().toLowerCase()
-  const goalMetric = (context?.goalMetric || (goalTypeRaw.includes('mrr') || goalTypeRaw.includes('revenue') ? 'MRR' : 'users')).toUpperCase()
-  const goalAmount = normaliseContextValue(context?.goalAmount ?? user?.goalAmount, goalMetric === 'MRR' ? '$1k' : '100')
-  const dayLabel = `Day ${day}`
-  const industryShort = industry.split('/')[0]?.trim() || industry
-  const challengeShort = challenge.length > 90 ? `${challenge.slice(0, 87)}...` : challenge
-  const valuePropShort = valueProp.length > 90 ? `${valueProp.slice(0, 87)}...` : valueProp
-
-  const stageGroup = deriveStageGroup(context?.userStageSummary)
-  const revenueGroup = deriveRevenueGroup(context?.revenueStageSummary)
-
-  const stageIs = {
-    prelaunch: stageGroup === 'prelaunch',
-    validation: stageGroup === 'validation',
-    traction: stageGroup === 'traction',
-    growth: stageGroup === 'growth',
-    scale: stageGroup === 'scale'
-  }
-
-  const revenueIs = {
-    pre: revenueGroup === 'pre',
-    first: revenueGroup === 'first',
-    growth: revenueGroup === 'growth',
-    scale: revenueGroup === 'scale'
-  }
-
-  const monthlyHook = monthlyTheme.replace(/^month\s*\d+:\s*/i, '').trim() || monthlyTheme
-  const audienceFocus = audienceShort.length > 70 ? `${audienceShort.slice(0, 67)}...` : audienceShort
-  const goalOutcome = goalMetric === 'MRR' ? 'revenue momentum' : 'user growth'
-
-  const sequenceTag = (offset: number) => `#${((day + offset) % 7) + 1}`
-  
-  // Get industry-specific resources for fallback
-  const industryRes = getIndustryResources(industry)
-  const directories = industryRes.directories.map((dir: string, idx: number) => ({
-    dir,
-    idx
-  }))
-  const subreddits = industryRes.subreddits.map((sub: string, idx: number) => ({
-    sub,
-    idx
-  }))
-
-  type Template = {
-    allowedStages?: StageGroup[]
-    allowedRevenueStages?: RevenueGroup[]
-    build: (ctx: { index: number }) => {
-      title: string
-      description: string
-      category: 'content' | 'analytics' | 'community' | 'strategy' | 'engagement'
-      platform?: string
-      impact: string
-      estimatedTime?: string
-    } | null
-  }
-
-  const templates: Template[] = [
-    {
-      build: ({ index }) => ({
-        title: `LinkedIn insight ${sequenceTag(index)}: ${industryShort} win`,
-        description: `Write 5 lines on LinkedIn covering how ${productName} helps ${audienceFocus} tackle ${challengeShort}. Highlight one data point or founder story and end by asking “How are you handling this now?”`,
-        category: 'content',
-        platform: 'linkedin',
-        impact: `Keeps ${audienceFocus} aware of ${productName} while nudging ${goalOutcome}.`
-      })
-    },
-    {
-      build: ({ index }) => ({
-        title: `Twitter/X thread ${sequenceTag(index)} on ${valuePropShort}`,
-        description: `Draft a 4-tweet thread breaking down ${valuePropShort}. Lead with a hook tailored to ${audienceFocus}, include one practical tactic, and end with a single CTA aimed at ${goalOutcome}.`,
-        category: 'content',
-        platform: 'twitter',
-        impact: `Earns saves and clicks from ${audienceFocus} looking for quick wins.`
-      })
-    },
-    {
-      build: ({ index }) => {
-        const { sub } = subreddits[(day + index) % subreddits.length]
-        return {
-          title: `Reddit: add value in r/${sub}`,
-          description: `Find or start a thread in r/${sub} where ${audienceFocus} discuss ${challengeShort}. Add a non-promotional comment that references ${productName} as a tool they can try, then note any replies.`,
-          category: 'community',
-          platform: 'reddit',
-          impact: `Seeds trust inside a ${industryShort} community that matches your buyers.`
-        }
-      }
-    },
-    {
-      allowedStages: ['prelaunch', 'validation'],
-      build: ({ index }) => ({
-        title: `DM 3 prospects for validation chats ${sequenceTag(index)}`,
-        description: `Send short DMs or emails to 3 ${audienceFocus} asking for a 10-minute call about ${challengeShort}. Mention you’re building ${productName} and want their candid input. Capture one quote.`,
-        category: 'engagement',
-        platform: 'direct outreach',
-        impact: `Generates real discovery data while lining up early adopters for ${productName}.`
-      })
-    },
-    {
-      allowedStages: ['prelaunch', 'validation'],
-      build: ({ index }) => ({
-        title: `Micro-survey in a niche community ${sequenceTag(index)}`,
-        description: `Post a single-question poll in a ${industryShort} Slack/Discord asking ${audienceFocus} how they currently handle ${challengeShort}. Share one response thread with your team.`,
-        category: 'community',
-        platform: 'community',
-        impact: `Validates messaging and uncovers phrasing prospects use when describing the pain.`
-      })
-    },
-    {
-      allowedStages: ['traction', 'growth', 'scale'],
-      build: ({ index }) => ({
-        title: `Share a customer mini-win ${sequenceTag(index)}`,
-        description: `Turn a recent ${goalMetric === 'MRR' ? 'upgrade' : 'activation'} into a short post or DM. Mention the specific outcome ${audienceFocus} achieved thanks to ${productName} and invite replies from people chasing the same result.`,
-        category: 'engagement',
-        platform: 'social proof',
-        impact: `Leverages social proof to persuade lookalike ${audienceFocus}.`
-      })
-    },
-    {
-      allowedStages: ['traction', 'growth', 'scale'],
-      build: ({ index }) => ({
-        title: `Newsletter or email blurb ${sequenceTag(index)}`,
-        description: `Write a 120-word story for your list explaining a fresh learning from building ${productName} for ${audienceFocus}. Link to a CTA that directly advances ${goalOutcome}.`,
-        category: 'content',
-        platform: 'email',
-        impact: `Warms up subscribers and funnels them toward ${goalMetric} conversions.`
-      })
-    },
-    {
-      allowedStages: ['validation', 'traction', 'growth', 'scale'],
-      build: ({ index }) => {
-        const { dir } = directories[(day + index) % directories.length]
-        return {
-          title: `List ${productName} on ${dir}`,
-          description: `Refresh your tagline to emphasise ${valuePropShort}, gather one screenshot showing the outcome, and submit ${productName} to ${dir}. Tag the listing for ${audienceFocus}.`,
-          category: 'strategy',
-          platform: 'saas directories',
-          impact: `Opens a steady discovery path to buyers browsing launch hubs.`
-        }
-      }
-    },
-    {
-      build: ({ index }) => ({
-        title: `Indie Hackers update ${sequenceTag(index)} (${monthlyHook})`,
-        description: `Post a progress update sharing one win, one struggle about ${challengeShort}, and a question for the community. Include a link to ${productName} only at the end.`,
-        category: 'community',
-        platform: 'indiehackers',
-        impact: `Invites feedback from fellow builders and surfaces early supporters.`
-      })
-    },
-    {
-      allowedStages: ['growth', 'scale'],
-      allowedRevenueStages: ['growth', 'scale'],
-      build: ({ index }) => ({
-        title: `Upgrade prompt for engaged users ${sequenceTag(index)}`,
-        description: `Send a quick upgrade nudge to 2 active ${audienceFocus} explaining the premium benefit linked to ${valuePropShort}. Add a deadline (e.g., “Reply by Friday”) to spark action.`,
-        category: 'engagement',
-        platform: 'email',
-        impact: `Converts warm users into MRR by highlighting a specific premium unlock.`
-      })
-    },
-    {
-      allowedStages: ['traction', 'growth', 'scale'],
-      build: ({ index }) => ({
-        title: `Quick testimonial ask ${sequenceTag(index)}`,
-        description: `Message one happy ${audienceFocus} and ask for a 2-line quote about ${productName}. Offer to draft it for them, then add it to your website or social proof doc.`,
-        category: 'strategy',
-        platform: 'customer',
-        impact: `Strengthens credibility for future ${goalOutcome} pushes.`
-      })
-    },
-    {
-      allowedStages: ['growth', 'scale'],
-      build: ({ index }) => ({
-        title: `Inspect 3 activation metrics ${sequenceTag(index)}`,
-        description: `Review analytics to spot where ${audienceFocus} drop off during onboarding. Capture one improvement idea you can implement this week to boost ${goalOutcome}.`,
-        category: 'analytics',
-        platform: 'analytics',
-        impact: `Tightens the funnel so new ${audienceFocus} convert faster.`
-      })
-    },
-    {
-      build: ({ index }) => ({
-        title: `Record a 45s Loom for ${audienceFocus} ${sequenceTag(index)}`,
-        description: `Film a short Loom demo showing how ${productName} handles ${challengeShort}. Post it to LinkedIn/Twitter and share privately with one prospect.`,
-        category: 'content',
-        platform: 'video',
-        impact: `Gives prospects a visual hook and humanises your brand.`
-      })
-    },
-    {
-      allowedStages: ['traction', 'growth', 'scale'],
-      build: ({ index }) => ({
-        title: `Ask for a referral ${sequenceTag(index)}`,
-        description: `Pick one engaged ${audienceFocus} and ask if they know someone else facing ${challengeShort}. Provide a short blurb they can forward.`,
-        category: 'engagement',
-        platform: 'referral',
-        impact: `Taps into existing trust networks to find high-fit leads.`
-      })
-    },
-    {
-      allowedStages: ['validation', 'traction', 'growth'],
-      build: ({ index }) => ({
-        title: `Guest post or collab pitch ${sequenceTag(index)}`,
-        description: `Identify a micro-influencer or newsletter serving ${audienceFocus}. Pitch a 200-word guest tip aligned with ${valuePropShort}.`,
-        category: 'strategy',
-        platform: 'partnership',
-        impact: `Places ${productName} in front of qualified audiences without ads.`
-      })
-    },
-    {
-      allowedStages: ['prelaunch', 'validation', 'traction'],
-      build: ({ index }) => ({
-        title: `Compile 3 objections ${sequenceTag(index)}`,
-        description: `Review past conversations and list 3 common pushbacks from ${audienceFocus}. Draft one-sentence responses tied to ${valuePropShort} and share them with the team.`,
-        category: 'strategy',
-        platform: 'research',
-        impact: `Prepares you to overcome friction and close more ${goalMetric === 'MRR' ? 'deals' : 'sign-ups'}.`
-      })
-    }
-  ]
-
-  const generatedTasks: any[] = []
-  templates.forEach((template, index) => {
-    if (template.allowedStages && !template.allowedStages.includes(stageGroup)) return
-    if (template.allowedRevenueStages && !template.allowedRevenueStages.includes(revenueGroup)) return
-    const result = template.build({ index: generatedTasks.length })
-    if (result) {
-      generatedTasks.push(result)
-    }
-  })
-
-  // Provide additional directory + subreddit variations to increase unique options
-  for (let i = 0; i < Math.max(3, count); i++) {
-    const dir = directories[(day + generatedTasks.length + i) % directories.length]?.dir
-    if (dir) {
-      generatedTasks.push({
-        title: `Refresh ${productName} listing for ${dir}`,
-        description: `Update your ${dir} profile with one punchy bullet about ${valuePropShort} and add proof that ${audienceFocus} can trust you (metric, quote, or waitlist size).`,
-        category: 'strategy',
-        platform: 'saas directories',
-        impact: `Keeps listings current and improves conversions from high-intent browsers.`
-      })
-    }
-    const sub = subreddits[(day + generatedTasks.length + i) % subreddits.length]?.sub
-    if (sub) {
-      generatedTasks.push({
-        title: `Reply in r/${sub} with a mini teardown`,
-        description: `Find a post asking for help on ${challengeShort}. Share one actionable teardown referencing ${productName} as the faster path.`,
-        category: 'community',
-        platform: 'reddit',
-        impact: `Positions you as the helpful expert in front of ${audienceFocus}.`
-      })
-    }
-  }
-
-  // Ensure we have more tasks than needed
-  const expandedTasks = generatedTasks.filter(Boolean)
-  if (expandedTasks.length === 0) {
-    // Fallback to simple generic tasks if something unexpected happened
-    return [
-      {
-        id: `fallback-${day}-1`,
-        title: `Share ${productName} story`,
-        description: `Write a short post explaining why you built ${productName} and how it helps ${audienceFocus}.`,
-        category: 'content',
-        platform: 'linkedin',
-        impact: `Keeps your network updated on ${productName}.`,
-        tips: [
-          'Be specific and authentic',
-          'Focus on helping, not selling',
-          `Mention your ${goalMetric} goal`
-        ],
-        xp: 15,
-        completed: false,
-        estimatedTime: '15 min',
-        day,
-        type: 'marketing'
-      }
-    ]
-  }
-
-  // Rotate starting point for variety
-  const start = expandedTasks.length > 0 ? ((day - 1) % expandedTasks.length + expandedTasks.length) % expandedTasks.length : 0
-  const rotated = [...expandedTasks.slice(start), ...expandedTasks.slice(0, start)]
-
-  return rotated.slice(0, Math.max(count, 0)).map((task, index) => ({
-    id: `fallback-${day}-${index + 1}`,
-    ...task,
-    tips: [
-      `Reference ${productName} and ${valuePropShort} explicitly`,
-      `Stay focused on ${audienceFocus} and their language`,
-      `Log any responses to track ${goalOutcome}`
-    ],
-    xp: 15,
-    completed: false,
-    estimatedTime: task.estimatedTime || '15 min',
-    day,
-    type: 'marketing'
-  }))
 }

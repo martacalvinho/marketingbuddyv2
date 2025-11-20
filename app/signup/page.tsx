@@ -58,13 +58,13 @@ function SignupPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 font-sans selection:bg-indigo-500/30 relative overflow-hidden">
+    <div className="min-h-screen bg-[#020604] flex items-center justify-center p-4 font-sans selection:bg-lime-400/30 relative overflow-hidden">
       {/* Background Glows */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-indigo-600/20 blur-[120px] rounded-full pointer-events-none -z-10 opacity-40" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-lime-500/20 blur-[120px] rounded-full pointer-events-none -z-10 opacity-40" />
 
       <Card className="w-full max-w-md bg-slate-900/80 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl">
         <div className="text-center mb-8">
-          <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-500/30">
+          <div className="w-12 h-12 bg-lime-400 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-lime-400/40">
             <Rocket className="w-6 h-6 text-white fill-white" />
           </div>
           <h1 className="text-2xl font-bold text-white mb-2">Create your Marketing Buddy account</h1>
@@ -78,7 +78,7 @@ function SignupPageContent() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="bg-slate-950 border-slate-800 text-white h-12 focus:ring-indigo-500/50 focus:border-indigo-500/50"
+              className="bg-slate-950 border-slate-800 text-white h-12 focus:ring-lime-500/40 focus:border-lime-400/60"
             />
           </div>
 
@@ -89,20 +89,20 @@ function SignupPageContent() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="bg-slate-950 border-slate-800 text-white h-12 focus:ring-indigo-500/50 focus:border-indigo-500/50"
+              className="bg-slate-950 border-slate-800 text-white h-12 focus:ring-lime-500/40 focus:border-lime-400/60"
             />
           </div>
 
           <Button
             type="submit"
             disabled={loading}
-            className="w-full h-12 bg-white text-slate-950 hover:bg-indigo-50 font-bold rounded-xl"
+            className="w-full h-12 bg-white text-slate-950 hover:bg-slate-100 font-bold rounded-xl"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Sign up with Email"}
           </Button>
 
           {message && (
-            <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-sm text-indigo-300 text-center">
+            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-sm text-red-300 text-center">
               {message}
             </div>
           )}
@@ -140,11 +140,13 @@ function SignupPageContent() {
 
 export default function SignupPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#020604] flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-lime-400" />
+        </div>
+      }
+    >
       <SignupPageContent />
     </Suspense>
   )

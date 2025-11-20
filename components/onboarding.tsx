@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from "framer-motion"
-import { ChevronLeft, ChevronRight, Loader2, LayoutDashboard, ArrowRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Loader2, LayoutDashboard, ArrowRight, Rocket } from "lucide-react"
 
 // Imports
 import StepWebsiteAnalysis from "./onboarding/steps/StepWebsiteAnalysis"
@@ -69,23 +69,45 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50 flex flex-col font-sans selection:bg-indigo-500/30">
+    <div className="min-h-screen bg-[#020604] text-slate-200 flex flex-col font-sans selection:bg-lime-400/30">
       
       {/* Ambient Background */}
-      <div className="fixed top-0 left-0 right-0 h-[500px] bg-indigo-900/20 blur-[120px] rounded-full pointer-events-none -z-10 transform -translate-y-1/2 opacity-50" />
+      <div className="fixed top-0 left-0 right-0 h-[500px] bg-lime-900/15 blur-[120px] rounded-full pointer-events-none -z-10 transform -translate-y-1/2 opacity-60" />
 
       {/* Top Bar Progress */}
       <div className="h-1 bg-slate-900 w-full fixed top-0 z-50">
         <motion.div 
-          className="h-full bg-gradient-to-r from-indigo-500 to-purple-500"
+          className="h-full bg-gradient-to-r from-lime-400 to-emerald-500"
           initial={{ width: 0 }}
           animate={{ width: `${((step) / (totalSteps - 1)) * 100}%` }}
         />
       </div>
 
       {/* MAIN CONTENT */}
-      <main className="flex-grow flex flex-col items-center justify-center p-6 pb-32 max-w-5xl mx-auto w-full relative z-10">
+      <main className="flex-grow flex flex-col items-center p-6 pt-24 pb-32 max-w-5xl mx-auto w-full relative z-10">
         
+        {/* Onboarding Hero Header */}
+        <div className="w-full mb-10">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-lime-400 rounded-sm flex items-center justify-center shadow-[0_0_25px_rgba(163,230,53,0.5)] text-black">
+                <Rocket className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Onboarding</p>
+                <h1 className="text-base md:text-lg font-semibold text-white mt-1">
+                  Tell us about your product and audience. We'll calibrate your marketing system.
+                </h1>
+              </div>
+            </div>
+
+            <div className="hidden md:flex items-center gap-2 text-[11px] text-slate-500 font-mono">
+              <span className="w-2 h-2 rounded-full bg-lime-400 animate-pulse" />
+              <span>Step {step + 1} of {totalSteps}</span>
+            </div>
+          </div>
+        </div>
+
         <AnimatePresence mode="wait">
           
           {/* STEP 0: INPUT WEBSITE */}
@@ -105,7 +127,7 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
               <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4">
                  <div>
                     <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Intelligence Report</h1>
-                    <p className="text-slate-400 text-lg">Strategy extracted for <span className="text-indigo-400">{formData.website}</span></p>
+                    <p className="text-slate-400 text-lg">Strategy extracted for <span className="text-lime-400">{formData.website}</span></p>
                  </div>
                  
                  {/* Styled "Skip" Button */}
@@ -157,7 +179,7 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
                  onClick={handleSubmit} 
                  disabled={isSubmitting}
                  size="lg"
-                 className="bg-white text-slate-950 hover:bg-indigo-50 rounded-full px-12 h-14 text-lg font-bold shadow-lg shadow-white/10 transition-all hover:scale-105"
+                 className="bg-lime-400 text-black hover:bg-lime-300 rounded-full px-12 h-14 text-lg font-bold shadow-[0_0_30px_rgba(163,230,53,0.35)] transition-transform hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed"
                >
                  {isSubmitting ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : "Generate Dashboard"}
                </Button>
@@ -170,7 +192,7 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
 
       {/* Footer Navigation */}
       {step > 0 && step < 5 && (
-        <footer className="fixed bottom-0 w-full bg-slate-950/80 backdrop-blur-xl border-t border-white/5 p-6 z-50">
+        <footer className="fixed bottom-0 w-full bg-[#020604]/90 backdrop-blur-xl border-t border-white/5 p-6 z-50">
             <div className="max-w-5xl mx-auto flex justify-between items-center">
             <Button 
                 variant="ghost" 
@@ -185,7 +207,7 @@ export default function Onboarding({ flow, initialData, onComplete, onSkip }: On
                 <Button 
                     onClick={handleNext}
                     disabled={!canProceed()}
-                    className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-full px-8 font-bold shadow-lg shadow-indigo-500/20 transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-lime-400 hover:bg-lime-300 text-black rounded-full px-8 font-bold shadow-lg shadow-lime-500/30 transition-all hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                     {step === 1 ? 'Looks good, continue' : 'Continue'}
                     <ChevronRight className="w-4 h-4 ml-2" />

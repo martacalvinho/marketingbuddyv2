@@ -85,19 +85,19 @@ export default function AnalyzePage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50 font-sans selection:bg-blue-500/30">
+    <div className="min-h-screen bg-slate-950 text-slate-50 font-sans selection:bg-lime-400/30">
       
       {/* Ambient Background Glows (Matching Landing Page) */}
       <div className="fixed top-0 left-0 right-0 h-[500px] bg-blue-600/10 blur-[120px] rounded-full pointer-events-none -z-10 transform -translate-y-1/2 opacity-60" />
-      <div className="fixed bottom-0 right-0 w-[500px] h-[500px] bg-purple-500/10 blur-[120px] rounded-full pointer-events-none -z-10 translate-y-1/3" />
+      <div className="fixed bottom-0 right-0 w-[500px] h-[500px] bg-emerald-500/10 blur-[120px] rounded-full pointer-events-none -z-10 translate-y-1/3" />
 
       {/* Navigation */}
       <header className="sticky top-0 z-50 border-b border-white/5 bg-slate-950/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 h-16 flex justify-between items-center">
           <div className="flex items-center gap-6">
             <Link href="/landing" className="flex items-center space-x-3 hover:opacity-80 transition">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
-                <Rocket className="w-4 h-4 text-white fill-white" />
+              <div className="w-8 h-8 bg-lime-400 rounded-lg flex items-center justify-center shadow-lg shadow-lime-400/20">
+                <Rocket className="w-4 h-4 text-black fill-black" />
               </div>
               <span className="text-lg font-bold tracking-tight text-white hidden sm:block">Marketing Buddy</span>
             </Link>
@@ -145,27 +145,27 @@ export default function AnalyzePage() {
              <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="w-full max-w-3xl text-center z-10"
+                className="w-full max-w-4xl text-center z-10"
             >
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-slate-300 text-xs font-medium mb-8 backdrop-blur-md">
-                  <Sparkles className="w-3 h-3 text-blue-400" /> AI Strategy Engine 2.0
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-slate-300 text-xs font-medium mb-8 backdrop-blur-md">
+                  <Sparkles className="w-3 h-3 text-lime-400" /> AI Strategy Engine 2.0
                 </div>
 
-                <h1 className="text-5xl md:text-7xl font-extrabold text-white mb-8 tracking-tight leading-tight">
+                <h1 className="text-5xl md:text-7xl font-extrabold text-white mb-10 tracking-tight leading-tight">
                   Identify your <br />
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">unfair advantage.</span>
+                  <span className="text-lime-400">unfair advantage.</span>
                 </h1>
                 
-                <div className="relative max-w-xl mx-auto mb-16">
+                <div className="relative max-w-2xl mx-auto mb-20">
                     {/* Glow behind input */}
-                    <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur opacity-40"></div>
-                    <div className="relative bg-slate-900 border border-white/10 p-2 rounded-xl flex gap-2 shadow-2xl">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-lime-400 to-emerald-500 rounded-xl blur opacity-20"></div>
+                    <form onSubmit={handleAnalyze} className="relative bg-[#020604] border border-white/20 p-1.5 rounded-lg flex gap-2 shadow-2xl">
                         <div className="relative flex-1">
-                            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
                                 <Search className="h-5 w-5 text-slate-500" />
                             </div>
                             <Input 
-                                className="bg-transparent border-none text-white pl-10 h-12 focus-visible:ring-0 text-base placeholder:text-slate-600"
+                                className="bg-transparent border-none text-white pl-12 h-14 focus-visible:ring-0 text-lg placeholder:text-slate-600"
                                 placeholder="marketingbuddy.ai"
                                 value={website}
                                 onChange={(e) => setWebsite(formatUrl(e.target.value))}
@@ -173,14 +173,14 @@ export default function AnalyzePage() {
                             />
                         </div>
                         <Button 
-                            onClick={handleAnalyze}
+                            type="submit"
                             size="lg" 
-                            className="h-12 px-8 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition-all hover:scale-105"
+                            className="h-14 px-8 bg-lime-400 hover:bg-lime-300 text-black font-bold rounded-md text-base transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_-5px_rgba(163,230,53,0.3)]"
                             disabled={!website}
                         >
                             Run Audit
                         </Button>
-                    </div>
+                    </form>
                 </div>
 
                 {error && (
@@ -189,22 +189,28 @@ export default function AnalyzePage() {
                   </div>
                 )}
 
-                {/* Teaser Grid */}
-                <div className="grid grid-cols-3 gap-px bg-white/10 rounded-2xl overflow-hidden border border-white/10">
-                    <div className="bg-slate-950 p-6 hover:bg-slate-900 transition duration-500 group">
-                        <Target className="w-6 h-6 text-blue-500 mb-3 group-hover:scale-110 transition" />
-                        <h3 className="text-white font-bold text-sm mb-1">Action Plan</h3>
-                        <p className="text-xs text-slate-500">Specific tactics to grow.</p>
+                {/* Teaser Grid - Exact Match to Screenshot */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-white/10 rounded-xl overflow-hidden border border-white/10 max-w-3xl mx-auto">
+                    <div className="bg-[#0b1215] p-8 hover:bg-[#111a1e] transition duration-500 group text-left">
+                        <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition">
+                           <Target className="w-5 h-5 text-emerald-400" />
+                        </div>
+                        <h3 className="text-white font-bold text-base mb-1">Action Plan</h3>
+                        <p className="text-sm text-slate-500">Specific tactics to grow.</p>
                     </div>
-                    <div className="bg-slate-950 p-6 hover:bg-slate-900 transition duration-500 group">
-                        <MessageSquare className="w-6 h-6 text-purple-500 mb-3 group-hover:scale-110 transition" />
-                        <h3 className="text-white font-bold text-sm mb-1">Messaging</h3>
-                        <p className="text-xs text-slate-500">Tone & clarity audit.</p>
+                    <div className="bg-[#0b1215] p-8 hover:bg-[#111a1e] transition duration-500 group text-left">
+                        <div className="w-10 h-10 rounded-full bg-lime-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition">
+                           <MessageSquare className="w-5 h-5 text-lime-400" />
+                        </div>
+                        <h3 className="text-white font-bold text-base mb-1">Messaging</h3>
+                        <p className="text-sm text-slate-500">Tone & clarity audit.</p>
                     </div>
-                    <div className="bg-slate-900/50 p-6 hover:bg-slate-900 transition duration-500 group">
-                        <ArrowUpRight className="w-6 h-6 text-emerald-500 mb-3 group-hover:scale-110 transition" />
-                        <h3 className="text-white font-bold text-sm mb-1">Opportunities</h3>
-                        <p className="text-xs text-slate-500">Low-hanging fruit.</p>
+                    <div className="bg-[#0b1215] p-8 hover:bg-[#111a1e] transition duration-500 group text-left">
+                        <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition">
+                           <ArrowUpRight className="w-5 h-5 text-blue-400" />
+                        </div>
+                        <h3 className="text-white font-bold text-base mb-1">Opportunities</h3>
+                        <p className="text-sm text-slate-500">Low-hanging fruit.</p>
                     </div>
                 </div>
             </motion.div>
@@ -215,19 +221,20 @@ export default function AnalyzePage() {
         {analyzing && (
             <div className="min-h-[60vh] flex flex-col items-center justify-center">
                 <div className="relative mb-8">
-                    <div className="w-24 h-24 bg-blue-500/20 rounded-full animate-ping absolute inset-0"></div>
-                    <div className="w-24 h-24 bg-slate-950 border border-blue-500/50 rounded-full flex items-center justify-center relative z-10 shadow-[0_0_50px_-10px_rgba(59,130,246,0.5)]">
-                        <Loader2 className="w-10 h-10 text-blue-400 animate-spin" />
+                    <div className="w-24 h-24 bg-lime-500/20 rounded-full animate-ping absolute inset-0"></div>
+                    <div className="w-24 h-24 bg-slate-950 border border-lime-500/50 rounded-full flex items-center justify-center relative z-10 shadow-[0_0_50px_-10px_rgba(163,230,53,0.3)]">
+                        <Loader2 className="w-10 h-10 text-lime-400 animate-spin" />
                     </div>
                 </div>
                 <div className="space-y-2 text-center">
                     <h3 className="text-2xl font-bold text-white">Analyzing Strategy...</h3>
-                    <div className="flex gap-2 justify-center">
-                         <span className={`w-2 h-2 rounded-full ${loadingStep >= 0 ? 'bg-blue-500' : 'bg-slate-800'}`}></span>
-                         <span className={`w-2 h-2 rounded-full ${loadingStep >= 1 ? 'bg-blue-500' : 'bg-slate-800'}`}></span>
-                         <span className={`w-2 h-2 rounded-full ${loadingStep >= 2 ? 'bg-blue-500' : 'bg-slate-800'}`}></span>
+                    <div className="flex gap-2 justify-center mt-4">
+                         <span className={`w-2 h-2 rounded-full transition-colors duration-300 ${loadingStep >= 0 ? 'bg-lime-500' : 'bg-slate-800'}`}></span>
+                         <span className={`w-2 h-2 rounded-full transition-colors duration-300 ${loadingStep >= 1 ? 'bg-lime-500' : 'bg-slate-800'}`}></span>
+                         <span className={`w-2 h-2 rounded-full transition-colors duration-300 ${loadingStep >= 2 ? 'bg-lime-500' : 'bg-slate-800'}`}></span>
+                         <span className={`w-2 h-2 rounded-full transition-colors duration-300 ${loadingStep >= 3 ? 'bg-lime-500' : 'bg-slate-800'}`}></span>
                     </div>
-                    <p className="text-slate-500 text-sm font-mono mt-4">Extraction: {website}</p>
+                    <p className="text-slate-500 text-sm font-mono mt-6">Target: {website}</p>
                 </div>
             </div>
         )}
@@ -244,7 +251,7 @@ export default function AnalyzePage() {
             <section>
                 <div className="flex items-end justify-between mb-8 border-b border-white/5 pb-4">
                     <div>
-                        <div className="text-blue-400 font-bold tracking-wider text-xs mb-2 uppercase">Section 01</div>
+                        <div className="text-lime-400 font-bold tracking-wider text-xs mb-2 uppercase">Section 01</div>
                         <h2 className="text-4xl font-bold text-white">Executive Summary</h2>
                     </div>
                     <div className="hidden md:block text-right">
@@ -379,12 +386,12 @@ export default function AnalyzePage() {
                 <div className="bg-slate-900 border border-white/10 rounded-3xl overflow-hidden flex flex-col">
                      <div className="p-8 border-b border-white/5 flex justify-between items-center bg-slate-950/50">
                         <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                                <MessageSquare className="w-4 h-4 text-purple-400" />
+                            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                                <MessageSquare className="w-4 h-4 text-emerald-300" />
                             </div>
                             <h3 className="text-xl font-bold text-white">Messaging Audit</h3>
                         </div>
-                        <div className="px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full text-[10px] text-purple-300 font-bold uppercase tracking-wide">
+                        <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[10px] text-emerald-200 font-bold uppercase tracking-wide">
                             {analysis.contentMessagingAnalysis?.toneOfVoice}
                         </div>
                     </div>

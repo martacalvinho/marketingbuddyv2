@@ -1,594 +1,564 @@
 "use client"
 
-import type React from "react"
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import {
-  Rocket,
-  Target,
-  Zap,
-  CheckCircle,
-  Calendar,
-  FileText,
-  Flame,
-  Sparkles,
-  Menu,
-  X,
-  Star,
-  ChevronDown,
-  PlayCircle,
-  ArrowRight
-} from "lucide-react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
+import { 
+  ArrowRight, 
+  Zap, 
+  CheckCircle2, 
+  Menu, 
+  X, 
+  Rocket,
+  Flame,
+  Calendar as CalendarIcon,
+  Search, 
+  MessageSquare,
+  Sparkles,
+  LayoutTemplate,
+  Bell
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 
-// Animation variants for reuse
-const fadeIn = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
+// --- Visual Components ---
+
+// 1. Hero Visual: The "Storytelling" Dashboard
+const DashboardVisual = () => {
+  return (
+    <div className="w-full bg-[#0A0F0C] border border-white/10 rounded-lg shadow-2xl overflow-hidden relative z-20 select-none group">
+      
+      {/* Window Header */}
+      <div className="bg-white/5 px-4 py-3 border-b border-white/5 flex items-center justify-between">
+        <div className="flex gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-[#ef4444]" />
+          <div className="w-2.5 h-2.5 rounded-full bg-[#eab308]" />
+          <div className="w-2.5 h-2.5 rounded-full bg-[#22c55e]" />
+        </div>
+        <div className="text-[10px] font-mono text-slate-600 uppercase tracking-widest">MARKETING_BUDDY_OS</div>
+      </div>
+
+      <div className="p-6 grid gap-4 relative">
+        
+        {/* Top Row */}
+        <div className="flex gap-4">
+            
+            {/* 1. SMART PLAN (The Input) */}
+            <div className="flex-1 bg-white/5 border border-white/5 p-4 rounded-md relative overflow-hidden">
+                <div className="flex justify-between items-start mb-2">
+                   <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Action Plan</div>
+                   {/* Auto-Gen Badge */}
+                   <div className="text-[9px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded flex items-center gap-1 font-bold">
+                      <Zap className="w-2 h-2" /> Auto-Gen
+                   </div>
+                </div>
+                <div className="text-sm font-medium text-white mb-3 leading-tight">
+                   "Promote 'Pricing Tier' feature found on /pricing"
+                </div>
+                <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden flex">
+                    <div className="bg-blue-500 h-full w-[66%]" />
+                </div>
+            </div>
+            
+            {/* 2. STREAK (The Motivation) */}
+            <div className="flex-1 bg-white/5 border border-white/5 p-4 rounded-md flex flex-col justify-center relative">
+                <div className="text-[10px] text-slate-400 uppercase mb-2 font-bold tracking-wider">Consistency</div>
+                <div className="text-3xl font-bold text-white flex items-center gap-2">
+                    12 <Flame className="w-6 h-6 text-orange-500 fill-orange-500 animate-pulse" />
+                </div>
+                <div className="text-[10px] text-slate-500 mt-1">Day Streak</div>
+            </div>
+        </div>
+
+        {/* 3. CONTENT GEN (The Output) */}
+        <div className="bg-lime-900/5 border border-lime-500/20 p-5 rounded-md flex items-center justify-between mt-2">
+            <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-lime-400 text-black flex items-center justify-center rounded-md shadow-lg shadow-lime-400/10">
+                    <MessageSquare className="w-6 h-6 fill-current" />
+                </div>
+                <div>
+                    <div className="text-sm font-bold text-white">LinkedIn Draft Ready</div>
+                    <div className="text-xs text-slate-400">Based on your action plan...</div>
+                </div>
+            </div>
+            <div className="px-5 py-2 bg-lime-400 text-black text-xs font-bold rounded-md cursor-pointer hover:bg-lime-300 transition shadow-lg shadow-lime-400/20">
+                Review
+            </div>
+        </div>
+
+        {/* 4. THE BUDDY NOTIFICATION (The Accountability) */}
+        <div className="absolute -right-4 top-24 bg-[#1a1f1c] border border-white/10 p-3 rounded-lg shadow-2xl max-w-[200px] animate-in slide-in-from-right-5 fade-in duration-1000">
+           <div className="flex gap-3 items-start">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-lime-400 to-emerald-600 flex items-center justify-center shrink-0 text-black">
+                 <Bell className="w-4 h-4 fill-current" />
+              </div>
+              <div>
+                 <div className="text-[10px] font-bold text-white mb-1">Buddy Check-in</div>
+                 <div className="text-[10px] text-slate-400 leading-snug">
+                    "You're on a roll! Post today to protect your streak 🔥"
+                 </div>
+              </div>
+           </div>
+        </div>
+
+        {/* Terminal Logic */}
+        <div className="font-mono text-[10px] text-slate-500 space-y-2 mt-2 border-t border-white/5 pt-4 pl-1">
+            <div className="flex gap-2 items-center"><CheckCircle2 className="w-3 h-3 text-emerald-500" /> Analyzed https://yoursite.com</div>
+            <div className="flex gap-2 items-center"><CheckCircle2 className="w-3 h-3 text-emerald-500" /> Pain Points Extracted</div>
+            <div className="flex gap-2 items-center animate-pulse text-lime-500/70">➜ Generating Content Plan...</div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1
-    }
-  }
+// Step 1 Visual: The "Brand Report"
+const BrandReportVisual = () => {
+  return (
+    <div className="w-full max-w-md mx-auto bg-[#0A0F0C] border border-white/10 rounded-xl shadow-2xl overflow-hidden relative">
+      <div className="bg-white/5 px-4 py-3 border-b border-white/5 flex justify-between items-center">
+        <div className="flex items-center gap-2">
+            <Search className="w-4 h-4 text-slate-400" />
+            <span className="text-xs font-bold text-slate-300 tracking-wide">WEBSITE_AUDIT_RESULTS</span>
+        </div>
+        <div className="text-[10px] bg-lime-500/20 text-lime-400 px-2 py-0.5 rounded-full border border-lime-500/30">Analysis Complete</div>
+      </div>
+      
+      <div className="p-6 space-y-6">
+        {/* Detected Brand Voice */}
+        <div className="space-y-2">
+            <div className="text-xs text-slate-500 uppercase font-bold tracking-wider">Detected Brand Voice</div>
+            <div className="flex gap-2">
+                <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-md text-sm text-white">Professional</span>
+                <span className="px-3 py-1 bg-lime-500/10 border border-lime-500/20 rounded-md text-sm text-lime-400 font-bold">Authoritative</span>
+                <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-md text-sm text-white">Direct</span>
+            </div>
+        </div>
+
+        {/* Detected Audience */}
+        <div className="space-y-2">
+             <div className="text-xs text-slate-500 uppercase font-bold tracking-wider">Target Audience</div>
+             <div className="bg-white/5 p-3 rounded-lg border border-white/10 flex items-start gap-3">
+                <div className="mt-1 w-2 h-2 rounded-full bg-lime-500 shrink-0" />
+                <p className="text-sm text-slate-300 leading-relaxed">
+                    "Small Business Owners & Solopreneurs looking for automation tools to save time."
+                </p>
+             </div>
+        </div>
+
+        {/* Action Button */}
+        <div className="pt-2">
+            <div className="w-full py-2 bg-lime-400 text-black font-bold text-center text-sm rounded-md shadow-[0_0_15px_rgba(163,230,53,0.3)]">
+                Generate Strategy &rarr;
+            </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Step 3 Visual: The "Success Calendar"
+const CalendarVisual = () => {
+    const days = Array.from({ length: 31 }, (_, i) => i + 1);
+    
+    return (
+      <div className="w-full max-w-md mx-auto bg-[#0A0F0C] border border-white/10 rounded-xl shadow-2xl overflow-hidden p-6">
+          <div className="flex justify-between items-end mb-6">
+              <div>
+                  <div className="text-xs text-slate-500 font-bold uppercase tracking-wider mb-1">Consistency Streak</div>
+                  <div className="text-3xl font-bold text-white flex items-center gap-2">
+                      14 Days <Flame className="w-6 h-6 text-orange-500 fill-orange-500 animate-pulse" />
+                  </div>
+              </div>
+              <div className="text-right">
+                  <div className="text-xs text-slate-400">October</div>
+              </div>
+          </div>
+
+          {/* Calendar Grid */}
+          <div className="grid grid-cols-7 gap-2 mb-6">
+              {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
+                  <div key={i} className="text-center text-[10px] text-slate-600 font-bold">{d}</div>
+              ))}
+              {days.slice(0, 28).map((day) => {
+                  const isPast = day < 15;
+                  const isToday = day === 15;
+                  const isCheck = [2, 4, 5, 7, 9, 11, 12, 14].includes(day);
+
+                  return (
+                      <div key={day} className={`aspect-square flex items-center justify-center rounded-md text-xs font-medium relative
+                          ${isToday ? 'bg-white/10 border border-lime-500/50 text-white' : 'text-slate-500'}
+                          ${isPast ? 'bg-white/[0.02]' : ''}
+                      `}>
+                          {isCheck ? (
+                              <div className="w-full h-full bg-lime-500/20 border border-lime-500/30 rounded-md flex items-center justify-center">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-lime-500" />
+                              </div>
+                          ) : (
+                             <span>{day}</span>
+                          )}
+                      </div>
+                  )
+              })}
+          </div>
+
+          <div className="bg-white/5 border border-white/10 rounded-lg p-3 flex items-center gap-3">
+             <div className="w-8 h-8 rounded-full bg-lime-500 flex items-center justify-center">
+                <Zap className="w-4 h-4 text-black fill-black" />
+             </div>
+             <div>
+                <div className="text-xs text-slate-400">Up Next:</div>
+                <div className="text-sm font-bold text-white">Schedule LinkedIn Post</div>
+             </div>
+             <div className="ml-auto text-xs font-bold text-lime-400">Do it &rarr;</div>
+          </div>
+      </div>
+    )
 }
 
 export default function LandingPage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null)
-
-  const toggleFaq = (index: number) => {
-    setOpenFaqIndex(openFaqIndex === index ? null : index)
-  }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50 font-sans selection:bg-blue-500/30 overflow-x-hidden">
+    <div className="min-h-screen bg-[#020604] text-slate-200 font-sans selection:bg-lime-400/30 selection:text-lime-200 overflow-x-hidden">
       
-      {/* Background: Deeper, richer gradients */}
-      <div className="fixed top-0 left-0 right-0 h-[600px] bg-blue-600/10 blur-[130px] rounded-full pointer-events-none -z-10 transform -translate-y-1/2 opacity-60" />
-      <div className="fixed bottom-0 left-0 w-[600px] h-[600px] bg-indigo-600/10 blur-[150px] rounded-full pointer-events-none -z-10 translate-y-1/3 opacity-50" />
-      <div className="fixed top-1/2 right-0 w-[400px] h-[400px] bg-purple-500/5 blur-[120px] rounded-full pointer-events-none -z-10 transform -translate-y-1/2" />
+      {/* --- Static Background (No Flicker) --- */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        {/* Grainy Texture */}
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 mix-blend-overlay" />
+        {/* Gradient Orbs */}
+        <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-lime-900/20 blur-[120px] rounded-full mix-blend-screen" />
+        <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-emerald-900/10 blur-[120px] rounded-full mix-blend-screen" />
+      </div>
 
-      {/* Navigation */}
-      <nav className="fixed w-full z-50 border-b border-white/5 bg-slate-950/80 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex justify-between items-center">
-          <div className="flex items-center space-x-3 cursor-pointer">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
-              <Rocket className="w-4 h-4 text-white fill-white" />
+      {/* --- Navigation --- */}
+      <nav className="fixed w-full z-50 top-0 left-0 border-b border-white/5 bg-[#020604]/80 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="w-8 h-8 bg-lime-400 flex items-center justify-center text-black rounded-sm transform transition-transform group-hover:rotate-12">
+              <Rocket className="w-4 h-4 fill-black" />
             </div>
-            <span className="text-lg font-bold tracking-tight">Marketing Buddy</span>
-          </div>
+            <span className="font-bold text-lg tracking-tight text-white group-hover:text-lime-400 transition-colors">Marketing Buddy</span>
+          </Link>
 
-          {/* Desktop Nav */}
-          <div className="hidden md:flex items-center space-x-8">
-            <a href="#features" className="text-sm font-medium text-slate-400 hover:text-white transition-colors">Features</a>
-            <a href="#how-it-works" className="text-sm font-medium text-slate-400 hover:text-white transition-colors">How it Works</a>
-            <a href="#pricing" className="text-sm font-medium text-slate-400 hover:text-white transition-colors">Pricing</a>
-            <Link href="/analyze" className="text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1">
-    <Zap className="w-3 h-3" /> Free Audit
-  </Link>
-          </div>
-
-          <div className="hidden md:flex items-center space-x-4">
-            <Link href="/login" className="text-sm font-medium text-slate-400 hover:text-white transition-colors">
-              Login
-            </Link>
+          <div className="hidden md:flex items-center gap-8">
+            <a href="#how-it-works" className="text-sm font-bold text-slate-400 hover:text-white transition-colors">How it Works</a>
+            <a href="#features" className="text-sm font-bold text-slate-400 hover:text-white transition-colors">Features</a>
+            <Link href="/login" className="text-sm font-bold text-white hover:text-lime-400 transition-colors">Login</Link>
             <Link href="/onboarding">
-              <Button className="bg-white text-slate-950 hover:bg-blue-50 rounded-full text-sm font-bold transition shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)]">
-                Get Started
+              <Button className="bg-white text-black hover:bg-lime-400 hover:text-black rounded-sm font-bold text-sm px-6 transition-all duration-300 border border-transparent shadow-lg">
+                Start Now
               </Button>
             </Link>
           </div>
 
-          {/* Mobile Menu Button */}
-          <button className="md:hidden text-slate-300" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+          <button className="md:hidden text-white" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
             {isMobileMenuOpen ? <X /> : <Menu />}
           </button>
         </div>
 
-        {/* Mobile Nav */}
+        {/* Mobile Menu */}
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div 
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="md:hidden bg-slate-900 border-b border-white/10 overflow-hidden"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="md:hidden bg-[#0a0f0c] border-b border-white/10 overflow-hidden"
             >
-              <div className="p-4 space-y-4">
-                <a href="#features" className="block text-slate-300" onClick={() => setIsMobileMenuOpen(false)}>Features</a>
-                <a href="#pricing" className="block text-slate-300" onClick={() => setIsMobileMenuOpen(false)}>Pricing</a>
-                <Link href="/onboarding" className="block w-full text-center py-3 bg-blue-600 rounded-lg font-semibold">Get Started</Link>
+              <div className="p-6 space-y-6 flex flex-col items-center">
+                <a href="#how-it-works" className="text-lg font-medium text-slate-300" onClick={() => setIsMobileMenuOpen(false)}>How it Works</a>
+                <a href="#features" className="text-lg font-medium text-slate-300" onClick={() => setIsMobileMenuOpen(false)}>Features</a>
+                <Link href="/login" className="text-lg font-medium text-slate-300" onClick={() => setIsMobileMenuOpen(false)}>Login</Link>
+                <Link href="/onboarding" className="w-full" onClick={() => setIsMobileMenuOpen(false)}>
+                  <Button className="w-full bg-lime-400 text-black hover:bg-lime-500 font-bold rounded-sm">
+                    Get Started
+                  </Button>
+                </Link>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </nav>
 
-      {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4 sm:px-6 relative overflow-visible">
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
+      {/* --- Hero Section --- */}
+      <section className="relative min-h-screen flex items-center pt-32 pb-20 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-12 gap-12 w-full items-center">
           
-          {/* Hero Copy */}
-          <motion.div 
-            initial="hidden"
-            animate="visible"
-            variants={staggerContainer}
-            className="lg:w-[45%] z-10"
-          >
-            <motion.div variants={fadeIn} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-medium mb-6">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-              </span>
-              v2.0 Now Live: AI Content Studio
-            </motion.div>
-            
-            <motion.h1 variants={fadeIn} className="text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.1] mb-6">
-              Marketing consistency, <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400 animate-gradient-x bg-[length:200%_auto]">
-                on autopilot.
-              </span>
-            </motion.h1>
-            
-            <motion.p variants={fadeIn} className="text-lg text-slate-400 mb-8 leading-relaxed max-w-lg">
-              Your personal AI marketing team. We analyze your site, plan your week, draft your content, and nag you until you hit publish.
-            </motion.p>
-            
-             <motion.div variants={fadeIn} className="flex flex-col sm:flex-row gap-4">
-    {/* PRIMARY CTA: Free Analysis (Low Friction) */}
-    <Link href="/analyze" className="px-8 py-4 bg-blue-600 hover:bg-blue-500 rounded-xl text-white font-bold shadow-[0_0_40px_-10px_rgba(37,99,235,0.5)] transition-all hover:scale-[1.02] flex items-center justify-center gap-2">
-      <Zap className="w-5 h-5 fill-white" />
-      Free Website Checkup
-    </Link>
-    
-    {/* SECONDARY CTA: Direct Onboarding */}
-    <Link href="/onboarding" className="px-8 py-4 bg-white/5 border border-white/10 hover:bg-white/10 rounded-xl text-white font-semibold transition flex items-center justify-center gap-2 group">
-      Get Started
-      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-    </Link>
-  </motion.div>
-          
-          </motion.div>
-
-          {/* Hero Visual */}
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="lg:w-[55%] w-full relative perspective-1000"
-          >
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-blue-600/20 rounded-full blur-[80px] -z-10 animate-pulse-slow"></div>
-            
-            <div className="relative bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden ring-1 ring-white/10">
-              <div className="h-10 bg-slate-900 border-b border-slate-800 flex items-center px-4 justify-between">
-                 <div className="flex gap-2">
-                    <div className="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50"></div>
-                    <div className="w-3 h-3 rounded-full bg-yellow-500/20 border border-yellow-500/50"></div>
-                    <div className="w-3 h-3 rounded-full bg-emerald-500/20 border border-emerald-500/50"></div>
-                 </div>
-                 <div className="text-[10px] text-slate-500 font-mono">marketingbuddy.ai</div>
-              </div>
-
-              <div className="p-6 grid grid-cols-12 gap-6 min-h-[380px] bg-slate-950/50">
-                {/* Left Col: Strategy & Tasks */}
-                <div className="col-span-7 space-y-4">
-                   <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
-                      <div className="text-xs text-slate-500 mb-2 uppercase tracking-wider font-bold">Today's Focus</div>
-                      <div className="flex items-center gap-3 mb-3">
-                         <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center">
-                            <FileText className="w-4 h-4" />
-                         </div>
-                         <div className="text-sm text-white font-medium">Post Case Study</div>
-                      </div>
-                      <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                         <motion.div 
-                           initial={{ width: 0 }}
-                           animate={{ width: "66%" }}
-                           transition={{ duration: 1.5, delay: 0.5 }}
-                           className="bg-blue-500 h-full rounded-full"
-                         />
-                      </div>
-                   </div>
-                   <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
-                      <div className="flex justify-between items-center mb-3">
-                        <div className="text-xs text-slate-500 uppercase tracking-wider font-bold">Engagement</div>
-                        <div className="text-xs text-emerald-400 font-mono">+24%</div>
-                      </div>
-                      <div className="flex items-end justify-between gap-1 h-16">
-                         {[40, 65, 45, 80, 55, 90, 75].map((h, i) => (
-                            <motion.div 
-                              key={i}
-                              initial={{ height: 0 }}
-                              animate={{ height: `${h}%` }}
-                              transition={{ duration: 0.5, delay: 0.8 + (i * 0.1) }}
-                              className={`w-full rounded-t-sm ${i === 5 ? 'bg-blue-500' : 'bg-slate-800'}`}
-                            />
-                         ))}
-                      </div>
-                   </div>
-                </div>
-
-                {/* Right Col: Calendar Grid */}
-                <div className="col-span-5 bg-slate-900 rounded-xl border border-slate-800 p-4 flex flex-col">
-                   <div className="text-xs text-slate-500 mb-3 uppercase tracking-wider font-bold">Schedule</div>
-                   <div className="space-y-2 mb-8">
-                      {['LinkedIn', 'Twitter', 'Blog'].map((platform, i) => (
-                        <div key={platform} className="bg-slate-800/50 p-2 rounded border border-slate-700/50 text-xs text-slate-300 flex items-center gap-2">
-                           <div className={`w-1.5 h-1.5 rounded-full ${i === 0 ? 'bg-purple-500' : i === 1 ? 'bg-blue-400' : 'bg-orange-400'}`}></div> {platform}
-                        </div>
-                      ))}
-                   </div>
-                   <div className="mt-auto pt-4 border-t border-slate-800 text-[10px] text-center text-slate-500">
-                     System Active
-                   </div>
-                </div>
-              </div>
+          {/* Hero Content - Bigger & Bolder */}
+          <div className="lg:col-span-7 z-10 flex flex-col justify-center">
+            <div className="inline-flex items-center self-start gap-2 mb-8 px-4 py-1.5 bg-white/5 border border-white/10 rounded-full text-lime-400 text-xs font-bold uppercase tracking-wide">
+              <span className="w-2 h-2 bg-lime-500 rounded-full animate-pulse" />
+              AI Marketing Agent 
             </div>
-
-            {/* Floating Elements with Animation */}
-            <motion.div 
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute -left-4 -top-8 bg-slate-900/95 backdrop-blur-md border border-blue-500/30 p-4 rounded-xl shadow-2xl w-52"
-            >
-               <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/5">
-                  <div className="text-[10px] font-bold text-blue-400 flex items-center gap-1">
-                    <Zap className="w-3 h-3" />
-                    ANALYZE WEBSITE
-                  </div>
-               </div>
-               <div className="bg-slate-950 rounded px-2 py-1.5 mb-3 border border-white/5 flex items-center justify-between">
-                  <span className="text-[10px] text-slate-400 font-mono">yourwebsite.com</span>
-                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
-               </div>
-            </motion.div>
-
-            <motion.div 
-               animate={{ y: [0, -15, 0] }}
-               transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-               className="absolute -right-6 bottom-12 bg-slate-900/95 backdrop-blur-md border border-purple-500/30 p-4 rounded-xl shadow-2xl w-56 z-20"
-            >
-               <div className="flex items-center gap-2 mb-2">
-                  <Sparkles className="w-3 h-3 text-purple-400" />
-                  <div className="text-[10px] font-bold text-purple-300">AI DRAFT READY</div>
-               </div>
-               <div className="space-y-2 mb-3">
-                  <div className="h-1.5 bg-slate-700 rounded w-full"></div>
-                  <div className="h-1.5 bg-slate-700 rounded w-11/12"></div>
-               </div>
-               <div className="bg-purple-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-md text-center shadow-lg shadow-purple-500/20">
-                  Post Now
-               </div>
-            </motion.div>
-
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Problem Section */}
-      <section className="py-24 bg-slate-900/50">
-        <div className="max-w-7xl mx-auto px-6">
-          <motion.div 
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeIn}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">The hardest part is showing up.</h2>
-            <p className="text-slate-400 max-w-2xl mx-auto">
-              Most tools just give you data. We give you a system to actually do the work.
+            
+            {/* Updated Headline */}
+            <h1 className="text-5xl sm:text-7xl lg:text-8xl font-bold leading-[0.95] text-white mb-8 tracking-tighter">
+              Stop Struggling With Marketing <br/>
+             <span className="text-lime-400">Consistency.</span>
+            </h1>
+            
+            <p className="text-lg sm:text-xl text-slate-400 mb-10 max-w-xl leading-relaxed">
+               Stop staring at a blank screen. We analyze your website, plan your weekly content, and write the drafts. You just hit publish.
             </p>
-          </motion.div>
-
-          <motion.div 
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={staggerContainer}
-            className="grid grid-cols-1 md:grid-cols-3 gap-8"
-          >
-            {[
-              { icon: Target, color: "text-red-400", bg: "bg-red-500/10", title: "Analysis Paralysis", desc: "Stuck figuring out the perfect strategy? We create the plan so you can stop thinking and start doing." },
-              { icon: FileText, color: "text-purple-400", bg: "bg-purple-500/10", title: "Blank Screen Syndrome", desc: "Don't know what to write? Our AI reads your website and generates relevant posts instantly." },
-              { icon: Calendar, color: "text-orange-400", bg: "bg-orange-500/10", title: "Inconsistency", desc: "Start strong, then fall off? Our streak tracking and simple daily check-ins gamify your consistency." }
-            ].map((item, index) => (
-              <motion.div key={index} variants={fadeIn}>
-                <Card className="bg-white/5 border-white/10 p-8 hover:bg-white/10 transition duration-300 group h-full">
-                  <div className={`w-14 h-14 ${item.bg} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition`}>
-                    <item.icon className={`w-7 h-7 ${item.color}`} />
-                  </div>
-                  <h3 className="text-xl font-bold text-white mb-3">{item.title}</h3>
-                  <p className="text-slate-400 leading-relaxed">{item.desc}</p>
-                </Card>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Feature 1: The Adaptive Plan */}
-      <section id="features" className="py-24 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col lg:flex-row items-center gap-16 mb-32">
-            <motion.div 
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={fadeIn}
-              className="lg:w-1/2"
-            >
-              <div className="inline-block text-blue-400 font-bold tracking-wider text-sm mb-4">STEP 1</div>
-              <h3 className="text-3xl md:text-4xl font-bold text-white mb-6">
-                A weekly plan that adapts to you.
-              </h3>
-              <p className="text-lg text-slate-400 mb-6 leading-relaxed">
-                Stop guessing what to do next. Marketing Buddy analyzes your website to generate your initial strategy.
-              </p>
-              <ul className="space-y-4">
-                <li className="flex items-center text-slate-300">
-                  <CheckCircle className="w-5 h-5 text-blue-500 mr-3" /> Deep site & niche analysis
-                </li>
-                <li className="flex items-center text-slate-300">
-                  <CheckCircle className="w-5 h-5 text-blue-500 mr-3" /> Context-aware weekly tasks
-                </li>
-              </ul>
-            </motion.div>
             
-            <div className="lg:w-1/2 relative group">
-               <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
-               <div className="relative bg-slate-900 rounded-xl border border-slate-800 p-6 shadow-2xl">
-                  <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-4">
-                    <div>
-                       <div className="text-xs text-slate-500 font-bold tracking-widest uppercase mb-1">Current Plan</div>
-                       <div className="text-lg font-bold text-white flex items-center gap-2">
-                         Week 4
-                         <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">On Track</span>
-                       </div>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="bg-slate-950/50 rounded-lg p-3 border border-white/5 hover:border-blue-500/30 transition flex items-center justify-between cursor-pointer">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold text-sm">M</div>
-                        <div>
-                           <div className="font-medium text-slate-200 text-sm">Engage with 5 potential leads</div>
-                           <div className="text-[10px] text-slate-500">Reason: You posted content yesterday</div>
-                        </div>
-                      </div>
-                      <CheckCircle className="w-4 h-4 text-slate-600" />
-                    </div>
-                    <div className="bg-slate-950/50 rounded-lg p-3 border border-white/5 hover:border-blue-500/30 transition flex items-center justify-between cursor-pointer">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold text-sm">W</div>
-                        <div>
-                           <div className="font-medium text-slate-200 text-sm">Draft Newsletter Issue #4</div>
-                           <div className="text-[10px] text-slate-500">Topic: Based on last week's engagement</div>
-                        </div>
-                      </div>
-                      <CheckCircle className="w-4 h-4 text-slate-600" />
-                    </div>
-                  </div>
-               </div>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Link href="/analyze">
+                <Button size="lg" className="h-16 px-10 bg-lime-400 text-black hover:bg-lime-300 rounded-sm font-bold text-lg transition-all hover:scale-[1.02] shadow-[0_0_40px_-5px_rgba(163,230,53,0.3)]">
+                  <Zap className="w-5 h-5 mr-2 fill-black" />
+                  Run Free Audit
+                </Button>
+              </Link>
+              <Link href="/onboarding">
+                <Button size="lg" variant="outline" className="h-16 px-10 border-white/20 text-white bg-transparent hover:bg-white/5 hover:text-white hover:border-white rounded-sm font-bold text-lg">
+                  Start For Free
+                </Button>
+              </Link>
             </div>
-          </div>
 
-          {/* Feature 2: AI Content Engine */}
-          <div className="flex flex-col lg:flex-row-reverse items-center gap-16 mb-32">
-            <motion.div 
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={fadeIn}
-              className="lg:w-1/2"
-            >
-              <div className="inline-block text-purple-400 font-bold tracking-wider text-sm mb-4">STEP 2</div>
-              <h3 className="text-3xl md:text-4xl font-bold text-white mb-6">
-                Turn 1 idea into 3 posts.
-              </h3>
-              <p className="text-lg text-slate-400 mb-6 leading-relaxed">
-                Staring at a blinking cursor is painful. Marketing Buddy takes your weekly tasks and drafts the actual content for you.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <Badge variant="outline" className="border-purple-500/30 text-purple-300 bg-purple-500/10 px-3 py-1">LinkedIn</Badge>
-                <Badge variant="outline" className="border-purple-500/30 text-purple-300 bg-purple-500/10 px-3 py-1">Twitter / X</Badge>
-                <Badge variant="outline" className="border-purple-500/30 text-purple-300 bg-purple-500/10 px-3 py-1">Blog</Badge>
-              </div>
-            </motion.div>
-
-            <div className="lg:w-1/2 relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
-                <div className="relative bg-slate-900 border border-slate-800 rounded-xl shadow-2xl overflow-hidden">
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-slate-950">
-                        <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-red-500/50"></div>
-                            <div className="w-2 h-2 rounded-full bg-yellow-500/50"></div>
-                            <span className="text-xs text-slate-500 ml-2">AI Generator</span>
-                        </div>
-                    </div>
-                    <div className="p-6 space-y-4">
-                        <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 rounded-full bg-purple-600/20 flex items-center justify-center">
-                                <Sparkles className="w-4 h-4 text-purple-400" />
-                            </div>
-                            <div className="space-y-2 w-full">
-                                <div className="text-sm text-slate-300 leading-relaxed">
-                                    <span className="text-purple-400 font-semibold">Hook:</span> I lost my first 3 clients because I was too afraid to ask for feedback.<br/><br/>
-                                    Here is what I learned about transparency in B2B sales...
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-          </div>
-
-          {/* Feature 3: Accountability / Streaks */}
-          <div className="flex flex-col lg:flex-row items-center gap-16">
-            <motion.div 
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true }}
-              variants={fadeIn}
-              className="lg:w-1/2"
-            >
-              <div className="inline-block text-orange-400 font-bold tracking-wider text-sm mb-4">STEP 3</div>
-              <h3 className="text-3xl md:text-4xl font-bold text-white mb-6">
-                The only "hack" is showing up.
-              </h3>
-              <p className="text-lg text-slate-400 mb-6 leading-relaxed">
-                Marketing fails when you stop. We gamify your consistency so you don't break the chain.
-              </p>
-              <p className="text-lg text-slate-400 mb-6 leading-relaxed">
-                Track your streak, visualize your effort on a heatmap, and get nudged by your accountability buddy when you're about to slack off.
-              </p>
-              <div className="flex items-center gap-4 text-sm font-medium text-slate-300">
+             <div className="mt-10 flex items-center gap-6 text-sm text-slate-500 font-medium">
                 <div className="flex items-center gap-2">
-                  <Flame className="w-4 h-4 text-orange-500" />
-                  Streak protection included
+                   <CheckCircle2 className="w-5 h-5 text-lime-500" />
+                   <span>No Credit Card</span>
                 </div>
-              </div>
-            </motion.div>
-            
-            {/* Visual: The Consistency Heatmap */}
-            <motion.div 
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-              className="lg:w-1/2 relative"
-            >
-               <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 shadow-2xl relative overflow-hidden">
-                   
-                   {/* Main Heatmap Visual */}
-                   <div className="mb-6">
-                       <div className="flex justify-between items-end mb-4">
-                           <div>
-                               <div className="text-4xl font-bold text-white">12 <span className="text-sm text-slate-500 font-normal">days</span></div>
-                               <div className="text-xs text-orange-400 font-bold uppercase tracking-wider flex items-center gap-1">
-                                   <Flame className="w-3 h-3" /> Current Streak
-                               </div>
-                           </div>
-                           <div className="text-right">
-                               <div className="text-sm text-slate-400">Nov 2025</div>
-                           </div>
-                       </div>
-                       
-                       {/* The Grid - Animated */}
-                       <div className="grid grid-cols-7 gap-1.5">
-                           {[...Array(28)].map((_, i) => {
-                               const isActive = i > 5 && i < 20 || i > 22; 
-                               return (
-                                   <motion.div 
-                                       key={i} 
-                                       initial={{ opacity: 0, scale: 0 }}
-                                       whileInView={{ opacity: isActive ? Math.random() * 0.5 + 0.5 : 1, scale: 1 }}
-                                       transition={{ delay: i * 0.02 }}
-                                       className={`aspect-square rounded-sm ${isActive ? 'bg-orange-500' : 'bg-slate-800'}`}
-                                   />
-                               )
-                           })}
-                       </div>
-                   </div>
+                <div className="flex items-center gap-2">
+                   <CheckCircle2 className="w-5 h-5 text-lime-500" />
+                   <span>Cancel Anytime</span>
+                </div>
+             </div>
+          </div>
 
-                   {/* Buddy Notification Overlay */}
-                   <motion.div 
-                      initial={{ y: 20, opacity: 0 }}
-                      whileInView={{ y: 0, opacity: 1 }}
-                      transition={{ delay: 0.8, type: "spring" }}
-                      className="absolute bottom-4 right-4 left-4 bg-slate-800 border border-slate-700 p-3 rounded-xl shadow-lg flex items-center gap-3"
-                    >
-                       <div className="relative shrink-0">
-                           <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold">
-                               AI
-                           </div>
-                           <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-slate-800 rounded-full"></div>
-                       </div>
-                       <div>
-                           <div className="text-xs font-bold text-white flex justify-between w-full">
-                               Marketing Buddy
-                               <span className="text-slate-500 font-normal text-[10px]">Just now</span>
-                           </div>
-                           <div className="text-xs text-slate-300 leading-snug">
-                               "Don't break the streak! You just need 1 more post to hit your weekly goal. 🚀"
-                           </div>
-                       </div>
-                   </motion.div>
-
-               </div>
-            </motion.div>
+          {/* Hero Visual - NEW Dashboard */}
+          <div className="lg:col-span-5 relative hidden lg:block">
+             {/* Static Background Glow */}
+             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-lime-500/10 blur-[100px] rounded-full pointer-events-none" />
+             
+             {/* Main Card */}
+             <DashboardVisual />
           </div>
         </div>
       </section>
 
-      {/* FAQ Section */}
-      <section className="py-24 bg-slate-900/30">
-        <div className="max-w-3xl mx-auto px-6">
-          <h2 className="text-3xl font-bold text-white text-center mb-12">Frequently Asked Questions</h2>
-          <div className="space-y-4">
+      {/* --- Scrolling Marquee --- */}
+      <div className="w-full py-12 border-y border-white/5 bg-black/50 overflow-hidden relative">
+        <div className="absolute left-0 top-0 bottom-0 w-40 bg-gradient-to-r from-[#020604] to-transparent z-10" />
+        <div className="absolute right-0 top-0 bottom-0 w-40 bg-gradient-to-l from-[#020604] to-transparent z-10" />
+        <div className="flex whitespace-nowrap gap-24 animate-marquee opacity-50">
+          {[...Array(10)].map((_, i) => (
+             <span key={i} className="text-xl font-bold text-slate-600 uppercase tracking-widest flex items-center gap-6">
+               Build Authority <span className="text-lime-900">•</span> Grow Audience <span className="text-lime-900">•</span> Save Time
+             </span>
+          ))}
+        </div>
+      </div>
+
+      {/* --- Problem/Solution Section --- */}
+      <section className="py-32 px-6 bg-[#050a07]">
+         <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 tracking-tight">
+               Marketing is hard because <br /> it never ends.
+            </h2>
+            <p className="text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed mb-16">
+               You know you need to post, but running a business gets in the way. We built a system to handle the heavy lifting for you.
+            </p>
+         </div>
+
+         <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-6">
             {[
-              { q: "How does it know what to write?", a: "We scan your landing page to understand your value proposition, then use our AI to generate weekly tasks, content that matches your industry and tone. Then we help keep motivated by tracking your goals, streaks, and wins." },
-              { q: "Can I edit the posts?", a: "Absolutely. Marketing Buddy provides a solid first draft (about 90% done). You can tweak it, change the tone, or rewrite sections before posting." },
-              { q: "What platforms do you support?", a: "Currently we optimize content for LinkedIn, X, Reddit, Tik Tok, Instagram, and blog posts." }
-            ].map((faq, i) => (
-              <div key={i} className="border border-slate-800 rounded-xl bg-slate-950 overflow-hidden">
-                <button 
-                  onClick={() => toggleFaq(i)}
-                  className="w-full px-6 py-4 text-left flex justify-between items-center text-slate-200 font-medium hover:bg-slate-900 transition"
-                >
-                  {faq.q}
-                  <ChevronDown className={`w-5 h-5 text-slate-500 transition-transform ${openFaqIndex === i ? 'rotate-180' : ''}`} />
-                </button>
-                {openFaqIndex === i && (
-                  <div className="px-6 pb-4 text-slate-400 text-sm leading-relaxed">
-                    {faq.a}
+               { icon: Search, title: "What do I say?", desc: "Stuck figuring out the perfect strategy? We scan your business and tell you exactly what to post." },
+               { icon: MessageSquare, title: "I hate writing.", desc: "Don't stare at a blank screen. Our AI generates 90% ready-to-go drafts in your brand voice." },
+               { icon: CalendarIcon, title: "I forget to post.", desc: "Start strong, then fall off? Our streak tracking and easy weekly plans keep you consistent." }
+            ].map((item, i) => (
+               <Card key={i} className="bg-white/[0.02] border-white/10 p-10 rounded-sm hover:bg-white/5 hover:border-lime-500/30 transition duration-300 group">
+                  <div className="w-14 h-14 bg-white/5 rounded-sm flex items-center justify-center mb-6 group-hover:bg-lime-400 group-hover:text-black transition-all duration-300 text-slate-300">
+                     <item.icon className="w-7 h-7" />
                   </div>
-                )}
-              </div>
+                  <h3 className="text-2xl font-bold text-white mb-3">{item.title}</h3>
+                  <p className="text-slate-400 leading-relaxed">{item.desc}</p>
+               </Card>
             ))}
-          </div>
+         </div>
+      </section>
+
+      {/* --- How it Works (The Loop) --- */}
+      <section id="how-it-works" className="py-32 px-6 relative overflow-hidden">
+         <div className="max-w-7xl mx-auto">
+            <div className="mb-24">
+               <h2 className="text-4xl md:text-6xl font-bold text-white mb-6 tracking-tighter">How it works</h2>
+               <div className="w-24 h-1.5 bg-lime-500" />
+            </div>
+
+            <div className="space-y-40">
+               
+               {/* Step 1: Scan */}
+               <div className="flex flex-col lg:flex-row gap-20 items-center">
+                  <div className="lg:w-1/2">
+                     <div className="flex items-center gap-4 mb-6">
+                        <div className="w-12 h-12 rounded-full border border-lime-500/30 text-lime-400 flex items-center justify-center font-bold text-xl bg-lime-500/10">1</div>
+                        <h3 className="text-3xl md:text-4xl font-bold text-white">We Audit Your Brand</h3>
+                     </div>
+                     <p className="text-lg text-slate-400 leading-relaxed mb-8">
+                        No lengthy questionnaires. Just paste your website URL. Our AI acts like a marketing consultant, analyzing your text, tone, and offering to understand exactly who you are.
+                     </p>
+                     <ul className="space-y-4 text-slate-300 font-medium">
+                        <li className="flex items-center gap-3">
+                           <CheckCircle2 className="w-5 h-5 text-lime-500" />
+                           Identifies your unique brand voice
+                        </li>
+                        <li className="flex items-center gap-3">
+                           <CheckCircle2 className="w-5 h-5 text-lime-500" />
+                           Defines your ideal customer profile
+                        </li>
+                     </ul>
+                  </div>
+                  
+                  {/* Visual: Brand Report Card */}
+                  <div className="lg:w-1/2 w-full">
+                     <BrandReportVisual />
+                  </div>
+               </div>
+
+               {/* Step 2: Plan */}
+               <div className="flex flex-col lg:flex-row-reverse gap-20 items-center">
+                  <div className="lg:w-1/2">
+                     <div className="flex items-center gap-4 mb-6">
+                        <div className="w-12 h-12 rounded-full border border-lime-500/30 text-lime-400 flex items-center justify-center font-bold text-xl bg-lime-500/10">2</div>
+                        <h3 className="text-3xl md:text-4xl font-bold text-white">We Write the Content</h3>
+                     </div>
+                     <p className="text-lg text-slate-400 leading-relaxed mb-8">
+                        Every week, we generate a plan and write the posts for you. You get a notification, review the drafts (which are 90% done), tweak them if needed, and hit schedule.
+                     </p>
+                     <div className="flex flex-wrap gap-2">
+                        {['LinkedIn', 'Twitter / X', 'Blog Posts', 'Newsletters'].map(tag => (
+                           <span key={tag} className="px-4 py-1.5 bg-white/5 border border-white/10 text-xs font-bold text-white uppercase tracking-wider rounded-full">
+                              {tag}
+                           </span>
+                        ))}
+                     </div>
+                  </div>
+                  
+                  {/* Visual: Draft Editor */}
+                  <div className="lg:w-1/2 w-full">
+                     <div className="bg-[#1e1e1e] rounded-xl border border-white/10 overflow-hidden shadow-2xl max-w-md mx-auto">
+                        <div className="flex bg-[#252526] border-b border-black/20 text-slate-400 px-4 py-3 gap-4 text-xs items-center">
+                           <LayoutTemplate className="w-4 h-4" />
+                           <span className="font-bold text-white">Post_Editor</span>
+                        </div>
+                        <div className="p-8 min-h-[300px] relative flex flex-col">
+                           <div className="flex gap-3 mb-6">
+                              <div className="w-10 h-10 bg-lime-500/20 rounded-full flex items-center justify-center shrink-0">
+                                 <Sparkles className="w-5 h-5 text-lime-400" />
+                              </div>
+                              <div className="text-sm text-slate-300 italic bg-white/5 p-3 rounded-lg rounded-tl-none border border-white/5">
+                                 "Here is a draft based on the testimonial you received last week..."
+                              </div>
+                           </div>
+                           
+                           <div className="bg-white/[0.03] p-5 rounded-lg border border-white/5 text-slate-200 text-sm leading-relaxed shadow-inner flex-1">
+                              <p className="mb-4"><span className="text-lime-400 font-bold">Hook:</span><br/>I used to think automation was impersonal. I was wrong.</p>
+                              <p className="mb-4"><span className="text-lime-400 font-bold">Body:</span><br/>Most business owners ignore tools because they fear losing their 'human touch'. But when we implemented this new system, our client satisfaction actually went UP.</p>
+                              <p className="text-slate-500 text-xs mt-4">#SmallBusiness #Automation #Growth</p>
+                           </div>
+                           
+                           <div className="mt-4 flex justify-end gap-2">
+                              <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white">Edit</Button>
+                              <Button size="sm" className="bg-lime-400 text-black hover:bg-lime-300 font-bold rounded-sm">
+                                 Approve & Post
+                              </Button>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+
+               {/* Step 3: Streak */}
+               <div className="flex flex-col lg:flex-row gap-20 items-center">
+                  <div className="lg:w-1/2">
+                     <div className="flex items-center gap-4 mb-6">
+                        <div className="w-12 h-12 rounded-full border border-lime-500/30 text-lime-400 flex items-center justify-center font-bold text-xl bg-lime-500/10">3</div>
+                        <h3 className="text-3xl md:text-4xl font-bold text-white">You Build the Habit</h3>
+                     </div>
+                     <p className="text-lg text-slate-400 leading-relaxed mb-8">
+                        The secret to marketing isn't virality, it's consistency. We track your streak and nudge you when you're falling behind. It's like a gym buddy for your business.
+                     </p>
+                     <div className="inline-flex items-center gap-2 px-4 py-2 bg-lime-500/10 border border-lime-500/20 text-lime-400 font-bold uppercase text-xs rounded-full">
+                        <Flame className="w-4 h-4 fill-lime-500" /> Streak Protection Active
+                     </div>
+                  </div>
+                  
+                  {/* Visual: Calendar */}
+                  <div className="lg:w-1/2 w-full">
+                     <CalendarVisual />
+                  </div>
+               </div>
+            </div>
+         </div>
+      </section>
+
+      {/* --- FAQ Section --- */}
+      <section className="py-32 px-6 border-t border-white/5 bg-[#020604]">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-12 text-center">Common Questions</h2>
+          <Accordion type="single" collapsible className="w-full space-y-4">
+            {[
+               { q: "Is the content generic AI garbage?", a: "No. Because we audit your website first, the AI understands your specific products, services, and tone. It's grounded in your reality, not generic internet data." },
+               { q: "How much time does this take?", a: "About 15 minutes a week. You receive the plan, review the drafts, and approve them. We handle the brainstorming and writing." },
+               { q: "What happens if I miss a week?", a: "We have 'Streak Protection'. We know life happens. We'll adjust your schedule so you don't feel overwhelmed, but we will gently nudge you to get back on track." }
+            ].map((item, i) => (
+               <AccordionItem key={i} value={`item-${i}`} className="border border-white/10 bg-white/[0.02] px-6 rounded-lg">
+                  <AccordionTrigger className="text-lg font-bold text-slate-200 hover:text-lime-400 hover:no-underline py-6 text-left">
+                     {item.q}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-slate-400 leading-relaxed text-base pb-6">
+                     {item.a}
+                  </AccordionContent>
+               </AccordionItem>
+            ))}
+          </Accordion>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-24 border-t border-white/5">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-            Ready to build marketing momentum?
-          </h2>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link href="/onboarding" className="px-8 py-4 bg-white text-slate-950 rounded-xl font-bold hover:bg-blue-50 transition shadow-lg shadow-white/10 w-full sm:w-auto">
-              Get My Marketing Plan
-            </Link>
-          </div>
-        </div>
+      {/* --- CTA Section --- */}
+      <section className="py-32 px-6 relative overflow-hidden flex items-center justify-center text-center">
+         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(163,230,53,0.1),transparent_70%)]" />
+         <div className="relative z-10 max-w-4xl mx-auto">
+            <h2 className="text-5xl md:text-7xl font-bold text-white mb-8 tracking-tighter leading-tight">
+               Turn your website into a <br/>
+               <span className="text-lime-400">marketing machine.</span>
+            </h2>
+            <p className="text-xl text-slate-400 mb-12 max-w-xl mx-auto">
+               Join the waitlist of business owners who are finally winning at consistency.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+               <Link href="/onboarding" className="w-full sm:w-auto">
+                  <Button className="w-full sm:w-auto h-16 px-12 bg-lime-400 text-black hover:bg-lime-300 font-bold text-xl rounded-sm shadow-[0_0_25px_rgba(163,230,53,0.4)] transition-transform hover:scale-105">
+                     Start For Free <ArrowRight className="ml-2 w-6 h-6" />
+                  </Button>
+               </Link>
+            </div>
+         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-12 bg-slate-950 border-t border-white/5 text-slate-400 text-sm">
+      {/* --- Footer --- */}
+      <footer className="py-12 border-t border-white/10 bg-[#010302] text-slate-500 text-sm font-sans">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-slate-800 rounded-lg flex items-center justify-center">
-              <Rocket className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-bold text-white">Marketing Buddy</span>
+             <div className="w-8 h-8 bg-lime-400 flex items-center justify-center rounded-sm text-black">
+               <Rocket className="w-4 h-4 fill-black" />
+             </div>
+            <span className="font-bold text-white tracking-wide text-lg">Marketing Buddy</span>
           </div>
           
-          <div className="flex gap-8">
-            <a href="#" className="hover:text-white transition">Twitter</a>
-            <a href="#" className="hover:text-white transition">Email</a>
-            <a href="/privacy" className="hover:text-white transition">Privacy</a>
+          <div className="flex gap-8 font-bold">
+            <a href="#" className="hover:text-lime-400 transition-colors">Twitter</a>
+            <a href="#" className="hover:text-lime-400 transition-colors">Support</a>
+            <a href="#" className="hover:text-lime-400 transition-colors">Privacy Policy</a>
           </div>
           
-          <div className="text-slate-600">
-            &copy; {new Date().getFullYear()} Marketing Buddy.
+          <div className="text-slate-600 flex items-center gap-2">
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+            All Systems Operational
           </div>
         </div>
       </footer>

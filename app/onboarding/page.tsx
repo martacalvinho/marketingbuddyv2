@@ -77,6 +77,7 @@ function OnboardingContent() {
         marketing_strategy: userData.marketingStrategy ?? null,
         current_users: toInt(userData.currentUsers),
         website_analysis: userData.websiteAnalysis ?? null,
+        target_audience: userData.targetAudience ?? null,
         preferred_platforms: userData.preferredPlatforms ?? null,
         plan: userData.plan ? { markdown: userData.plan } : null,
         goals: userData.goals ?? null,
@@ -383,11 +384,13 @@ function OnboardingContent() {
 
 export default function OnboardingPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-[#020604]">
+          <div className="w-12 h-12 rounded-full border-2 border-lime-500/30 border-t-lime-400 animate-spin" />
+        </div>
+      }
+    >
       <OnboardingContent />
     </Suspense>
   )
