@@ -36,7 +36,7 @@ Would love to hear your approaches before I launch this publicly. What am I miss
   },
   {
     id: 2,
-    title: "Twitter Thread Hooks That Convert",
+    title: "X Thread Hooks That Convert",
     description: "Write opening lines that stop the scroll",
     content: `Your first tweet determines if anyone reads the rest. Great hooks create curiosity, promise value, or challenge assumptions.
 
@@ -63,7 +63,7 @@ That's a wrap! If you found this helpful:
 • RT the first tweet to help other founders
 
 What's your biggest [relevant] challenge? 👇`,
-    actionTitle: "Write Twitter Thread",
+    actionTitle: "Write X Thread",
     estimatedTime: "15 min",
   },
   {

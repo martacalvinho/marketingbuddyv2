@@ -59,13 +59,13 @@ const mockAnalyticsData: AnalyticsData[] = [
     posts: 2,
     engagement: 180,
     strategy: "Content Marketing",
-    platform: "Twitter",
-    tasksCompleted: ["Create Twitter thread", "Engage with community"],
+    platform: "X",
+    tasksCompleted: ["Create X thread", "Engage with community"],
     contentPosted: [
-      { type: "Twitter Thread", platform: "Twitter", views: 1500, engagement: 120 },
-      { type: "Quote Tweet", platform: "Twitter", views: 1000, engagement: 60 }
+      { type: "X Thread", platform: "X", views: 1500, engagement: 120 },
+      { type: "Quote Post", platform: "X", views: 1000, engagement: 60 }
     ],
-    insights: "Your Twitter thread about productivity got 1,500 views and drove 2 sales. Community engagement boosted overall reach."
+    insights: "Your X thread about productivity got 1,500 views and drove 2 sales. Community engagement boosted overall reach."
   },
   {
     date: "2024-01-16",
@@ -91,13 +91,13 @@ const mockAnalyticsData: AnalyticsData[] = [
     engagement: 250,
     strategy: "Video Content",
     platform: "TikTok",
-    tasksCompleted: ["Create TikTok video", "Post on Instagram Reels", "Share on Twitter"],
+    tasksCompleted: ["Create TikTok video", "Post on Instagram Reels", "Share on X"],
     contentPosted: [
       { type: "TikTok Video", platform: "TikTok", views: 2000, engagement: 150 },
       { type: "Instagram Reel", platform: "Instagram", views: 800, engagement: 60 },
-      { type: "Twitter Video", platform: "Twitter", views: 400, engagement: 40 }
+      { type: "X Video", platform: "X", views: 400, engagement: 40 }
     ],
-    insights: "Your TikTok video went viral with 2,000 views! Cross-posting to Instagram and Twitter amplified reach and drove 5 sales."
+    insights: "Your TikTok video went viral with 2,000 views! Cross-posting to Instagram and X amplified reach and drove 5 sales."
   },
   {
     date: "2024-01-18",

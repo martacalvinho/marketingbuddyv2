@@ -41,7 +41,7 @@ BUSINESS CONTEXT:
 
 AVAILABLE PLATFORMS:
 1. LinkedIn (B2B, professional networking, thought leadership)
-2. Twitter/X (real-time, tech community, thought leadership)
+2. X (real-time, tech community, thought leadership)
 3. Instagram (visual content, lifestyle, B2C)
 4. TikTok (short video, Gen Z/Millennial, viral potential)
 5. YouTube (long-form video, tutorials, demos)
@@ -77,7 +77,7 @@ CRITICAL RULES:
 - Be SPECIFIC to this industry (don't recommend TikTok for B2B SaaS)
 - AVOID platforms that don't match (e.g., Pinterest for developer tools)
 - Treat product-launch sites as a category: use "SaaS Directories" instead of only "Product Hunt". Do not over-index on Product Hunt.
-- For indie hacker/solo founder SaaS audiences, emphasize Reddit (with relevant subreddits) and Indie Hackers alongside LinkedIn/Twitter.
+- For indie hacker/solo founder SaaS audiences, emphasize Reddit (with relevant subreddits) and Indie Hackers alongside LinkedIn/X.
 
 Return ONLY valid JSON in this format:
 {
@@ -197,7 +197,7 @@ function getFallbackPlatforms(industry: string, businessModel: string, targetAud
     })
     platforms.push({
       id: 'twitter',
-      name: 'Twitter/X',
+      name: 'X',
       category: 'recommended',
       reasoning: 'Great for real-time engagement and building thought leadership in your industry.',
       audienceFit: 7,

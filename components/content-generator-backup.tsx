@@ -17,7 +17,7 @@ interface ContentGeneratorProps {
 const contentTypes = [
   {
     id: "twitter-thread",
-    name: "Twitter Thread",
+    name: "X Thread",
     icon: Twitter,
     description: "Engaging thread to share insights",
     color: "text-blue-500",

@@ -4,26 +4,26 @@ import { NextRequest, NextResponse } from 'next/server'
 const INDUSTRY_RESOURCES: Record<string, { directories: string[], subreddits: string[], communities: string[] }> = {
   // Crypto/Web3/Blockchain
   crypto: {
-    directories: ['Product Hunt', 'CoinMarketCap', 'CoinGecko', 'DappRadar', 'State of the Dapps', 'Crypto Twitter lists', 'DefiLlama', 'CryptoCompare'],
+    directories: ['Product Hunt', 'CoinMarketCap', 'CoinGecko', 'DappRadar', 'State of the Dapps', 'X lists', 'DefiLlama', 'CryptoCompare'],
     subreddits: ['CryptoCurrency', 'Bitcoin', 'ethereum', 'CryptoMarkets', 'defi', 'NFT', 'web3', 'CryptoTechnology', 'altcoin', 'CryptoMoonShots'],
-    communities: ['Crypto Twitter', 'Discord servers (Bankless, DeFi Pulse)', 'Telegram groups', 'Farcaster', 'Lens Protocol']
+    communities: ['Crypto X', 'Discord servers (Bankless, DeFi Pulse)', 'Telegram groups', 'Farcaster', 'Lens Protocol']
   },
   web3: {
     directories: ['Product Hunt', 'DappRadar', 'State of the Dapps', 'Web3 Jobs', 'BuildSpace', 'DefiLlama'],
     subreddits: ['web3', 'ethereum', 'defi', 'NFT', 'CryptoCurrency', 'ethdev', 'solana'],
-    communities: ['Crypto Twitter', 'Farcaster', 'Lens Protocol', 'Discord (Bankless, Developer DAO)', 'Telegram']
+    communities: ['Crypto X', 'Farcaster', 'Lens Protocol', 'Discord (Bankless, Developer DAO)', 'Telegram']
   },
   blockchain: {
     directories: ['Product Hunt', 'DappRadar', 'CoinMarketCap', 'CoinGecko', 'Blockchain.com', 'CryptoCompare'],
     subreddits: ['CryptoCurrency', 'Bitcoin', 'ethereum', 'blockchain', 'CryptoTechnology', 'btc'],
-    communities: ['Crypto Twitter', 'BitcoinTalk', 'Telegram groups', 'Discord servers']
+    communities: ['Crypto X', 'BitcoinTalk', 'Telegram groups', 'Discord servers']
   },
   
   // SaaS/Software
   saas: {
     directories: ['Product Hunt', 'BetaList', 'Alternativeto.net', 'SaaSHub', 'Startupstash', 'G2', 'Capterra', 'GetApp', 'Uneed.best', 'MicroLaunch'],
     subreddits: ['SaaS', 'startups', 'Entrepreneur', 'IndieHackers', 'SideProject', 'microsaas', 'growthhacking', 'IMadeThis'],
-    communities: ['Indie Hackers', 'Product Hunt', 'Hacker News', 'Twitter #buildinpublic', 'LinkedIn groups']
+    communities: ['Indie Hackers', 'Product Hunt', 'Hacker News', 'X #buildinpublic', 'LinkedIn groups']
   },
   software: {
     directories: ['Product Hunt', 'Alternativeto.net', 'GitHub', 'SourceForge', 'Slant', 'AlternativeTo'],
@@ -35,14 +35,14 @@ const INDUSTRY_RESOURCES: Record<string, { directories: string[], subreddits: st
   ai: {
     directories: ['Product Hunt', 'Theresanaiforthat.com', 'Futuretools.io', 'AI Valley', 'TopAI.tools', 'AIToolHunt', 'Futurepedia'],
     subreddits: ['artificial', 'MachineLearning', 'OpenAI', 'ChatGPT', 'StableDiffusion', 'LocalLLaMA', 'ArtificialIntelligence'],
-    communities: ['AI Twitter', 'Hugging Face', 'Papers with Code', 'Discord (OpenAI, Midjourney)', 'LinkedIn AI groups']
+    communities: ['AI X', 'Hugging Face', 'Papers with Code', 'Discord (OpenAI, Midjourney)', 'LinkedIn AI groups']
   },
   
   // E-commerce/Retail (Digital Products/Apps)
   ecommerce: {
     directories: ['Shopify App Store', 'WooCommerce Extensions', 'BigCommerce Apps', 'Product Hunt', 'Capterra'],
     subreddits: ['ecommerce', 'shopify', 'Entrepreneur', 'smallbusiness', 'dropship', 'FulfillmentByAmazon'],
-    communities: ['Shopify Community', 'Facebook Groups (Ecom)', 'Twitter #ecommerce', 'LinkedIn Ecommerce groups']
+    communities: ['Shopify Community', 'Facebook Groups (Ecom)', 'X #ecommerce', 'LinkedIn Ecommerce groups']
   },
   
   // Handmade/Craft/Jewelry
@@ -63,7 +63,7 @@ const INDUSTRY_RESOURCES: Record<string, { directories: string[], subreddits: st
   marketing: {
     directories: ['Product Hunt', 'G2', 'Capterra', 'MarTech', 'BuiltWith', 'Stackshare'],
     subreddits: ['marketing', 'digital_marketing', 'socialmedia', 'SEO', 'PPC', 'content_marketing', 'growthhacking'],
-    communities: ['GrowthHackers', 'Inbound.org', 'Marketing Twitter', 'LinkedIn Marketing groups', 'Facebook Marketing groups']
+    communities: ['GrowthHackers', 'Inbound.org', 'Marketing X', 'LinkedIn Marketing groups', 'Facebook Marketing groups']
   },
   
   // Developer Tools
@@ -75,9 +75,9 @@ const INDUSTRY_RESOURCES: Record<string, { directories: string[], subreddits: st
   
   // Default/General
   general: {
-    directories: ['Product Hunt', 'BetaList', 'Hacker News', 'Indie Hackers', 'Reddit', 'Twitter'],
+    directories: ['Product Hunt', 'BetaList', 'Hacker News', 'Indie Hackers', 'Reddit', 'X'],
     subreddits: ['startups', 'Entrepreneur', 'SideProject', 'SmallBusiness', 'IMadeThis', 'alphaandbetausers'],
-    communities: ['Indie Hackers', 'Product Hunt', 'Hacker News', 'Twitter #buildinpublic', 'LinkedIn']
+    communities: ['Indie Hackers', 'Product Hunt', 'Hacker News', 'X #buildinpublic', 'LinkedIn']
   }
 }
 
@@ -440,12 +440,40 @@ export async function POST(request: NextRequest) {
     // If user specified preferred platforms, strongly constrain suggestions to them
     const allowedNote = preferred.length > 0 ? `✅ ONLY USE THESE PLATFORMS: ${preferred.join(', ').toUpperCase()}` : ''
     const disallowedPlatforms = preferred.length > 0 
-      ? ['linkedin','instagram','tiktok','twitter','x','blog','indie hackers','youtube','medium','substack','discord','facebook groups', 'facebook', 'email']
+      ? ['linkedin','instagram','tiktok','x','blog','indie hackers','youtube','medium','substack','discord','facebook groups', 'facebook', 'email']
           .filter(p => !preferred.includes(p))
           .concat(Array.from(avoidList))
           .filter((v, i, a) => a.indexOf(v) === i)
       : Array.from(avoidList)
     const disallowedNote = disallowedPlatforms.length > 0 ? `❌ NEVER USE THESE PLATFORMS: ${disallowedPlatforms.join(', ').toUpperCase()}` : ''
+    const normalizePlatform = (value?: string) => {
+      if (!value) return ''
+      const raw = value.toLowerCase().trim()
+      const map: Record<string, string> = {
+        'x': 'x',
+        'x.com': 'x',
+        'twitter': 'x',
+        'twitter/x': 'x',
+        'fb': 'facebook',
+        'facebook groups': 'facebook',
+        'facebook group': 'facebook',
+        'ig': 'instagram',
+        'insta': 'instagram',
+        'linkedin': 'linkedin',
+        'li': 'linkedin',
+        'guerrilla marketing': 'guerrilla',
+        'guerilla': 'guerrilla'
+      }
+      return map[raw] || raw
+    }
+    const allowedSet = new Set(preferred.map(normalizePlatform).filter(Boolean))
+    const disallowedSet = new Set(disallowedPlatforms.map(normalizePlatform).filter(Boolean))
+    const isDisallowedPlatform = (platform?: string) => {
+      const norm = normalizePlatform(platform || '')
+      if (!norm) return false
+      if (allowedSet.size > 0 && !allowedSet.has(norm)) return true
+      return disallowedSet.has(norm)
+    }
 
     const currentUsersMetric = parseMetric(user?.currentUsers ?? user?.current_users)
     const currentMrrMetric = parseMetric(user?.currentMrr ?? user?.current_mrr)
@@ -513,6 +541,7 @@ export async function POST(request: NextRequest) {
     const launchDateDisplay = safeString(user?.launchDate, 'Not provided')
     const monthlyTheme = getMonthlyTheme(day, user?.strategyMode || 'foundation_content_community')
     const platformNotes = [allowedNote, disallowedNote].filter(Boolean).join('\n')
+    const guerrillaGuidance = 'If platform = "guerrilla", design unexpected, low-cost IRL/digital stunts (QR sticker drops, chalk tags, prop demos, micro meetups) with a measurable hook (scans, DMs, photo proof). Avoid generic social posts.'
     const goalMetric = goalTypeDisplay.toLowerCase().includes('mrr') || goalTypeDisplay.toLowerCase().includes('revenue') ? 'MRR' : 'users'
     
     // Get marketing channel research from website analysis (AI-researched channels)
@@ -638,6 +667,10 @@ MARKETING CHANNEL RESEARCH (Based on ${websiteIndustry} industry analysis):
 - **Directories to List On:** ${industryDirectories}
 - **Subreddits to Engage:** ${industrySubreddits}
 - **Communities to Join:** ${industryCommunities}${avoidPlatformsNote}
+${guerrillaGuidance ? `
+GUERRILLA TASK STYLE:
+- ${guerrillaGuidance}
+` : ''}
 ${excludeTitles && excludeTitles.length > 0 ? `
 ALREADY GENERATED TASKS (DO NOT REPEAT):
 ${excludeTitles.map((t: string) => `- ${t}`).join('\n')}
@@ -660,12 +693,13 @@ ${platformNotes ? `1. **PLATFORM CONSTRAINTS (MUST FOLLOW):**\n   ${platformNote
 16. **USE TARGET AUDIENCE DEEP DIVE**: If provided above, weave in specific professions, pain points, interests, behaviors, and hangout spots into task descriptions. This is your secret weapon for hyper-targeted tasks that feel custom-built.
 17. **BALANCED USE OF ANALYSIS**: The "Actionable Recommendations" and "Top Marketing Opportunities" above are insights to INSPIRE tasks, not dominate them. For Week 1 (Days 1-7), include 1-2 tasks TOTAL (not per day) that directly implement a specific recommendation. The rest should be a well-rounded marketing strategy: content creation, community engagement, audience research, social proof building, and channel experiments. Don't repeat the same recommendation multiple times in different forms.
 18. **VARIETY IS KEY**: Each day should feel different. Mix content types (posts, threads, videos), platforms, and objectives (awareness, engagement, conversion, learning). Avoid suggesting the same initiative more than once per week.
-19. Keep outcomes aligned with the user's primary goal metric (users versus MRR) when describing impact or success criteria.
-20. Tone: write like an experienced marketing coach talking to a busy founder—clear, friendly, and conversational, not corporate or robotic.
-21. Titles: keep them short and natural (ideally under 70 characters) with no "Task 1" or "#3" labels—make them sound like simple to-dos a human would write.
-22. Every task should feel like a small, confidence-boosting step the founder can actually do today, not a big vague project.
-23. **GENERATE EXACTLY ${marketingTasksTarget} TASKS** - no more, no less. This is critical.
-24. **KEEP DESCRIPTIONS CONCISE**: Maximum 1-2 short sentences (under 100 chars total). Be direct and actionable, not verbose.
+19. **NO BIG CAMPAIGNS**: Ban funnels/webinars/paid ads/landing-page rebuilds. Keep each task a 15-minute micro-action with a concrete output (post, reply, DM, snippet, screen recording).
+20. Keep outcomes aligned with the user's primary goal metric (users versus MRR) when describing impact or success criteria.
+21. Tone: write like an experienced marketing coach talking to a busy founder—clear, friendly, and conversational, not corporate or robotic.
+22. Titles: keep them short and natural (ideally under 70 characters) with no "Task 1" or "#3" labels—make them sound like simple to-dos a human would write.
+23. Every task should feel like a small, confidence-boosting step the founder can actually do today, not a big vague project.
+24. **GENERATE EXACTLY ${marketingTasksTarget} TASKS** - no more, no less. This is critical.
+25. **KEEP DESCRIPTIONS CONCISE**: Maximum 1-2 short sentences (under 100 chars total). Be direct and actionable, not verbose.
 
 Return ONLY valid JSON in this exact format (no markdown, no code blocks):
 
@@ -686,8 +720,9 @@ Return ONLY valid JSON in this exact format (no markdown, no code blocks):
 Generate exactly ${marketingTasksTarget} tasks.`
 
     let marketingTasks: any[] = []
-    
-    try {
+    let lastContent = ''
+
+    const callAiForTasks = async (prompt: string) => {
       const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -704,7 +739,7 @@ Generate exactly ${marketingTasksTarget} tasks.`
             },
             {
               role: 'user',
-              content: marketingPrompt
+              content: prompt
             }
           ],
           max_tokens: 3000,
@@ -713,53 +748,182 @@ Generate exactly ${marketingTasksTarget} tasks.`
         }),
       })
 
-      if (response.ok) {
-        const data = await response.json()
-        const content = data.choices[0]?.message?.content || ''
-        console.log('✅ AI Response received for Day', day, '- Length:', content.length, 'chars')
-        
-        try {
-          // Parse JSON response
-          const parsed = JSON.parse(content)
-          const tasksArray = Array.isArray(parsed) ? parsed : (parsed.tasks || [])
-          
-          marketingTasks = tasksArray.map((task: any, index: number) => ({
-            id: `marketing-${day}-${index + 1}`,
-            title: task.title || 'Untitled task',
-            description: task.description || '',
-            category: task.category || 'strategy',
-            platform: task.platform?.toLowerCase() || undefined,
-            impact: task.impact || 'Builds marketing momentum',
-            tips: Array.isArray(task.tips) ? task.tips.slice(0, 3) : [],
-            type: task.type || 'exploit',
-            xp: 15,
-            completed: false,
-            estimatedTime: "15 min",
-            day
-          })).slice(0, marketingTasksTarget)
-          
-          console.log('✅ Parsed', marketingTasks.length, 'tasks from JSON response')
-        } catch (parseError) {
-          console.error('❌ JSON parsing failed:', parseError)
-          console.error('Raw content:', content.substring(0, 500))
-          marketingTasks = []
-        }
-      } else {
+      if (!response.ok) {
         const errorText = await response.text()
         console.error('❌ OpenRouter API failed:', response.status, response.statusText, errorText.substring(0, 500))
-        return NextResponse.json({ 
-          error: 'AI task generation failed', 
-          details: `${response.status}: ${response.statusText}`,
-          tasks: [] 
-        }, { status: 500 })
+        throw new Error(`AI task generation failed: ${response.status}`)
+      }
+
+      const data = await response.json()
+      const content = data.choices[0]?.message?.content || ''
+      console.log('✅ AI Response received for Day', day, '- Length:', content.length, 'chars')
+      lastContent = content
+
+      try {
+        const parsed = JSON.parse(content)
+        const tasksArray = Array.isArray(parsed) ? parsed : (parsed.tasks || [])
+        const mapped = tasksArray.map((task: any, index: number) => ({
+          id: `marketing-${day}-${index + 1}`,
+          title: task.title || 'Untitled task',
+          description: task.description || '',
+          category: task.category || 'strategy',
+          platform: normalizePlatform(task.platform || '') || undefined,
+          impact: task.impact || 'Builds marketing momentum',
+          tips: Array.isArray(task.tips) ? task.tips.slice(0, 3) : [],
+          type: task.type || 'exploit',
+          xp: 15,
+          completed: false,
+          estimatedTime: "15 min",
+          day
+        }))
+        console.log('✅ Parsed', mapped.length, 'tasks from JSON response')
+        return mapped
+      } catch (parseError) {
+        console.error('❌ JSON parsing failed:', parseError)
+        console.error('Raw content:', content.substring(0, 500))
+        return []
+      }
+    }
+
+    const dedupeTasks = (arr: any[]) => {
+      const seen = new Set<string>()
+      const cleaned: any[] = []
+      for (const t of arr) {
+        const key = `${(t.title || '').trim()}|${(t.description || '').trim()}`.toLowerCase()
+        if (seen.has(key)) continue
+        seen.add(key)
+        cleaned.push(t)
+      }
+      return cleaned
+    }
+
+    const BANNED_PHRASES = ['webinar', 'funnel', 'paid ad', 'landing page', 'landing-page', 'cta & pricing', 'cta and pricing']
+
+    const isBanned = (title: string, description: string) => {
+      const combined = `${title} ${description}`.toLowerCase()
+      return BANNED_PHRASES.some(phrase => combined.includes(phrase))
+    }
+
+    // Fallback generator to guarantee we always return the requested task count
+    const fallbackPlatformsPool = (() => {
+      const base = preferred.length > 0
+        ? preferred
+        : ['x', 'linkedin', 'reddit', 'indie hackers', 'email', 'discord']
+      return base
+        .map((p) => normalizePlatform(p))
+        .filter((p) => p && !disallowedSet.has(p))
+    })()
+    const fallbackPlatforms = fallbackPlatformsPool.length > 0 ? fallbackPlatformsPool : ['x']
+
+    const fallbackTemplates = [
+      (platform: string) => ({
+        title: `Post a pain-point hook on ${platform}`,
+        description: `Share how ${productNameDisplay} fixes one ${targetAudienceSummary} pain in 3 lines.`,
+        category: 'content' as const,
+        platform,
+        impact: 'Quick awareness nudge for the target audience.',
+        tips: ['Lead with the pain, end with a 1-line outcome.'],
+        type: 'exploit' as const
+      }),
+      (platform: string) => ({
+        title: `Ask for one blocker on ${platform}`,
+        description: `Post 1 question asking ${targetAudienceSummary} their top blocker; reply to 2 responses.`,
+        category: 'engagement' as const,
+        platform,
+        impact: 'Opens a feedback loop with real prospects.',
+        tips: ['Name the persona in the question.', 'Offer a quick tip in replies.'],
+        type: 'explore' as const
+      }),
+      (platform: string) => ({
+        title: `Share a mini demo on ${platform}`,
+        description: `Write a 4-step text demo showing ${productNameDisplay} delivering ${productValueProp}.`,
+        category: 'content' as const,
+        platform,
+        impact: 'Shows the product in action with a simple CTA.',
+        tips: ['Use a before/after line.', 'End with a one-click CTA or link.'],
+        type: 'exploit' as const
+      }),
+      (platform: string) => ({
+        title: platform === 'guerrilla' ? 'Drop a quick guerrilla stunt' : `Drop 3 helpful replies on ${platform}`,
+        description: platform === 'guerrilla'
+          ? 'Place 5 QR stickers with a curiosity hook near your ICP; snap 1 photo + track scans.'
+          : `Find 3 threads where ${targetAudienceSummary} hangs out; add one practical tip each.`,
+        category: platform === 'guerrilla' ? 'engagement' as const : 'community' as const,
+        platform,
+        impact: platform === 'guerrilla'
+          ? 'Creates memorable offline buzz that drives scans/DMs.'
+          : 'Earns credibility and profile visits.',
+        tips: platform === 'guerrilla'
+          ? ['Use bold contrast + short hook.', 'Use a unique URL/QR to measure scans.']
+          : ['Avoid pitching—be concise and useful.', 'Sign off with a soft mention of the product.'],
+        type: 'explore' as const
+      })
+    ]
+
+    const buildFallbackTasks = (count: number) => {
+      const tasks: any[] = []
+      for (let i = 0; i < count; i++) {
+        const platform = fallbackPlatforms[(day + i) % fallbackPlatforms.length]
+        const template = fallbackTemplates[i % fallbackTemplates.length]
+        const base = platform === 'guerrilla'
+          ? {
+              title: 'Run a quick guerrilla stunt',
+              description: 'Place 5 QR stickers with a curiosity hook near your ICP; snap 1 photo + track scans.',
+              category: 'engagement' as const,
+              platform,
+              impact: 'Creates memorable offline buzz that drives scans/DMs.',
+              tips: ['Use bold contrast + short hook.', 'Use a unique URL/QR to measure scans.'],
+              type: 'explore' as const
+            }
+          : template(platform)
+        tasks.push({
+          id: `marketing-${day}-fallback-${i + 1}`,
+          ...base,
+          xp: 15,
+          completed: false,
+          estimatedTime: '15 min',
+          day
+        })
+      }
+      return tasks
+    }
+
+    let aiError: string | null = null
+    try {
+      marketingTasks = await callAiForTasks(marketingPrompt)
+
+      // Drop banned/large tasks and retry to backfill
+      marketingTasks = dedupeTasks(marketingTasks)
+        .filter(t => !isBanned(t.title || '', t.description || ''))
+        .filter(t => !isDisallowedPlatform(t.platform))
+
+      if (marketingTasks.length < marketingTasksTarget) {
+        const missing = Math.max(0, marketingTasksTarget - marketingTasks.length)
+        const avoidList = marketingTasks.map((t) => t.title).filter(Boolean).slice(0, 10).join(' | ')
+        const retryPrompt = `${marketingPrompt}
+
+You only produced ${marketingTasks.length} of ${marketingTasksTarget} tasks and some were removed (webinars/funnels/landing-page/paid-ad work are banned). Generate ONLY the missing ${missing} tasks, avoid: ${avoidList || 'None'}.`
+        const retryTasks = await callAiForTasks(retryPrompt)
+        marketingTasks = dedupeTasks([...marketingTasks, ...retryTasks])
+          .filter(t => !isBanned(t.title || '', t.description || ''))
+          .filter(t => !isDisallowedPlatform(t.platform))
       }
     } catch (error) {
-      console.error('❌ Marketing task generation failed:', error)
-      return NextResponse.json({ 
-        error: 'Task generation error', 
-        details: error instanceof Error ? error.message : 'Unknown error',
-        tasks: [] 
-      }, { status: 500 })
+      aiError = error instanceof Error ? error.message : 'Unknown AI error'
+      console.error('❌ Marketing task generation failed, using fallbacks:', error)
+      marketingTasks = []
+    }
+
+    marketingTasks = dedupeTasks(marketingTasks)
+
+    // If the model returned fewer tasks than requested, backfill with deterministic fallbacks.
+    if (marketingTasksTarget > 0 && marketingTasks.length < marketingTasksTarget) {
+      const missing = Math.max(0, marketingTasksTarget - marketingTasks.length)
+      const fallback = buildFallbackTasks(missing)
+      if (fallback.length > 0) {
+        marketingTasks = dedupeTasks([...marketingTasks, ...fallback]).slice(0, marketingTasksTarget)
+        console.warn(`⚠️ Filled ${fallback.length} fallback tasks for Day ${day} (AI returned ${marketingTasksTarget - missing} of ${marketingTasksTarget})${aiError ? `; AI error: ${aiError}` : ''}`)
+      }
     }
 
     // Log platform distribution for debugging

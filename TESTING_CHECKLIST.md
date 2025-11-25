@@ -75,7 +75,7 @@ WHERE user_id = '<your-user-id>';
 
 **Bad Example (Generic Fallback)**:
 ```
-Title: Twitter/X thread #3 on Real-time MRR leaderboard
+Title: X thread #3 on Real-time MRR leaderboard
 Description: Draft a 4-tweet thread breaking down Real-time, self-reported MRR leaderboard...
 ```
 

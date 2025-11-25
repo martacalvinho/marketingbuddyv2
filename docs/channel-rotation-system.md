@@ -144,8 +144,8 @@ Communities aren't one-time - they're **ongoing engagement** with different task
       ]
     },
     {
-      "name": "Crypto Twitter",
-      "platform": "Twitter",
+      "name": "Crypto X",
+      "platform": "X",
       "priority": "high",
       "frequency": "daily",
       "reasoning": "Primary discovery platform for crypto users",
@@ -324,27 +324,27 @@ async function expandChannelResearch(user) {
 
 **Week 1:**
 - Day 1: List on CoinMarketCap (high priority)
-- Day 2: Post launch thread on Crypto Twitter (high priority)
+- Day 2: Post launch thread on Crypto X (high priority)
 - Day 3: List on CoinGecko (high priority)
 - Day 4: Post in r/CryptoCurrency about launch (high priority)
 - Day 5: List on DappRadar (high priority)
-- Day 6: Engage with crypto influencers on Twitter (high priority)
+- Day 6: Engage with crypto influencers on X (high priority)
 - Day 7: Post in r/defi about DeFi tracking features (high priority)
 
 **Week 2:**
 - Day 8: List on DefiLlama (medium priority)
 - Day 9: Answer questions in r/CryptoCurrency comments (recurring)
 - Day 10: List on CryptoCompare (medium priority)
-- Day 11: Share market insight on Crypto Twitter (recurring)
+- Day 11: Share market insight on Crypto X (recurring)
 - Day 12: List on State of the Dapps (medium priority)
 - Day 13: Participate in r/defi discussion (recurring)
-- Day 14: Post feature demo on Crypto Twitter (recurring)
+- Day 14: Post feature demo on Crypto X (recurring)
 
 **Week 3:**
 - Day 15: List on CoinCodex (medium priority)
 - Day 16: Share user success story in r/CryptoCurrency (recurring)
 - Day 17: Join Bankless Discord and introduce tool (medium priority)
-- Day 18: Post alpha thread on Crypto Twitter (recurring)
+- Day 18: Post alpha thread on Crypto X (recurring)
 - Day 19: List on Messari (low priority)
 - Day 20: Engage in DeFi Pulse Discord (medium priority)
 - Day 21: Create educational post in r/CryptoCurrency (recurring)
@@ -355,7 +355,7 @@ async function expandChannelResearch(user) {
 - Day 24: List on Blockchain.com Directory (low priority)
 - Day 25: Share analytics insights in r/defi (recurring)
 - Day 26: List on CoinCheckup (low priority)
-- Day 27: Reply to tracking questions on Twitter (recurring)
+- Day 27: Reply to tracking questions on X (recurring)
 - Day 28: Post in r/ethereum about Ethereum tracking (new community)
 
 #### **Month 2: Expansion**
@@ -367,7 +367,7 @@ async function expandChannelResearch(user) {
 - Day 32: AI suggests: "Reach out to Bankless podcast"
 - Day 33: Engage in r/Bitcoin about Bitcoin tracking (new community)
 - Day 34: AI suggests: "Submit to crypto influencer tool lists"
-- Day 35: Share testimonial on Crypto Twitter (recurring)
+- Day 35: Share testimonial on Crypto X (recurring)
 
 **Week 6-8:**
 - Continue community engagement (recurring)
@@ -380,7 +380,7 @@ async function expandChannelResearch(user) {
 **Week 9-12:**
 - AI analyzes: "CoinMarketCap drove 40% of traffic - update listing"
 - AI suggests: "r/CryptoCurrency posts get 500+ views - post weekly"
-- AI suggests: "Crypto Twitter engagement is high - increase to 2x/day"
+- AI suggests: "Crypto X engagement is high - increase to 2x/day"
 - AI suggests: "Partner with top 5 crypto influencers"
 - Continue rotating through communities with best-performing content types
 

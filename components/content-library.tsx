@@ -33,6 +33,7 @@ interface ContentLibraryProps {
 
 const platformIcons: Record<string, any> = {
   "twitter-thread": Twitter,
+  "x-post": Twitter,
   "linkedin-post": Linkedin,
   "reddit-post": MessageSquare,
   "instagram-post": Instagram,
@@ -44,6 +45,7 @@ const platformIcons: Record<string, any> = {
 
 const platformColors: Record<string, string> = {
   "twitter-thread": "text-blue-500",
+  "x-post": "text-blue-500",
   "linkedin-post": "text-blue-700",
   "reddit-post": "text-orange-500",
   "instagram-post": "text-pink-500",

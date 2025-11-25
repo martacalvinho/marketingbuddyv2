@@ -4,7 +4,7 @@
 ---
 
 ## **Target Platforms**
-1. **Twitter/X** (Primary) - Tech/startup community, indie hackers
+1. **X** (Primary) - Tech/startup community, indie hackers
 2. **LinkedIn** (Secondary) - B2B founders, solopreneurs
 3. **Product Hunt** (Launch) - Week 4 launch
 4. **Indie Hackers** (Community) - Ongoing engagement
@@ -20,37 +20,37 @@
 - **Day 1 (Monday)**: Personal story thread
   - *"I spent 6 months building a product. Marketing it? 6 minutes. Here's why that's backwards..."*
   - Share your journey, the problem you're solving
-  - **Platforms:** Twitter thread + LinkedIn post
+  - **Platforms:** X thread + LinkedIn post
 
 - **Day 2 (Tuesday)**: Pain point poll
   - *"What's your biggest marketing challenge? 🧵"*
   - Options: Consistency, Ideas, Time, All of the above
-  - **Platforms:** Twitter poll
+  - **Platforms:** X poll
 
 - **Day 3 (Wednesday)**: Value bomb
   - *"5 marketing tasks you can do in 15 minutes that actually move the needle"*
   - Free value, no product mention yet
-  - **Platforms:** Twitter thread + LinkedIn carousel
+  - **Platforms:** X thread + LinkedIn carousel
 
 - **Day 4 (Thursday)**: Behind-the-scenes
   - *"Building in public: Here's what I'm working on..."*
   - Screenshot of the app (blurred/teaser)
-  - **Platforms:** Twitter + screenshot
+  - **Platforms:** X + screenshot
 
 - **Day 5 (Friday)**: Engagement post
   - *"Reply with your product and I'll give you 3 marketing ideas you can execute this weekend"*
   - Build relationships, understand your audience
-  - **Platforms:** Twitter
+  - **Platforms:** X
 
 - **Day 6 (Saturday)**: Weekend value
   - *"The 15-minute marketing routine that changed everything"*
   - Share the Build to 5K concept without revealing the product
-  - **Platforms:** Twitter thread
+  - **Platforms:** X thread
 
 - **Day 7 (Sunday)**: Week recap + tease
   - *"This week I talked to 50+ founders about marketing. Here's what I learned + something I'm building..."*
   - First soft mention of the product
-  - **Platforms:** Twitter + LinkedIn
+  - **Platforms:** X + LinkedIn
 
 ---
 
@@ -63,36 +63,36 @@
 - **Day 8 (Monday)**: Myth-busting
   - *"Marketing myths that keep solopreneurs stuck: 🧵"*
   - Debunk "post 3x/day" and other unrealistic advice
-  - **Platforms:** Twitter thread
+  - **Platforms:** X thread
 
 - **Day 9 (Tuesday)**: Case study
   - *"How I went from 0 to 500 followers in 30 days with 15 min/day"*
   - Your own results or beta tester results
-  - **Platforms:** LinkedIn article + Twitter summary
+  - **Platforms:** LinkedIn article + X summary
 
 - **Day 10 (Wednesday)**: Comparison post
   - *"Hiring a marketing agency: $5k/month. Marketing Buddy: $15/month. Here's what you actually need..."*
-  - **Platforms:** Twitter
+  - **Platforms:** X
 
 - **Day 11 (Thursday)**: Sneak peek
   - *"I'm building something to solve this. Here's a first look..."*
   - Share dashboard screenshot with key features visible
-  - **Platforms:** Twitter + LinkedIn
+  - **Platforms:** X + LinkedIn
 
 - **Day 12 (Friday)**: Interactive
   - *"What if you had a marketing coach that cost less than your Netflix subscription?"*
   - Poll: Would you use it? Yes/Maybe/No
-  - **Platforms:** Twitter poll
+  - **Platforms:** X poll
 
 - **Day 13 (Saturday)**: Educational
   - *"The Build to 5K method: How to grow your audience like training for a marathon"*
   - Introduce the core concept
-  - **Platforms:** Twitter thread + blog post
+  - **Platforms:** X thread + blog post
 
 - **Day 14 (Sunday)**: Waitlist announcement
   - *"Next week I'm opening early access to Marketing Buddy. Join the waitlist for..."*
   - Create simple waitlist (Tally form or similar)
-  - **Platforms:** Twitter + LinkedIn + Indie Hackers
+  - **Platforms:** X + LinkedIn + Indie Hackers
 
 ---
 
@@ -105,37 +105,37 @@
 - **Day 15 (Monday)**: Feature reveal #1
   - *"Feature reveal: Daily marketing tasks that actually match your business goals"*
   - Video walkthrough or GIF
-  - **Platforms:** Twitter + LinkedIn
+  - **Platforms:** X + LinkedIn
 
 - **Day 16 (Tuesday)**: Social proof
   - *"Beta testers are seeing results. Here's what they're saying..."*
   - Share testimonials (even if just 3-5 people)
-  - **Platforms:** Twitter
+  - **Platforms:** X
 
 - **Day 17 (Wednesday)**: Feature reveal #2
   - *"Your AI marketing coach that knows your business inside-out"*
   - Show the chat interface
-  - **Platforms:** Twitter + demo video
+  - **Platforms:** X + demo video
 
 - **Day 18 (Thursday)**: Comparison
   - *"Marketing Buddy vs Hiring a VA vs Doing it Alone: A breakdown"*
   - Infographic or simple comparison
-  - **Platforms:** LinkedIn + Twitter
+  - **Platforms:** LinkedIn + X
 
 - **Day 19 (Friday)**: Early access opens
   - *"🚨 Early access is OPEN. First 50 users get lifetime 50% off..."*
   - Create urgency with limited spots
-  - **Platforms:** Twitter + LinkedIn + Email waitlist
+  - **Platforms:** X + LinkedIn + Email waitlist
 
 - **Day 20 (Saturday)**: User spotlight
   - *"Meet [User]: How they're using Marketing Buddy to grow their SaaS"*
   - Feature an early user's success
-  - **Platforms:** Twitter thread
+  - **Platforms:** X thread
 
 - **Day 21 (Sunday)**: Week recap + momentum
   - *"Week 3 recap: X users signed up, here's what they're achieving..."*
   - Share early metrics
-  - **Platforms:** Twitter + LinkedIn
+  - **Platforms:** X + LinkedIn
 
 ---
 
@@ -147,38 +147,38 @@
 ### Daily Content:
 - **Day 22 (Monday)**: Pre-launch hype
   - *"In 48 hours, we're launching on Product Hunt. Here's why this matters..."*
-  - **Platforms:** Twitter + LinkedIn + Indie Hackers
+  - **Platforms:** X + LinkedIn + Indie Hackers
 
 - **Day 23 (Tuesday)**: Launch day prep
   - *"Tomorrow is the day! Set your alarms for [time]. Here's how you can support..."*
   - Rally your community
-  - **Platforms:** Twitter + LinkedIn + Email
+  - **Platforms:** X + LinkedIn + Email
 
 - **Day 24 (Wednesday)**: 🚀 PRODUCT HUNT LAUNCH
   - *"We're LIVE on Product Hunt! 🚀"*
   - Post every 3-4 hours with updates
   - Share user testimonials throughout the day
-  - **Platforms:** Twitter (multiple posts) + LinkedIn + PH comments + Indie Hackers
+  - **Platforms:** X (multiple posts) + LinkedIn + PH comments + Indie Hackers
 
 - **Day 25 (Thursday)**: Post-launch momentum
   - *"We hit #X on Product Hunt! Here's what happened in 24 hours..."*
   - Share metrics, learnings, thank supporters
-  - **Platforms:** Twitter thread + LinkedIn
+  - **Platforms:** X thread + LinkedIn
 
 - **Day 26 (Friday)**: User-generated content
   - *"Our users are crushing it. Here's [User]'s first week results..."*
   - Repost user wins
-  - **Platforms:** Twitter + LinkedIn
+  - **Platforms:** X + LinkedIn
 
 - **Day 27 (Saturday)**: Deep dive
   - *"How we got X users in our first month: A transparent breakdown"*
   - Share your marketing tactics
-  - **Platforms:** Twitter thread + blog post
+  - **Platforms:** X thread + blog post
 
 - **Day 28 (Sunday)**: Month 1 wrap + Month 2 preview
   - *"Month 1: X users, $X MRR, infinite lessons. Here's what's coming in Month 2..."*
   - Roadmap preview, build excitement
-  - **Platforms:** Twitter + LinkedIn + blog
+  - **Platforms:** X + LinkedIn + blog
 
 ---
 
@@ -212,7 +212,7 @@
 
 ## **Key Tactics**
 
-### **Twitter Strategy**
+### **X Strategy**
 - **Post timing:** 8am, 12pm, 5pm (your timezone)
 - **Engage 30 min/day:** Reply to 10-15 relevant tweets
 - **Use hashtags:** #buildinpublic #indiehackers #solopreneur #marketing
@@ -258,7 +258,7 @@
 - **Scheduling:** Buffer or Hypefury
 - **Graphics:** Canva (free tier)
 - **Screenshots:** CleanShot X or Snagit
-- **Analytics:** Twitter Analytics + LinkedIn Analytics
+- **Analytics:** X Analytics + LinkedIn Analytics
 - **Waitlist:** Tally.so or Google Forms
 
 ---

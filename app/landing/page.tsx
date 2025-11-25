@@ -44,20 +44,24 @@ const DashboardVisual = () => {
         {/* Top Row */}
         <div className="flex gap-4">
             
-            {/* 1. SMART PLAN (The Input) */}
+            {/* 1. TODAY'S TASKS (The Input) */}
             <div className="flex-1 bg-white/5 border border-white/5 p-4 rounded-md relative overflow-hidden">
                 <div className="flex justify-between items-start mb-2">
-                   <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Action Plan</div>
+                   <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Today's Tasks</div>
                    {/* Auto-Gen Badge */}
-                   <div className="text-[9px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded flex items-center gap-1 font-bold">
-                      <Zap className="w-2 h-2" /> Auto-Gen
+                   <div className="text-[9px] bg-lime-500/10 text-lime-400 border border-lime-500/20 px-1.5 py-0.5 rounded flex items-center gap-1 font-bold">
+                      <Zap className="w-2 h-2" /> AI-Generated
                    </div>
                 </div>
-                <div className="text-sm font-medium text-white mb-3 leading-tight">
-                   "Promote 'Pricing Tier' feature found on /pricing"
-                </div>
-                <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden flex">
-                    <div className="bg-blue-500 h-full w-[66%]" />
+                <div className="space-y-2">
+                   <div className="flex items-center gap-2 text-xs">
+                      <CheckCircle2 className="w-3 h-3 text-lime-500" />
+                      <span className="text-slate-400 line-through">Write LinkedIn post about your service</span>
+                   </div>
+                   <div className="flex items-center gap-2 text-xs">
+                      <div className="w-3 h-3 rounded-full border border-white/30" />
+                      <span className="text-white">Reply to 3 comments in your niche</span>
+                   </div>
                 </div>
             </div>
             
@@ -90,7 +94,7 @@ const DashboardVisual = () => {
         {/* 4. THE BUDDY NOTIFICATION (The Accountability) */}
         <div className="absolute -right-4 top-24 bg-[#1a1f1c] border border-white/10 p-3 rounded-lg shadow-2xl max-w-[200px] animate-in slide-in-from-right-5 fade-in duration-1000">
            <div className="flex gap-3 items-start">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-lime-400 to-emerald-600 flex items-center justify-center shrink-0 text-black">
+              <div className="w-8 h-8 rounded-full bg-lime-500 flex items-center justify-center shrink-0 text-black">
                  <Bell className="w-4 h-4 fill-current" />
               </div>
               <div>
@@ -142,7 +146,7 @@ const BrandReportVisual = () => {
              <div className="bg-white/5 p-3 rounded-lg border border-white/10 flex items-start gap-3">
                 <div className="mt-1 w-2 h-2 rounded-full bg-lime-500 shrink-0" />
                 <p className="text-sm text-slate-300 leading-relaxed">
-                    "Small Business Owners & Solopreneurs looking for automation tools to save time."
+                    "Solopreneurs, Indie Hackers & Small Business Owners who need to market but hate the grind."
                 </p>
              </div>
         </div>
@@ -290,7 +294,7 @@ export default function LandingPage() {
           <div className="lg:col-span-7 z-10 flex flex-col justify-center">
             <div className="inline-flex items-center self-start gap-2 mb-8 px-4 py-1.5 bg-white/5 border border-white/10 rounded-full text-lime-400 text-xs font-bold uppercase tracking-wide">
               <span className="w-2 h-2 bg-lime-500 rounded-full animate-pulse" />
-              AI Marketing Agent 
+              For Solopreneurs, Indie Hackers & Small Businesses 
             </div>
             
             {/* Updated Headline */}
@@ -312,7 +316,7 @@ export default function LandingPage() {
               </Link>
               <Link href="/onboarding">
                 <Button size="lg" variant="outline" className="h-16 px-10 border-white/20 text-white bg-transparent hover:bg-white/5 hover:text-white hover:border-white rounded-sm font-bold text-lg">
-                  Start For Free
+                  Start Your Marketing Journey
                 </Button>
               </Link>
             </div>
@@ -366,9 +370,9 @@ export default function LandingPage() {
 
          <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-6">
             {[
-               { icon: Search, title: "What do I say?", desc: "Stuck figuring out the perfect strategy? We scan your business and tell you exactly what to post." },
-               { icon: MessageSquare, title: "I hate writing.", desc: "Don't stare at a blank screen. Our AI generates 90% ready-to-go drafts in your brand voice." },
-               { icon: CalendarIcon, title: "I forget to post.", desc: "Start strong, then fall off? Our streak tracking and easy weekly plans keep you consistent." }
+               { icon: Search, title: "What do I say?", desc: "Whether you're launching a SaaS, running a local shop, or freelancing—we scan your business and tell you exactly what to post." },
+               { icon: MessageSquare, title: "I hate writing.", desc: "You're building products, serving clients, or running operations. Let our AI generate 90% ready-to-go drafts in your voice." },
+               { icon: CalendarIcon, title: "I forget to post.", desc: "Between shipping features, client work, or managing inventory—marketing falls off. Our streak tracking keeps you consistent." }
             ].map((item, i) => (
                <Card key={i} className="bg-white/[0.02] border-white/10 p-10 rounded-sm hover:bg-white/5 hover:border-lime-500/30 transition duration-300 group">
                   <div className="w-14 h-14 bg-white/5 rounded-sm flex items-center justify-center mb-6 group-hover:bg-lime-400 group-hover:text-black transition-all duration-300 text-slate-300">
@@ -430,7 +434,7 @@ export default function LandingPage() {
                         Every week, we generate a plan and write the posts for you. You get a notification, review the drafts (which are 90% done), tweak them if needed, and hit schedule.
                      </p>
                      <div className="flex flex-wrap gap-2">
-                        {['LinkedIn', 'Twitter / X', 'Blog Posts', 'Newsletters'].map(tag => (
+                        {['LinkedIn', 'X', 'Blog Posts', 'Newsletters'].map(tag => (
                            <span key={tag} className="px-4 py-1.5 bg-white/5 border border-white/10 text-xs font-bold text-white uppercase tracking-wider rounded-full">
                               {tag}
                            </span>
@@ -451,14 +455,14 @@ export default function LandingPage() {
                                  <Sparkles className="w-5 h-5 text-lime-400" />
                               </div>
                               <div className="text-sm text-slate-300 italic bg-white/5 p-3 rounded-lg rounded-tl-none border border-white/5">
-                                 "Here is a draft based on the testimonial you received last week..."
+                                 "Here's a draft based on your website's value proposition..."
                               </div>
                            </div>
                            
                            <div className="bg-white/[0.03] p-5 rounded-lg border border-white/5 text-slate-200 text-sm leading-relaxed shadow-inner flex-1">
-                              <p className="mb-4"><span className="text-lime-400 font-bold">Hook:</span><br/>I used to think automation was impersonal. I was wrong.</p>
-                              <p className="mb-4"><span className="text-lime-400 font-bold">Body:</span><br/>Most business owners ignore tools because they fear losing their 'human touch'. But when we implemented this new system, our client satisfaction actually went UP.</p>
-                              <p className="text-slate-500 text-xs mt-4">#SmallBusiness #Automation #Growth</p>
+                              <p className="mb-4"><span className="text-lime-400 font-bold">Hook:</span><br/>Most [your audience] struggle with [pain point]. Here's what actually works.</p>
+                              <p className="mb-4"><span className="text-lime-400 font-bold">Body:</span><br/>After working with dozens of clients, I've noticed the same pattern. They try [common mistake], when they should be focusing on [your solution]...</p>
+                              <p className="text-slate-500 text-xs mt-4">#YourNiche #YourExpertise</p>
                            </div>
                            
                            <div className="mt-4 flex justify-end gap-2">
@@ -502,9 +506,10 @@ export default function LandingPage() {
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-12 text-center">Common Questions</h2>
           <Accordion type="single" collapsible className="w-full space-y-4">
             {[
-               { q: "Is the content generic AI garbage?", a: "No. Because we audit your website first, the AI understands your specific products, services, and tone. It's grounded in your reality, not generic internet data." },
-               { q: "How much time does this take?", a: "About 15 minutes a week. You receive the plan, review the drafts, and approve them. We handle the brainstorming and writing." },
-               { q: "What happens if I miss a week?", a: "We have 'Streak Protection'. We know life happens. We'll adjust your schedule so you don't feel overwhelmed, but we will gently nudge you to get back on track." }
+               { q: "Is the content generic AI garbage?", a: "No. Because we audit your website first, the AI understands your specific products, services, and tone. Whether you're an indie hacker with a SaaS, a freelancer, or a local bakery—it's grounded in YOUR reality." },
+               { q: "How much time does this take?", a: "About 15 minutes a week. You receive the plan, review the drafts, and approve them. Perfect for busy founders, solopreneurs, and small business owners who can't afford a marketing team." },
+               { q: "What happens if I miss a week?", a: "We have 'Streak Protection'. We know life happens—product launches, client emergencies, busy seasons. We'll adjust your schedule so you don't feel overwhelmed, but we will gently nudge you to get back on track." },
+               { q: "Is this for online businesses only?", a: "Not at all! We work great for SaaS founders and indie hackers, but also for local businesses like restaurants, salons, consultants, and service providers. If you have a website, we can help." }
             ].map((item, i) => (
                <AccordionItem key={i} value={`item-${i}`} className="border border-white/10 bg-white/[0.02] px-6 rounded-lg">
                   <AccordionTrigger className="text-lg font-bold text-slate-200 hover:text-lime-400 hover:no-underline py-6 text-left">
@@ -528,7 +533,7 @@ export default function LandingPage() {
                <span className="text-lime-400">marketing machine.</span>
             </h2>
             <p className="text-xl text-slate-400 mb-12 max-w-xl mx-auto">
-               Join the waitlist of business owners who are finally winning at consistency.
+               Join solopreneurs, indie hackers, and small business owners who are finally winning at consistency.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
                <Link href="/onboarding" className="w-full sm:w-auto">
@@ -551,7 +556,7 @@ export default function LandingPage() {
           </div>
           
           <div className="flex gap-8 font-bold">
-            <a href="#" className="hover:text-lime-400 transition-colors">Twitter</a>
+            <a href="#" className="hover:text-lime-400 transition-colors">X</a>
             <a href="#" className="hover:text-lime-400 transition-colors">Support</a>
             <a href="#" className="hover:text-lime-400 transition-colors">Privacy Policy</a>
           </div>

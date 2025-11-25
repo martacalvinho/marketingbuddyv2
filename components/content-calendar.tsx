@@ -16,7 +16,7 @@ export default function ContentCalendar({ user }: ContentCalendarProps) {
     {
       id: 1,
       title: "Build in Public: Day 1 of Marketing Journey",
-      platform: "twitter",
+      platform: "x",
       status: "draft",
       content:
         "Just shipped my app and realized distribution is the hard part 😅\n\nStarting my 30-day marketing challenge with @MarketingBuddy\n\nGoal: Find my first 10 users\nDay 1: Share my story + ask for feedback\n\n#BuildInPublic #IndieHacker",
@@ -58,8 +58,8 @@ export default function ContentCalendar({ user }: ContentCalendarProps) {
       const generatedItems = [
         ...newContent.tweets.map((tweet: string, index: number) => ({
           id: Date.now() + index,
-          title: `AI Generated Tweet ${index + 1}`,
-          platform: "twitter",
+          title: `AI Generated X Post ${index + 1}`,
+          platform: "x",
           status: "draft",
           content: tweet,
           scheduledFor: null,
@@ -114,6 +114,7 @@ export default function ContentCalendar({ user }: ContentCalendarProps) {
 
   const getPlatformIcon = (platform: string) => {
     switch (platform) {
+      case "x":
       case "twitter":
         return <Twitter className="h-4 w-4" />
       case "linkedin":
@@ -206,7 +207,7 @@ export default function ContentCalendar({ user }: ContentCalendarProps) {
                         const newItem = {
                           id: Date.now(),
                           title: "New Content Idea",
-                          platform: "twitter",
+                          platform: "x",
                           status: "ideas",
                           content: "",
                           scheduledFor: null,

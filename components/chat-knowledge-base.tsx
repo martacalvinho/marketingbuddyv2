@@ -73,7 +73,7 @@ export default function ChatKnowledgeBase({ messages, onSuggestAction }: ChatKno
     const actionMap: Record<string, string[]> = {
       insight: [
         "Create a LinkedIn post about this insight",
-        "Turn this into a Twitter thread",
+        "Turn this into an X thread",
         "Write a blog post exploring this topic"
       ],
       goal: [

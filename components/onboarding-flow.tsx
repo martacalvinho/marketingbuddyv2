@@ -214,7 +214,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                     <SelectValue placeholder="Select your preferred channel" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="twitter">Twitter/X</SelectItem>
+                    <SelectItem value="twitter">X</SelectItem>
                     <SelectItem value="reddit">Reddit</SelectItem>
                     <SelectItem value="linkedin">LinkedIn</SelectItem>
                     <SelectItem value="hackernews">Hacker News</SelectItem>

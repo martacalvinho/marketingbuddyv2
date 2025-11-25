@@ -209,7 +209,7 @@ Day 2:
         "contentType": "design tips, client success stories, industry insights"
       },
       {
-        "platform": "Twitter",
+        "platform": "X",
         "reasoning": "Design community engagement and visibility",
         "priority": "medium",
         "contentType": "design threads, quick tips, portfolio highlights"
@@ -236,8 +236,8 @@ Day 2:
         "reasoning": "Peer feedback and industry discussions"
       },
       {
-        "name": "Design Twitter",
-        "platform": "Twitter",
+        "name": "Design X",
+        "platform": "X",
         "reasoning": "Active design community for networking"
       }
     ],
@@ -259,7 +259,7 @@ Day 1:
 - Optimize LinkedIn headline for "Freelance Graphic Designer"
 
 Day 2:
-- Post design process thread on Twitter with portfolio link
+- Post design process thread on X with portfolio link
 - Join r/graphic_design and provide feedback on 3 posts
 - Set up Upwork profile with portfolio and client testimonials
 ```
@@ -276,7 +276,7 @@ Day 2:
   "marketingChannelResearch": {
     "recommendedPlatforms": [
       {
-        "platform": "Crypto Twitter",
+        "platform": "Crypto X",
         "reasoning": "Primary platform where crypto users discover new tools, high engagement",
         "priority": "high",
         "contentType": "feature demos, market insights, data visualizations, alpha threads"
@@ -314,8 +314,8 @@ Day 2:
     ],
     "communities": [
       {
-        "name": "Crypto Twitter",
-        "platform": "Twitter",
+        "name": "Crypto X",
+        "platform": "X",
         "reasoning": "Where crypto users share and discover tools daily"
       },
       {
@@ -343,12 +343,12 @@ Day 2:
 ```
 Day 1:
 - List usatom.fun on CoinMarketCap and CoinGecko tool directories
-- Create Twitter account and post first alpha thread about dashboard features
+- Create X account and post first alpha thread about dashboard features
 - Submit to Product Hunt with demo video
 
 Day 2:
 - Post in r/CryptoCurrency about unique dashboard features (follow subreddit rules)
-- Share market insight thread on Crypto Twitter with dashboard screenshot
+- Share market insight thread on Crypto X with dashboard screenshot
 - Join Bankless Discord and introduce tool in appropriate channel
 ```
 
@@ -360,7 +360,7 @@ Day 2:
 ```typescript
 // We guessed what works
 const JEWELRY_CHANNELS = ['Etsy', 'Instagram', 'Pinterest']
-const CRYPTO_CHANNELS = ['CoinMarketCap', 'Twitter', 'Reddit']
+const CRYPTO_CHANNELS = ['CoinMarketCap', 'X', 'Reddit']
 const ARCHITECT_CHANNELS = ['LinkedIn', 'Instagram', 'Website']
 ```
 
@@ -407,13 +407,13 @@ Researches: "What marketing channels work for crypto tools?"
   "industry": "Cryptocurrency Dashboard",
   "recommendedPlatforms": [
     {
-      "platform": "Crypto Twitter",
+      "platform": "Crypto X",
       "reasoning": "Primary discovery platform for crypto users",
       "contentType": "Alpha threads, market insights, feature demos"
     }
   ],
   "directories": ["CoinMarketCap", "CoinGecko", "DappRadar"],
-  "communities": ["r/CryptoCurrency", "Crypto Twitter", "Discord servers"],
+  "communities": ["r/CryptoCurrency", "Crypto X", "Discord servers"],
   "avoidPlatforms": ["Startupstash (not crypto-focused)", "LinkedIn (B2B, crypto is B2C)"]
 }
 ```
@@ -422,7 +422,7 @@ Researches: "What marketing channels work for crypto tools?"
 ```
 Day 1 Tasks:
 - List on CoinMarketCap (AI said: "Where crypto users discover tools")
-- Post alpha thread on Crypto Twitter (AI said: "Primary discovery platform")
+- Post alpha thread on Crypto X (AI said: "Primary discovery platform")
 - Submit to Product Hunt (AI said: "Tech-savvy early adopters")
 
 NOT:
@@ -483,13 +483,13 @@ Generates industry-specific tasks
 
 ### **Test 3: Crypto Dashboard**
 **Input:** usatom.fun
-**Expected:** CoinMarketCap, Crypto Twitter, r/CryptoCurrency
+**Expected:** CoinMarketCap, Crypto X, r/CryptoCurrency
 **Avoid:** Startupstash, SaaSHub, LinkedIn
 **Status:** ✅ AI researches and recommends correctly
 
 ### **Test 4: Freelance Designer**
 **Input:** Graphic design portfolio
-**Expected:** Behance, Dribbble, Upwork, Design Twitter
+**Expected:** Behance, Dribbble, Upwork, Design X
 **Avoid:** Instagram (unless brand focus), TikTok
 **Status:** ✅ AI researches and recommends correctly
 

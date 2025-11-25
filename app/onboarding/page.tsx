@@ -281,63 +281,72 @@ function OnboardingContent() {
           }
         }
         if (forceReseed || (!checkErr && (!existingWeek1 || existingWeek1.length === 0))) {
-          const usedTitles = new Set<string>()
           const desiredPerDay = parseInt(String(userData.dailyTaskCount || '3'), 10) || 3
-          for (let day = 1; day <= 7; day++) {
-            try {
-              const dayPicks: any[] = []
-              const seenDay = new Set<string>()
-              // Up to 4 attempts to fill the daily quota with unique titles
-              for (let attempt = 0; attempt < 4 && dayPicks.length < desiredPerDay; attempt++) {
-                const exclude = Array.from(new Set<string>([
-                  ...Array.from(usedTitles),
-                  ...dayPicks.map(t => String((t?.title || '').trim()).toLowerCase())
-                ]))
-                const resp = await fetch('/api/generate-enhanced-daily-tasks', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    user: userData,
-                    day,
-                    month: 1,
-                    weekInMonth: 1,
-                    monthStrategy: userData.marketingStrategy || '',
-                    focusArea: userData.focusArea || 'growth',
-                    dailyTaskCount: desiredPerDay,
-                    websiteAnalysis: userData.websiteAnalysis,
-                    contextSignals: undefined,
-                    excludeTitles: exclude
-                  })
-                })
-                const json = await resp.json()
-                const tasks: any[] = Array.isArray(json.tasks) ? json.tasks : []
-                for (const t of tasks) {
-                  if (dayPicks.length >= desiredPerDay) break
-                  const key = String((t?.title || '').trim()).toLowerCase()
-                  if (!key) continue
-                  if (usedTitles.has(key) || seenDay.has(key)) continue
-                  seenDay.add(key)
-                  dayPicks.push(t)
-                }
-              }
+          try {
+            const resp = await fetch('/api/generate-weekly-plan', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                user: userData,
+                startDay: 1,
+                weekNumber: 1,
+                focusArea: userData.focusArea || 'growth',
+                dailyTaskCount: desiredPerDay,
+                websiteAnalysis: userData.websiteAnalysis,
+                targetAudience: userData.targetAudience,
+                contextSignals: {},
+                excludeTitles: []
+              })
+            })
+            const json = await resp.json()
+            const allTasks: any[] = Array.isArray(json.tasks) ? json.tasks : []
+            const perDay: Record<number, any[]> = {}
+            const perDayKeys: Record<number, Set<string>> = {}
 
-              if (dayPicks.length > 0) {
-                const rows = dayPicks.slice(0, desiredPerDay).map((t: any) => ({
+            allTasks.forEach((t: any) => {
+              const dayValue = Number(t.day) || 1
+              const title = String(t.title || '').trim()
+              const description = String(t.description || '').trim()
+              if (!title) return
+              if (!perDay[dayValue]) perDay[dayValue] = []
+              if (!perDayKeys[dayValue]) perDayKeys[dayValue] = new Set<string>()
+              const key = `${title}|${description}`.toLowerCase()
+              if (perDayKeys[dayValue].has(key)) return
+              if (perDay[dayValue].length >= desiredPerDay) return
+              perDayKeys[dayValue].add(key)
+              perDay[dayValue].push({ ...t, title, description })
+            })
+
+            const rows: any[] = []
+            for (let day = 1; day <= 7; day++) {
+              const dayTasks = perDay[day] || []
+              dayTasks.slice(0, desiredPerDay).forEach((t: any) => {
+                const metadata = t.metadata && typeof t.metadata === 'object'
+                  ? { ...t.metadata }
+                  : { day, week: 1, month: 1 }
+                metadata.day = metadata.day || day
+                metadata.week = metadata.week || 1
+                metadata.month = metadata.month || 1
+                metadata.source = metadata.source || 'onboarding_seed'
+                metadata.algorithm_version = metadata.algorithm_version || 'v2_weekly'
+                rows.push({
                   user_id: user.id,
                   title: t.title,
                   description: t.description || null,
                   category: t.category || null,
                   platform: t.platform || null,
                   status: 'pending',
-                  metadata: { day, week: 1, month: 1, source: 'onboarding_seed' }
-                }))
-                await supabase.from('tasks').insert(rows)
-                rows.forEach((r: any) => usedTitles.add(String((r.title || '').trim()).toLowerCase()))
-              }
-            } catch (seedErr) {
-              // eslint-disable-next-line no-console
-              console.warn('Failed seeding tasks for day', day, seedErr)
+                  metadata
+                })
+              })
             }
+
+            if (rows.length > 0) {
+              await supabase.from('tasks').insert(rows)
+            }
+          } catch (seedErr) {
+            // eslint-disable-next-line no-console
+            console.warn('Failed to seed week 1 tasks:', seedErr)
           }
         }
       } catch (seedWeekErr) {

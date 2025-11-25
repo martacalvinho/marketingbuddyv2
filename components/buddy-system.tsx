@@ -168,7 +168,7 @@ export default function BuddySystem({ user, streak, xp, todaysTasks, showOnlyLea
           { id: "a3", type: "milestone", description: "Reached 500 followers on Instagram", timestamp: "2024-01-29T09:20:00Z" }
         ],
         suggestedTasks: [
-          { id: "s1", title: "Create Twitter thread", description: "Share your design process in a thread", reason: "I noticed you're great at visual content", category: "Social", xpReward: 30, suggestedBy: "Sarah Chen" }
+          { id: "s1", title: "Create X thread", description: "Share your design process in a thread", reason: "I noticed you're great at visual content", category: "Social", xpReward: 30, suggestedBy: "Sarah Chen" }
         ]
       },
       {

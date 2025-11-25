@@ -1,16 +1,44 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { 
+  ChevronRight, 
+  ChevronLeft,
+  GripVertical, 
+  Plus, 
+  Users, 
+  Banknote, 
+  Flame, 
+  Rocket,
+  CheckCircle2,
+  Lock,
+  Edit2,
+  X,
+  Save,
+  Share2,
+  Trophy,
+  Target,
+  Calendar,
+  Flag,
+  Trash2,
+  MoreHorizontal
+} from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { supabase } from "@/lib/supabase"
 import type { Milestone } from "@/hooks/use-milestones"
-import { ChevronLeft, ChevronRight, Target, MapPin, Star, GripVertical } from "lucide-react"
+import { cn } from "@/lib/utils"
 
-import AddMilestoneModal from "./AddMilestoneModal"
-// ProgressRing removed in favor of journey map
 import ShareJourneyDialog from "./ShareJourneyDialog"
 import type { MilestoneDraft } from "./types"
+
+// --- Types ---
 
 interface JourneyPanelProps {
   streak: number
@@ -26,1053 +54,801 @@ interface JourneyPanelProps {
 }
 
 const defaultMilestoneDraft: MilestoneDraft = {
-  title: "",
-  emoji: "🏅",
-  description: "",
-  date: "",
-  current: "",
-  target: "",
-  unit: "",
+  title: "", emoji: "🚩", description: "", date: "", current: "", target: "", unit: "",
 }
 
-const JourneyPanel = ({
-  streak,
-  xp,
-  currentDay,
-  user,
-  weekStats,
-  milestones,
-  applyMilestonesChange,
-  onRefreshMilestones,
-  completedTasks,
-  totalTasks,
-}: JourneyPanelProps) => {
-  const [isJourneyCollapsed, setIsJourneyCollapsed] = useState(false)
-  const [showEditGoal, setShowEditGoal] = useState(false)
-  const [showShareModal, setShowShareModal] = useState(false)
-  const [shareTemplate, setShareTemplate] = useState<"journey" | "milestone" | "weekly">("journey")
-  const [showAddMilestone, setShowAddMilestone] = useState(false)
-  const [newMilestone, setNewMilestone] = useState<MilestoneDraft>(defaultMilestoneDraft)
-  const [celebratingId, setCelebratingId] = useState<string | null>(null)
-  const [draggedMilestone, setDraggedMilestone] = useState<string | null>(null)
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
-  const [editUsersOpen, setEditUsersOpen] = useState(false)
-  const [editMrrOpen, setEditMrrOpen] = useState(false)
-  const [usersDraftCurrent, setUsersDraftCurrent] = useState<string>("")
-  const [usersDraftTarget, setUsersDraftTarget] = useState<string>("")
-  const [mrrDraftCurrent, setMrrDraftCurrent] = useState<string>("")
-  const [mrrDraftTarget, setMrrDraftTarget] = useState<string>("")
+const EMOJI_OPTIONS = [
+  '🚀', '🎯', '💰', '👥', '💵', '🏅', '⭐', '🔥', '💎', '🎉',
+  '✨', '🌟', '🏆', '📈', '💪', '🎊', '🌈', '🎁', '🔔', '📱',
+  '💻', '🌍', '🎨', '📝', '✅', '🎓', '🏃', '🚴', '🎸', '📚'
+]
 
-  // Small helper to avoid indefinite hangs
-  function withTimeout<T>(promise: Promise<T>, ms = 8000): Promise<T> {
-    return new Promise<T>((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error('timeout')), ms)
-      promise
-        .then((v) => { clearTimeout(timer); resolve(v) })
-        .catch((e) => { clearTimeout(timer); reject(e) })
-    })
+// --- NEW: Improved Add Milestone Modal (Story Only) ---
+
+const CreateMilestoneModal = ({ open, onClose, onSubmit }: any) => {
+  const [data, setData] = useState(defaultMilestoneDraft)
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+
+  useEffect(() => {
+    if (open) {
+       setData({ ...defaultMilestoneDraft, emoji: '🚩' })
+    }
+  }, [open])
+
+  const handleSubmit = () => {
+    onSubmit({ ...data, mode: 'story' })
   }
 
-  const [currentUsers, setCurrentUsers] = useState(() => {
-    const value = parseInt(user?.currentUsers || "0", 10)
-    return Number.isFinite(value) ? value : 0
-  })
-  const [currentRevenue, setCurrentRevenue] = useState(() => {
-    const value = parseFloat(user?.currentMrr || "0")
-    return Number.isFinite(value) ? value : 0
-  })
-  const getUserGoal = useCallback(() => {
-    // Prefer an explicit pending milestone target if one exists; else suggest 100/500/1000
-    const current = Number.isFinite(currentUsers) ? currentUsers : parseInt(user?.currentUsers || "0", 10) || 0
-    const pending = (milestones || []).find(m => m.type === 'user_added' && (m as any).goal_type === 'users' && !m.unlocked && !((m as any).completed === true))
-    if (pending) {
-      const t = (pending as any).progressTarget ?? (pending as any).progress_target
-      if (t != null) return Number(t)
-    }
-    if (current < 50) return 50
-    if (current < 100) return 100
-    if (current < 500) return 500
-    if (current < 1000) return 1000
-    return Math.max(10, current * 2)
-  }, [currentUsers, milestones, user?.currentUsers])
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Log a Win</DialogTitle>
+        </DialogHeader>
+        
+        <div className="mt-4 space-y-4">
+          {/* Emoji & Title Row */}
+          <div className="flex gap-3">
+             <div className="w-16 relative">
+               <Label className="text-xs text-zinc-500">Icon</Label>
+               <Button
+                  variant="outline"
+                  className="w-full h-10 bg-zinc-900 border-zinc-800 text-xl p-0 hover:bg-zinc-800 hover:text-white"
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+               >
+                  {data.emoji}
+               </Button>
+               
+               {showEmojiPicker && (
+                 <div className="absolute z-50 mt-1 w-64 bg-zinc-900 border border-zinc-800 rounded-lg shadow-lg p-3 left-0">
+                   <div className="grid grid-cols-6 gap-2">
+                     {EMOJI_OPTIONS.map((emoji) => (
+                       <button
+                         key={emoji}
+                         onClick={() => {
+                           setData({ ...data, emoji })
+                           setShowEmojiPicker(false)
+                         }}
+                         className="text-2xl hover:bg-zinc-800 rounded p-1 transition-colors"
+                       >
+                         {emoji}
+                       </button>
+                     ))}
+                   </div>
+                 </div>
+               )}
+             </div>
+             <div className="flex-1">
+               <Label className="text-xs text-zinc-500">Title</Label>
+               <Input 
+                  className="bg-zinc-900 border-zinc-800" 
+                  placeholder="e.g., First Viral Tweet"
+                  value={data.title}
+                  onChange={e => setData({...data, title: e.target.value})}
+               />
+             </div>
+          </div>
 
-  const getRevenueGoal = useCallback(() => {
-    const current = Number.isFinite(currentRevenue) ? currentRevenue : parseFloat(user?.currentMrr || "0") || 0
-    const pending = (milestones || []).find(m => m.type === 'user_added' && ((m as any).goal_type === 'revenue' || (m as any).goal_type === 'mrr') && !m.unlocked && !((m as any).completed === true))
-    if (pending) {
-      const t = (pending as any).progressTarget ?? (pending as any).progress_target
-      if (t != null) return Number(t)
-    }
-    if (current < 100) return 100
-    if (current < 500) return 500
-    if (current < 1000) return 1000
-    return Math.max(10, Math.round(current * 2))
-  }, [currentRevenue, milestones, user?.currentMrr])
+          <div className="space-y-1">
+             <Label className="text-xs text-zinc-500">Description</Label>
+             <Textarea 
+                className="bg-zinc-900 border-zinc-800 resize-none" 
+                placeholder="Add a little context..."
+                value={data.description}
+                onChange={e => setData({...data, description: e.target.value})}
+             />
+          </div>
 
-  const [userGoal, setUserGoal] = useState(getUserGoal)
-  const [revenueGoal, setRevenueGoal] = useState(getRevenueGoal)
+          <div className="pt-2 border-t border-zinc-800">
+             <Label className="text-xs text-zinc-500">Date</Label>
+             <Input 
+                type="date"
+                className="bg-zinc-900 border-zinc-800" 
+                value={data.date || new Date().toISOString().slice(0, 10)}
+                onChange={e => setData({...data, date: e.target.value})}
+             />
+          </div>
+        </div>
+
+        <DialogFooter className="mt-4">
+          <Button variant="ghost" onClick={onClose} className="text-zinc-400 hover:text-white hover:bg-white/10">Cancel</Button>
+          <Button onClick={handleSubmit} className="bg-white text-black hover:bg-zinc-200">
+            Add to Story
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// --- NEW: Set Goal Modal ---
+
+const SetGoalModal = ({ open, onClose, onSubmit, category }: any) => {
+  const [data, setData] = useState(defaultMilestoneDraft)
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
 
   useEffect(() => {
-    setUserGoal(getUserGoal())
-    setRevenueGoal(getRevenueGoal())
-    const users = parseInt(user?.currentUsers || "0", 10)
-    setCurrentUsers(Number.isFinite(users) ? users : 0)
-    const revenue = parseFloat(user?.currentMrr || "0")
-    setCurrentRevenue(Number.isFinite(revenue) ? revenue : 0)
-  }, [getRevenueGoal, getUserGoal, user?.currentUsers, user?.currentMrr])
+    if (open) {
+       setData({ 
+         ...defaultMilestoneDraft, 
+         emoji: '🎯',
+         unit: category === 'mrr' ? 'MRR' : 'users'
+       })
+    }
+  }, [open, category])
 
+  const handleSubmit = () => {
+    onSubmit({ ...data, mode: 'goal' })
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Set {category === 'mrr' ? 'Revenue' : 'User'} Target</DialogTitle>
+        </DialogHeader>
+        
+        <div className="mt-4 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+             <div>
+               <Label className="text-xs text-zinc-500">Target Number</Label>
+               <Input 
+                  type="number"
+                  className="bg-zinc-900 border-zinc-800 text-lg" 
+                  placeholder="100"
+                  value={data.target}
+                  onChange={e => setData({...data, target: e.target.value})}
+                  autoFocus
+               />
+             </div>
+             <div>
+               <Label className="text-xs text-zinc-500">Unit</Label>
+               <Input 
+                  className="bg-zinc-900 border-zinc-800" 
+                  placeholder="users"
+                  value={data.unit}
+                  onChange={e => setData({...data, unit: e.target.value})}
+               />
+             </div>
+          </div>
+
+          <div className="space-y-1">
+             <Label className="text-xs text-zinc-500">Goal Title</Label>
+             <Input 
+                className="bg-zinc-900 border-zinc-800" 
+                placeholder={category === 'mrr' ? "e.g., Reach $1k MRR" : "e.g., Reach 100 Users"}
+                value={data.title}
+                onChange={e => setData({...data, title: e.target.value})}
+             />
+          </div>
+          
+          <div>
+               <Label className="text-xs text-zinc-500">Icon</Label>
+               <div className="relative">
+                 <Button
+                    variant="outline"
+                    className="w-16 h-10 bg-zinc-900 border-zinc-800 text-xl p-0 hover:bg-zinc-800 hover:text-white"
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                 >
+                    {data.emoji}
+                 </Button>
+                 
+                 {showEmojiPicker && (
+                   <div className="absolute z-50 mt-1 w-64 bg-zinc-900 border border-zinc-800 rounded-lg shadow-lg p-3">
+                     <div className="grid grid-cols-6 gap-2">
+                       {EMOJI_OPTIONS.map((emoji) => (
+                         <button
+                           key={emoji}
+                           onClick={() => {
+                             setData({ ...data, emoji })
+                             setShowEmojiPicker(false)
+                           }}
+                           className="text-2xl hover:bg-zinc-800 rounded p-1 transition-colors"
+                         >
+                           {emoji}
+                         </button>
+                       ))}
+                     </div>
+                   </div>
+                 )}
+               </div>
+          </div>
+        </div>
+
+        <DialogFooter className="mt-4">
+          <Button variant="ghost" onClick={onClose} className="text-zinc-400 hover:text-white hover:bg-white/10">Cancel</Button>
+          <Button onClick={handleSubmit} className="bg-white text-black hover:bg-zinc-200">
+            Set Goal
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+
+// --- NEW: Goal Carousel Component ---
+
+const GoalCarousel = ({ title, icon: Icon, goals, currentVal, onAddGoal, onCompleteGoal, colorClass }: any) => {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const amount = 200
+      scrollRef.current.scrollBy({ left: direction === 'left' ? -amount : amount, behavior: 'smooth' })
+    }
+  }
+
+  return (
+    <div className="w-full space-y-3">
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2 text-zinc-400">
+          <Icon size={16} className={colorClass} />
+          <span className="text-sm font-medium uppercase tracking-wider">{title} Roadmap</span>
+        </div>
+        <div className="flex gap-1">
+          <button onClick={() => scroll('left')} className="p-1 rounded-md hover:bg-white/5 text-zinc-500 hover:text-white"><ChevronLeft size={16} /></button>
+          <button onClick={() => scroll('right')} className="p-1 rounded-md hover:bg-white/5 text-zinc-500 hover:text-white"><ChevronRight size={16} /></button>
+        </div>
+      </div>
+
+      <div 
+        ref={scrollRef}
+        className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide snap-x"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        {/* Add Button */}
+        <button 
+          onClick={onAddGoal}
+          className="snap-start flex-shrink-0 w-[140px] h-[160px] rounded-xl border border-dashed border-zinc-800 bg-zinc-900/20 flex flex-col items-center justify-center gap-2 text-zinc-500 hover:text-white hover:border-zinc-600 hover:bg-zinc-900/40 transition-all group"
+        >
+          <div className="p-2 rounded-full bg-zinc-900 group-hover:bg-zinc-800"><Plus size={20} /></div>
+          <span className="text-xs font-medium">Set Target</span>
+        </button>
+
+        {/* Goal Cards */}
+        {goals.map((goal: any, idx: number) => {
+           const progress = Math.min(100, Math.max(0, (currentVal / goal.target) * 100))
+           const isNext = idx === 0 // Highlight the immediate next goal
+
+           return (
+             <div 
+               key={goal.id || idx} 
+               className={cn(
+                 "snap-start flex-shrink-0 w-[200px] h-[160px] rounded-xl border p-4 flex flex-col justify-between transition-all relative overflow-hidden cursor-pointer group",
+                 isNext ? "border-zinc-700 bg-zinc-900" : "border-zinc-800 bg-zinc-950/50 opacity-70 hover:opacity-100"
+               )}
+               onClick={() => onCompleteGoal(goal)}
+             >
+                {isNext && <div className={`absolute top-0 left-0 right-0 h-1 ${colorClass.replace('text-', 'bg-')}`} />}
+                
+                <div className="flex justify-between items-start">
+                  <div className="p-2 rounded-lg bg-zinc-950 border border-zinc-800 text-2xl">{goal.emoji}</div>
+                  <div className="text-zinc-600 group-hover:text-white transition-colors">
+                    {goal.type === 'users' || goal.type === 'mrr' ? (
+                       <Lock size={14} />
+                    ) : (
+                       <CheckCircle2 size={14} />
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                   <div className="text-xs text-zinc-500 font-medium uppercase mb-1">{goal.type === 'mrr' ? 'MRR Goal' : 'User Goal'}</div>
+                   <div className="text-lg font-bold text-white leading-tight">{goal.title}</div>
+                </div>
+
+                <div className="space-y-1.5">
+                   <div className="flex justify-between text-[10px] text-zinc-500">
+                      <span>{Math.round(progress)}%</span>
+                      <span>{goal.target.toLocaleString()}</span>
+                   </div>
+                   <Progress value={progress} className="h-1 bg-zinc-800" indicatorClassName={colorClass.replace('text-', 'bg-')} />
+                </div>
+             </div>
+           )
+        })}
+      </div>
+    </div>
+  )
+}
+
+
+// --- Main Panel ---
+
+const JourneyPanel = ({ streak, currentDay, user, weekStats, milestones, applyMilestonesChange, onRefreshMilestones, completedTasks, totalTasks }: JourneyPanelProps) => {
+  
+  // State
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [shareTemplate, setShareTemplate] = useState<"journey" | "milestone" | "weekly">("journey")
+  
+  const [modalOpen, setModalOpen] = useState(false)
+  const [goalModalOpen, setGoalModalOpen] = useState(false)
+  const [goalCategory, setGoalCategory] = useState<'users' | 'mrr' | null>(null)
+  
+  const [draggedMilestone, setDraggedMilestone] = useState<string | null>(null)
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
   const shareCardRef = useRef<HTMLDivElement>(null)
 
-  const weekDone = useMemo(
-    () => (weekStats || []).reduce((acc, item) => acc + (item?.done || 0), 0),
-    [weekStats],
-  )
-  const weekTotal = useMemo(
-    () => (weekStats || []).reduce((acc, item) => acc + (item?.total || 0), 0),
-    [weekStats],
-  )
-  const winsGoals = useMemo(() => {
-    const goals = (weekStats || []).flatMap((item) => item?.goals || [])
-    return Array.from(new Set(goals)).slice(0, 4)
-  }, [weekStats])
+  const [currentUsers, setCurrentUsers] = useState(() => parseInt(user?.currentUsers || "0", 10) || 0)
+  const [currentRevenue, setCurrentRevenue] = useState(() => parseFloat(user?.currentMrr || "0") || 0)
 
-  const currentWeek = Math.ceil(currentDay / 7)
-  const currentWeekGoals = weekStats[currentWeek - 1]?.goals || []
-  const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0
+  // Calculation Helpers
+  const weekDone = useMemo(() => (weekStats || []).reduce((acc, item) => acc + (item?.done || 0), 0), [weekStats])
+  const weekTotal = useMemo(() => (weekStats || []).reduce((acc, item) => acc + (item?.total || 0), 0), [weekStats])
+  const consistencyPercent = totalTasks > 0 ? Math.min(100, Math.round((completedTasks / totalTasks) * 100)) : 0
 
-  // Journey map helpers
-  const journeySteps = useMemo(() => [0, 10, 100, 500, 1000], [])
-  const percentForUsers = useCallback((u: number) => {
-    if (!Number.isFinite(u) || u <= 0) return 0
-    if (u <= 10) return (u / 10) * 25
-    if (u <= 100) return 25 + ((u - 10) / 90) * 25
-    if (u <= 500) return 50 + ((u - 100) / 400) * 25
-    if (u <= 1000) return 75 + ((u - 500) / 500) * 25
-    return 100
-  }, [])
-  const nodePercent = useCallback((step: number) => {
-    const idx = journeySteps.indexOf(step)
-    return idx <= 0 ? 0 : (idx / (journeySteps.length - 1)) * 100
-  }, [journeySteps])
+  // --- Handling Milestones ---
 
-  const markerPercent = useMemo(() => percentForUsers(currentUsers), [currentUsers, percentForUsers])
+  const handleCreateMilestone = async (data: any) => {
+    if (!data.title.trim() || !user?.id) return
 
-  const suggestNextTargets = useCallback((current: number) => {
-    if (current < 100) return 100
-    if (current < 500) return 500
-    if (current < 1000) return 1000
-    return 0 // use custom
-  }, [])
-
-  const ensurePendingMilestone = useCallback(async (kind: 'users' | 'revenue', currentVal: number, targetVal: number) => {
-    try {
-      // If already achieved at creation time, mark unlocked immediately
-      const unlocked = currentVal >= targetVal
-      const title = kind === 'users' ? `Reach ${targetVal} users` : `Reach $${targetVal} MRR`
-      const unit = kind === 'users' ? 'users' : 'mrr'
-
-      // Try to find an existing pending of this kind
-      const existing = (milestones || []).find(m => m.type === 'user_added' && ((m as any).goal_type === kind || (kind === 'revenue' && (m as any).goal_type === 'mrr')) && !m.unlocked && !((m as any).completed === true))
-
-      if (existing?.id && !unlocked) {
-        await supabase.from('milestones').update({
-          title,
-          goal_type: kind,
-          progress_current: currentVal,
-          progress_target: targetVal,
-          unit,
-          unlocked: false,
-          date: null,
-        }).eq('id', existing.id)
-      } else {
-        const payload: any = {
-          user_id: user?.id,
-          title,
-          description: null,
-          emoji: kind === 'users' ? '👥' : '💰',
-          type: 'user_added',
-          goal_type: kind,
-          progress_current: currentVal,
-          progress_target: targetVal,
-          unit,
-          unlocked,
-          date: unlocked ? new Date().toISOString().slice(0,10) : null,
-          sort_order: 0,
-        }
-        await supabase.from('milestones').insert([payload])
-      }
-
-      if (onRefreshMilestones) await onRefreshMilestones()
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.warn('ensurePendingMilestone error', e)
-    }
-  }, [milestones, onRefreshMilestones, supabase, user?.id])
-
-  const saveUsersEdit = useCallback(async () => {
-    const curr = parseInt(usersDraftCurrent || '0', 10) || 0
-    const tgt = parseInt(usersDraftTarget || String(suggestNextTargets(curr) || 0), 10) || 0
-    try {
-      if (user?.id) {
-        await supabase.from('onboarding').update({ current_users: curr }).eq('user_id', user.id)
-      }
-      setCurrentUsers(curr)
-      setUserGoal(tgt > 0 ? tgt : getUserGoal())
-      if (tgt > 0) await ensurePendingMilestone('users', curr, tgt)
-    } finally {
-      setEditUsersOpen(false)
-      setUsersDraftCurrent('')
-      setUsersDraftTarget('')
-    }
-  }, [ensurePendingMilestone, getUserGoal, setUserGoal, supabase, user?.id, usersDraftCurrent, usersDraftTarget])
-
-  const saveMrrEdit = useCallback(async () => {
-    const curr = Math.max(0, Math.round(parseFloat(mrrDraftCurrent || '0'))) || 0
-    const tgt = Math.max(0, Math.round(parseFloat(mrrDraftTarget || String(suggestNextTargets(curr) || 0)))) || 0
-    try {
-      if (user?.id) {
-        await supabase.from('onboarding').update({ current_mrr: curr }).eq('user_id', user.id)
-      }
-      setCurrentRevenue(curr)
-      setRevenueGoal(tgt > 0 ? tgt : getRevenueGoal())
-      if (tgt > 0) await ensurePendingMilestone('revenue', curr, tgt)
-    } finally {
-      setEditMrrOpen(false)
-      setMrrDraftCurrent('')
-      setMrrDraftTarget('')
-    }
-  }, [ensurePendingMilestone, getRevenueGoal, setRevenueGoal, supabase, user?.id, mrrDraftCurrent, mrrDraftTarget])
-
-  const achievementPresets = useMemo(
-    () => [
-      {
-        id: "users-10",
-        title: "First 10 Users",
-        unlocked: currentUsers >= 10,
-        progress: `${Math.min(currentUsers, 10)}/10`,
-        icon: "👥",
-        blurb: "Every journey starts somewhere",
-      },
-      {
-        id: "streak-7",
-        title: "7-Day Streak",
-        unlocked: streak >= 7,
-        progress: `${Math.min(streak, 7)}/7 days`,
-        icon: "🔥",
-        blurb: "Consistency is key",
-      },
-      {
-        id: "mrr-1",
-        title: "First Dollar",
-        unlocked: currentRevenue >= 1,
-        progress: `$${Math.min(currentRevenue, 1).toLocaleString()}/$1 MRR`,
-        icon: "💰",
-        blurb: "The first dollar is the hardest",
-      },
-      {
-        id: "users-100",
-        title: "100 Users",
-        unlocked: currentUsers >= 100,
-        progress: `${Math.min(currentUsers, 100)}/100`,
-        icon: "🚩",
-        blurb: "Real traction begins",
-      },
-      {
-        id: "streak-30",
-        title: "30-Day Streak",
-        unlocked: streak >= 30,
-        progress: `${Math.min(streak, 30)}/30 days`,
-        icon: "⚡️",
-        blurb: "Unstoppable momentum",
-      },
-      {
-        id: "mrr-100",
-        title: "$100 MRR",
-        unlocked: currentRevenue >= 100,
-        progress: `$${Math.min(currentRevenue, 100).toLocaleString()}/$100 MRR`,
-        icon: "💎",
-        blurb: "Proof people pay",
-      },
-      {
-        id: "completion-75",
-        title: "75% Completion",
-        unlocked: completionRate >= 75,
-        progress: `${completionRate.toFixed(0)}%`,
-        icon: "🎯",
-        blurb: "You are executing consistently",
-      },
-    ],
-    [completionRate, currentRevenue, currentUsers, streak],
-  )
-
-  // Show only milestones for the user's current stage
-  const stage = useMemo(() => {
-    if ((currentUsers ?? 0) < 10 && (currentRevenue ?? 0) < 1) return 0
-    if ((currentUsers ?? 0) < 100 && (currentRevenue ?? 0) < 100) return 1
-    if ((currentUsers ?? 0) < 500) return 2
-    return 3
-  }, [currentRevenue, currentUsers])
-
-  const visibleAchievementPresets = useMemo(() => {
-    const byId = (ids: string[]) => achievementPresets.filter((p) => ids.includes(p.id))
-    switch (stage) {
-      case 0:
-        return byId(["users-10", "streak-7", "mrr-1"]) // First 10 users, 7-day streak, First Dollar
-      case 1:
-        return byId(["users-100", "streak-30", "mrr-100"]) // 100 users, 30-day streak, $100 MRR
-      case 2:
-        return byId(["users-100", "streak-30"]) // keep meaningful next steps
-      default:
-        return achievementPresets
-    }
-  }, [achievementPresets, stage])
-
-  const prevAchievementsRef = useRef<Record<string, boolean>>({})
-  useEffect(() => {
-    const currentState = achievementPresets.reduce<Record<string, boolean>>((acc, preset) => {
-      acc[preset.id] = !!preset.unlocked
-      return acc
-    }, {})
-
-    const previous = prevAchievementsRef.current
-    const newlyUnlocked = Object.keys(currentState).find(
-      (id) => currentState[id] && previous[id] === false,
-    )
-
-    if (newlyUnlocked) {
-      setCelebratingId(newlyUnlocked)
-      void launchConfetti()
-      setTimeout(() => setCelebratingId(null), 1200)
-    }
-
-    prevAchievementsRef.current = { ...previous, ...currentState }
-  }, [achievementPresets])
-
-  const handleDownloadShareCard = useCallback(async () => {
-    if (!shareCardRef.current) return
-    try {
-      const win = window as typeof window & { htmlToImage?: any }
-      if (!win.htmlToImage) {
-        await new Promise<void>((resolve, reject) => {
-          const script = document.createElement("script")
-          script.src = "https://unpkg.com/html-to-image@1.11.11/dist/html-to-image.js"
-          script.async = true
-          script.onload = () => resolve()
-          script.onerror = () => reject(new Error("Failed to load html-to-image"))
-          document.body.appendChild(script)
-        })
-      }
-
-      const dataUrl = await win.htmlToImage.toPng(shareCardRef.current, {
-        pixelRatio: 2,
-        cacheBust: true,
-      })
-      const link = document.createElement("a")
-      link.href = dataUrl
-      link.download = `marketing-share-${shareTemplate}.png`
-      link.click()
-    } catch {
-      const shareText = `🚀 My Marketing Journey - Day ${currentDay}\n\n👥 Users: ${currentUsers.toLocaleString()} / ${userGoal.toLocaleString()}\n💰 Revenue: $${currentRevenue.toLocaleString()} / $${revenueGoal.toLocaleString()} MRR\n🔥 ${streak} day streak\n\nBuilding: ${user?.productName || "My Product"} - ${window.location.origin}/landing`
-      if (navigator.share) {
-        try {
-          await navigator.share({ text: shareText })
-        } catch {
-          // user dismissed share dialog
-        }
-      } else {
-        await navigator.clipboard.writeText(shareText)
-        alert("Share card copied to clipboard")
-      }
-    }
-  }, [
-    currentDay,
-    currentRevenue,
-    currentUsers,
-    revenueGoal,
-    shareTemplate,
-    streak,
-    user?.productName,
-    userGoal,
-  ])
-
-  useEffect(() => {
-    const persistIfNeeded = async () => {
-      if (!user?.id) return
-
-      try {
-        const toInsert: any[] = []
-        if (currentUsers >= userGoal) {
-          const title = `Reached ${userGoal.toLocaleString()} users`
-          const exists = milestones.some(
-            (milestone) =>
-              milestone.type === "goal_achieved" &&
-              (milestone.goalType === "users" || milestone.goal_type === "users") &&
-              milestone.title === title,
-          )
-          if (!exists) {
-            toInsert.push({ title, type: "goal_achieved", goal_type: "users" })
-          }
-        }
-        if (currentRevenue >= revenueGoal) {
-          const title = `Reached $${revenueGoal.toLocaleString()} MRR`
-          const exists = milestones.some(
-            (milestone) =>
-              milestone.type === "goal_achieved" &&
-              (milestone.goalType === "revenue" || milestone.goal_type === "revenue") &&
-              milestone.title === title,
-          )
-          if (!exists) {
-            toInsert.push({ title, type: "goal_achieved", goal_type: "revenue" })
-          }
-        }
-
-        if (toInsert.length > 0) {
-          const rows = toInsert.map((row) => ({
-            user_id: user.id,
-            title: row.title,
-            type: row.type,
-            goal_type: row.goal_type,
-            unlocked: true,
-            date: new Date().toISOString().slice(0, 10),
-          }))
-          const { data } = await supabase.from("milestones").insert(rows).select("*")
-          if (data) {
-            applyMilestonesChange((prev) => [...(data as unknown as Milestone[]), ...prev])
-            if (onRefreshMilestones) {
-              await onRefreshMilestones()
-            }
-          }
-        }
-      } catch {
-        // ignore persistence errors
-      }
-    }
-
-    void persistIfNeeded()
-  }, [
-    applyMilestonesChange,
-    currentRevenue,
-    currentUsers,
-    milestones,
-    onRefreshMilestones,
-    revenueGoal,
-    user?.id,
-    userGoal,
-  ])
-
-  // Auto-complete user-defined pending milestones when current value reaches target
-  useEffect(() => {
-    const maybeComplete = async () => {
-      try {
-        const today = new Date().toISOString().slice(0, 10)
-        const toComplete = (milestones || []).filter((m: any) => {
-          if (m.type !== 'user_added') return false
-          if (m.unlocked === true || m.completed === true) return false
-          const target = Number(m.progressTarget ?? m.progress_target)
-          if (!Number.isFinite(target) || target <= 0) return false
-          const goalKind = m.goal_type || m.goalType
-          if (goalKind === 'users') return currentUsers >= target
-          if (goalKind === 'revenue' || goalKind === 'mrr') return currentRevenue >= target
-          return false
-        })
-
-        for (const m of toComplete) {
-          applyMilestonesChange((prev) => prev.map((row: any) => row.id === m.id ? { ...row, unlocked: true, completed: true, date: today } : row))
-          await supabase.from('milestones').update({ unlocked: true, completed: true, date: today }).eq('id', m.id)
-        }
-        if (toComplete.length > 0 && onRefreshMilestones) await onRefreshMilestones()
-      } catch {
-        // ignore
-      }
-    }
-    void maybeComplete()
-  }, [currentUsers, currentRevenue, milestones, applyMilestonesChange, onRefreshMilestones])
-
-  const handleAddMilestone = useCallback(async () => {
-    console.log('handleAddMilestone called', { newMilestone, userId: user?.id })
-    
-    if (!newMilestone.title.trim()) {
-      console.log('No title, closing modal')
-      setShowAddMilestone(false)
-      return
-    }
-    
-    if (!user?.id) {
-      console.error('No user ID!')
-      setShowAddMilestone(false)
-      return
-    }
-    
-    const current = parseFloat(String(newMilestone.current || ""))
-    const target = parseFloat(String(newMilestone.target || ""))
-    const progressUnlocked = Number.isFinite(current) && Number.isFinite(target) ? current >= target : false
-    const unlocked = newMilestone.isCompleted === true ? true : progressUnlocked
-    
-    // Set date: if completed, use provided date or today; if pending, use null
-    const dateValue = unlocked 
-      ? (newMilestone.date || new Date().toISOString()).slice(0, 10)
-      : null
-    
-    const payload: any = {
+    // Prepare Payload
+    let payload: any = {
       user_id: user.id,
-      title: newMilestone.title,
-      description: newMilestone.description || null,
-      emoji: newMilestone.emoji || "🏅",
+      title: data.title,
+      description: data.description,
+      emoji: data.emoji || (data.mode === 'goal' ? "🎯" : "🚩"),
       type: "user_added",
-      goal_type: null,
-      progress_current: Number.isFinite(current) ? current : null,
-      progress_target: Number.isFinite(target) ? target : null,
-      unit: newMilestone.unit || null,
-      unlocked,
-      date: dateValue,
+      unlocked: false,
+      date: null
+    }
+
+    if (data.mode === 'goal') {
+       // It's a numeric target
+       const target = parseFloat(data.target || "0")
+       // If adding via carousel, force the type
+       const goalType = goalCategory || (data.title.toLowerCase().includes('mrr') ? 'revenue' : 'users')
+       const current = goalType === 'revenue' || goalType === 'mrr' ? currentRevenue : currentUsers
+       
+       payload.goal_type = goalType === 'revenue' ? 'revenue' : (goalType === 'mrr' ? 'mrr' : 'users')
+       payload.progress_target = target
+       payload.progress_current = current
+       payload.unit = data.unit || (goalType === 'users' ? 'users' : 'mrr')
+       payload.unlocked = current >= target
+       payload.date = payload.unlocked ? new Date().toISOString().slice(0, 10) : null
+    } else {
+       // It's a story moment
+       payload.unlocked = true
+       payload.completed = true // Custom flag often used
+       payload.date = data.date || new Date().toISOString().slice(0, 10)
+    }
+
+    const { data: newRow } = await supabase.from("milestones").insert([payload]).select("*").maybeSingle()
+    
+    if (newRow) {
+      applyMilestonesChange((prev) => [...prev, newRow as unknown as Milestone])
+    }
+    if (onRefreshMilestones) await onRefreshMilestones()
+    setModalOpen(false)
+    setGoalModalOpen(false)
+  }
+
+  const handleDeleteMilestone = async (milestoneId: string) => {
+    if (!confirm("Are you sure you want to delete this milestone?")) return
+
+    const { error } = await supabase.from("milestones").delete().eq('id', milestoneId)
+    
+    if (!error) {
+      applyMilestonesChange((prev) => prev.filter(m => m.id !== milestoneId))
+      if (onRefreshMilestones) await onRefreshMilestones()
+    }
+  }
+
+  const handleCompleteGoal = async (goal: any) => {
+    if (goal.isPreset) {
+      alert("Preset system goals cannot be manually completed. They will unlock automatically when you reach the target.")
+      return
     }
     
-    console.log('Inserting milestone payload:', payload)
+    if (!confirm(`Mark "${goal.title}" as completed today?`)) return
     
-    try {
-      const { data, error } = await supabase
-        .from("milestones")
-        .insert([payload])
-        .select("*")
-        .maybeSingle()
-      console.log('Supabase response:', { data, error })
+    const payload = {
+      unlocked: true,
+      date: new Date().toISOString().slice(0, 10)
+    }
+    
+    const { error } = await supabase.from("milestones").update(payload).eq('id', goal.id)
+    
+    if (!error) {
+      // Optimistic update
+      applyMilestonesChange((prev) => prev.map(m => m.id === goal.id ? { ...m, ...payload } : m))
+      if (onRefreshMilestones) await onRefreshMilestones()
+    }
+  }
+
+  const handleDrop = async (index: number) => {
+      if (!draggedMilestone) return
+      const draggedIndex = pendingStory.findIndex(m => m.id === draggedMilestone)
+      if (draggedIndex === -1) return
+      const reordered = [...pendingStory]
+      const [removed] = reordered.splice(draggedIndex, 1)
+      reordered.splice(index, 0, removed)
+      for (let i = 0; i < reordered.length; i++) {
+         const m = reordered[i]
+         if (!m.isPreset && m.milestoneData?.id) { await supabase.from('milestones').update({ sort_order: i }).eq('id', m.milestoneData.id) }
+      }
+      setDraggedMilestone(null)
+      setDragOverIndex(null)
+      if (onRefreshMilestones) await onRefreshMilestones()
+  }
+
+  // --- Filtering Logic (Carousel vs Timeline) ---
+
+  const { pendingStory, historyStory, lockedUserGoals, lockedRevenueGoals } = useMemo(() => {
+    // 1. Define Base System Presets
+    const presets = [
+      { id: 'p-u-1', emoji: '👤', title: 'First User', target: 1, type: 'users' },
+      { id: 'p-u-10', emoji: '👥', title: '10 Users', target: 10, type: 'users' },
+      { id: 'p-u-50', emoji: '👨‍👩‍👧', title: '50 Users', target: 50, type: 'users' },
+      { id: 'p-u-100', emoji: '🎯', title: '100 Users', target: 100, type: 'users' },
+      { id: 'p-u-500', emoji: '🚀', title: '500 Users', target: 500, type: 'users' },
+      { id: 'p-u-1000', emoji: '⚡️', title: '1,000 Users', target: 1000, type: 'users' },
       
-      if (error) {
-        console.error('Error adding milestone:', error)
+      { id: 'p-m-1', emoji: '💵', title: 'First Dollar', target: 1, type: 'mrr' },
+      { id: 'p-m-100', emoji: '💰', title: '$100 MRR', target: 100, type: 'mrr' },
+      { id: 'p-m-500', emoji: '💸', title: '$500 MRR', target: 500, type: 'mrr' },
+      { id: 'p-m-1000', emoji: '💎', title: '$1k MRR', target: 1000, type: 'mrr' },
+      { id: 'p-m-5000', emoji: '🏛️', title: '$5k MRR', target: 5000, type: 'mrr' },
+    ]
+
+    const pendingStoryItems: any[] = []
+    const historyItems: any[] = []
+    const userGoals: any[] = []
+    const revGoals: any[] = []
+
+    // 2. Process Presets
+    presets.forEach(preset => {
+      const current = preset.type === 'users' ? currentUsers : currentRevenue
+      const achieved = current >= preset.target
+      const existing = milestones.find(m => m.title.toLowerCase().includes(preset.title.toLowerCase()) || (m.type === 'goal_achieved' && m.goal_type === preset.type && achieved))
+      
+      if (achieved && existing?.unlocked) {
+        // If achieved, it goes to the HISTORY wall (Trophy)
+        historyItems.push({ ...preset, date: existing.date || new Date().toISOString(), isPreset: true, milestoneData: existing })
       } else {
-        if (data) {
-          console.log('Successfully added milestone, updating state (data present)')
-          applyMilestonesChange((prev) => [...prev, data as unknown as Milestone])
-        } else {
-          console.log('Insert succeeded without returning data; refreshing list')
-        }
-        if (onRefreshMilestones) {
-          await onRefreshMilestones()
-        }
+        // If NOT achieved, it stays in the CAROUSEL (Locked Goal)
+        const item = { ...preset, current: current }
+        if (preset.type === 'users') userGoals.push(item)
+        else revGoals.push(item)
       }
-    } catch (err) {
-      console.error('Exception adding milestone:', err)
-    } finally {
-      console.log('Resetting form and closing modal')
-      setNewMilestone(defaultMilestoneDraft)
-      setShowAddMilestone(false)
-    }
-  }, [applyMilestonesChange, newMilestone, onRefreshMilestones, user?.id])
+    })
 
-  const launchConfetti = useCallback(async () => {
-    try {
-      const win = window as typeof window & { confetti?: any }
-      if (!win.confetti) {
-        await new Promise<void>((resolve, reject) => {
-          const script = document.createElement("script")
-          script.src = "https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"
-          script.async = true
-          script.onload = () => resolve()
-          script.onerror = () => reject(new Error("Failed to load confetti"))
-          document.body.appendChild(script)
-        })
-      }
-      win.confetti({ particleCount: 140, spread: 70, origin: { y: 0.6 } })
-      setTimeout(() => win.confetti?.({ particleCount: 80, angle: 60, spread: 55, origin: { x: 0 } }), 150)
-      setTimeout(() => win.confetti?.({ particleCount: 80, angle: 120, spread: 55, origin: { x: 1 } }), 300)
-    } catch {
-      // confetti is non-critical
-    }
-  }, [])
+    // 3. Process Custom Milestones
+    milestones.forEach(m => {
+       const isStory = m.type === 'user_added' && !m.goal_type // Just a story moment
+       const isGoal = m.goal_type === 'users' || m.goal_type === 'revenue' || m.goal_type === 'mrr'
 
-  const markCustomMilestoneCompleted = useCallback(
-    async (id: string) => {
-      const todayIso = new Date().toISOString().slice(0, 10)
-      applyMilestonesChange((prev) =>
-        prev.map((milestone) =>
-          milestone.id === id
-            ? { ...milestone, unlocked: true, completed: true as any, date: todayIso }
-            : milestone,
-        ),
-      )
-      try {
-        const { error } = await supabase
-          .from("milestones")
-          .update({ unlocked: true, completed: true, date: todayIso })
-          .eq("id", id)
-        if (error) console.error('Error marking milestone completed:', error)
-      } catch (e) {
-        console.error('Exception marking milestone completed:', e)
-      }
-      setCelebratingId(id)
-      await launchConfetti()
-      setTimeout(() => setCelebratingId(null), 1200)
-    },
-    [applyMilestonesChange, launchConfetti],
-  )
+       if (isStory) {
+          const item = {
+             id: m.id, emoji: m.emoji || '🚩', title: m.title, description: m.description,
+             date: m.date, isPreset: false, sortOrder: (m as any).sortOrder ?? 999, milestoneData: m
+          }
+          if (m.unlocked || (m as any).completed) historyItems.push(item)
+          else pendingStoryItems.push(item)
+       } else if (isGoal && !m.unlocked) {
+          // Custom Locked Goal -> Add to Carousel
+          const current = (m.goal_type === 'users') ? currentUsers : currentRevenue
+          const item = {
+             id: m.id, emoji: m.emoji || '🎯', title: m.title, target: m.progressTarget || 0,
+             current: current, type: m.goal_type === 'users' ? 'users' : 'mrr', isPreset: false
+          }
+          if (m.goal_type === 'users') userGoals.push(item)
+          else revGoals.push(item)
+       } else if (isGoal && m.unlocked) {
+          // Custom Goal Achieved -> Add to History
+          historyItems.push({
+             id: m.id, emoji: m.emoji || '🏆', title: m.title, date: m.date, isPreset: false, milestoneData: m
+          })
+       }
+    })
+
+    // Sorting
+    historyItems.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    pendingStoryItems.sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999))
+    userGoals.sort((a, b) => a.target - b.target)
+    revGoals.sort((a, b) => a.target - b.target)
+
+    return { pendingStory: pendingStoryItems, historyStory: historyItems, lockedUserGoals: userGoals, lockedRevenueGoals: revGoals }
+  }, [currentUsers, currentRevenue, milestones])
+
 
   return (
     <>
-      <Card className="border-gray-200 bg-white shadow-sm">
-        <CardHeader className="pb-4">
-          <div className="flex items-center justify-end gap-3">
-            <Badge variant="outline">Day {currentDay}</Badge>
-            <Button
-              size="sm"
-              className="bg-indigo-600 text-white hover:bg-indigo-700"
-              onClick={() => {
-                setShareTemplate("journey")
-                setShowShareModal(true)
-              }}
-            >
-              📷 Share My Journey
-            </Button>
-          </div>
-        </CardHeader>
-
-        <CardContent>
-            <div className="space-y-6">
-              {/* Progress Circles for Users and MRR */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                {/* Users Circle */}
-                <div className="rounded-xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-6 shadow-sm">
-                  <div className="flex flex-col items-center">
-                    <div className="relative w-32 h-32">
-                      <svg className="w-32 h-32 transform -rotate-90">
-                        <circle
-                          cx="64"
-                          cy="64"
-                          r="56"
-                          stroke="currentColor"
-                          strokeWidth="8"
-                          fill="none"
-                          className="text-blue-100"
-                        />
-                        <circle
-                          cx="64"
-                          cy="64"
-                          r="56"
-                          stroke="currentColor"
-                          strokeWidth="8"
-                          fill="none"
-                          strokeDasharray={`${2 * Math.PI * 56}`}
-                          strokeDashoffset={`${2 * Math.PI * 56 * (1 - Math.min(currentUsers / userGoal, 1))}`}
-                          className="text-blue-500 transition-all duration-500"
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <div className="text-2xl font-bold text-blue-600">{currentUsers.toLocaleString()}</div>
-                        <div className="text-xs text-gray-500">of {userGoal.toLocaleString()}</div>
-                      </div>
-                    </div>
-                    <div className="mt-3 text-center">
-                      <button
-                        className="text-sm font-semibold text-gray-900 underline-offset-2 hover:underline"
-                        onClick={() => {
-                          setEditUsersOpen((v) => !v)
-                          setUsersDraftCurrent(String(currentUsers))
-                          const suggested = suggestNextTargets(currentUsers)
-                          setUsersDraftTarget(String(suggested || userGoal))
-                        }}
-                      >👥 Users</button>
-                      <div className="text-xs text-gray-600">{Math.round((currentUsers / userGoal) * 100)}% to goal</div>
-                    </div>
-                    {editUsersOpen && (
-                      <div className="mt-3 w-full max-w-xs text-left">
-                        <div className="grid grid-cols-2 gap-2 text-sm">
-                          <label className="text-gray-600">Current</label>
-                          <input value={usersDraftCurrent} onChange={(e)=>setUsersDraftCurrent(e.target.value)} type="number" className="border rounded px-2 py-1" />
-                          <label className="text-gray-600">Target</label>
-                          <div className="flex items-center gap-2">
-                            <input value={usersDraftTarget} onChange={(e)=>setUsersDraftTarget(e.target.value)} type="number" className="border rounded px-2 py-1 w-24" />
-                            {[100,500,1000].map(v => (
-                              <button key={v} className={`px-2 py-1 rounded border ${Number(usersDraftTarget)===v? 'bg-blue-100 border-blue-300':'border-gray-200'}`} onClick={()=>setUsersDraftTarget(String(v))}>{v}</button>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="mt-2 flex gap-2">
-                          <button className="px-3 py-1 text-sm rounded bg-blue-600 text-white" onClick={saveUsersEdit}>Save</button>
-                          <button className="px-3 py-1 text-sm rounded bg-gray-100" onClick={()=>setEditUsersOpen(false)}>Cancel</button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* MRR Circle */}
-                <div className="rounded-xl border border-green-200 bg-gradient-to-br from-green-50 to-white p-6 shadow-sm">
-                  <div className="flex flex-col items-center">
-                    <div className="relative w-32 h-32">
-                      <svg className="w-32 h-32 transform -rotate-90">
-                        <circle
-                          cx="64"
-                          cy="64"
-                          r="56"
-                          stroke="currentColor"
-                          strokeWidth="8"
-                          fill="none"
-                          className="text-green-100"
-                        />
-                        <circle
-                          cx="64"
-                          cy="64"
-                          r="56"
-                          stroke="currentColor"
-                          strokeWidth="8"
-                          fill="none"
-                          strokeDasharray={`${2 * Math.PI * 56}`}
-                          strokeDashoffset={`${2 * Math.PI * 56 * (1 - Math.min(currentRevenue / revenueGoal, 1))}`}
-                          className="text-green-500 transition-all duration-500"
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <div className="text-2xl font-bold text-green-600">${currentRevenue.toLocaleString()}</div>
-                        <div className="text-xs text-gray-500">of ${revenueGoal.toLocaleString()}</div>
-                      </div>
-                    </div>
-                    <div className="mt-3 text-center">
-                      <button
-                        className="text-sm font-semibold text-gray-900 underline-offset-2 hover:underline"
-                        onClick={() => {
-                          setEditMrrOpen((v) => !v)
-                          setMrrDraftCurrent(String(currentRevenue))
-                          const suggested = suggestNextTargets(currentRevenue)
-                          setMrrDraftTarget(String(suggested || revenueGoal))
-                        }}
-                      >💰 MRR</button>
-                      <div className="text-xs text-gray-600">{Math.round((currentRevenue / revenueGoal) * 100)}% to goal</div>
-                    </div>
-                    {editMrrOpen && (
-                      <div className="mt-3 w-full max-w-xs text-left">
-                        <div className="grid grid-cols-2 gap-2 text-sm">
-                          <label className="text-gray-600">Current</label>
-                          <input value={mrrDraftCurrent} onChange={(e)=>setMrrDraftCurrent(e.target.value)} type="number" className="border rounded px-2 py-1" />
-                          <label className="text-gray-600">Target</label>
-                          <div className="flex items-center gap-2">
-                            <input value={mrrDraftTarget} onChange={(e)=>setMrrDraftTarget(e.target.value)} type="number" className="border rounded px-2 py-1 w-24" />
-                            {[100,500,1000].map(v => (
-                              <button key={v} className={`px-2 py-1 rounded border ${Number(mrrDraftTarget)===v? 'bg-green-100 border-green-300':'border-gray-200'}`} onClick={()=>setMrrDraftTarget(String(v))}>${v}</button>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="mt-2 flex gap-2">
-                          <button className="px-3 py-1 text-sm rounded bg-green-600 text-white" onClick={saveMrrEdit}>Save</button>
-                          <button className="px-3 py-1 text-sm rounded bg-gray-100" onClick={()=>setEditMrrOpen(false)}>Cancel</button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
+      <div className="space-y-8">
+        
+        {/* --- 1. Dashboard HUD --- */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+           {/* Users Card */}
+           <div className="bg-black/20 border border-white/5 backdrop-blur-sm rounded-2xl p-5 relative overflow-hidden group hover:border-white/10 transition-colors">
+              <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity scale-125 rotate-12"><Users size={64} /></div>
+              <div className="relative z-10">
+                 <div className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Total Users</div>
+                 <div className="text-3xl font-bold text-white tracking-tight">{currentUsers.toLocaleString()}</div>
+                 <div className="mt-4 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500 w-1/2 shadow-[0_0_10px_rgba(59,130,246,0.5)]" style={{ width: `${currentUsers > 0 ? Math.min(100, (currentUsers / (lockedUserGoals[0]?.target || 100)) * 100) : 0}%` }} />
+                 </div>
+                 <div className="text-[10px] text-zinc-500 mt-2 flex justify-between font-medium">
+                    <span>Current</span>
+                    <span>Next: {lockedUserGoals[0]?.target || '∞'}</span>
+                 </div>
               </div>
+           </div>
 
-              {/* Journey Map - Narrative Style */}
-              <div className="rounded-xl border border-gray-200 bg-white/80 p-6 shadow-sm">
-                <div className="mb-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Your story of building {user?.productName || "your product"}</p>
-                  </div>
-                  <Button size="sm" variant="outline" onClick={() => setShowAddMilestone(true)}>Add Milestone</Button>
-                </div>
-
-                {/* Journey Timeline - Grid Layout */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  {/* Launch Day - Always first */}
-                  {user?.launchDate && (
-                    <div className="rounded-lg border border-purple-200 bg-gradient-to-r from-purple-50 to-white p-4 shadow-sm">
-                      <div className="flex items-start gap-2">
-                        <div className="text-2xl">🚀</div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-gray-900 text-sm">
-                            Launched {user?.productName || "my product"}
-                          </div>
-                          <div className="text-xs text-gray-500 mt-1">
-                            {new Date(user.launchDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Completed Milestones - Sorted by date */}
-                  {(() => {
-                    const presets = [
-                      { id: 'first-user', emoji: '👤', title: 'Got my first user', target: 1, current: currentUsers, type: 'users' },
-                      { id: 'first-10', emoji: '👥', title: 'Reached 10 users', target: 10, current: currentUsers, type: 'users' },
-                      { id: 'first-dollar', emoji: '💵', title: 'Made my first dollar', target: 1, current: currentRevenue, type: 'mrr' },
-                      { id: 'first-100-users', emoji: '🎯', title: 'Hit 100 users', target: 100, current: currentUsers, type: 'users' },
-                      { id: 'first-100-mrr', emoji: '💰', title: 'Reached $100 MRR', target: 100, current: currentRevenue, type: 'mrr' },
-                      { id: 'first-500-users', emoji: '🚀', title: 'Reached 500 users', target: 500, current: currentUsers, type: 'users' },
-                      { id: 'first-1k-mrr', emoji: '💎', title: 'Hit $1k MRR', target: 1000, current: currentRevenue, type: 'mrr' },
-                    ]
-
-                    // Collect all completed milestones with dates
-                    const completedMilestones: any[] = []
-                    
-                    // Add completed preset milestones
-                    presets.forEach(preset => {
-                      const achieved = preset.current >= preset.target
-                      const existingMilestone = milestones.find(m => 
-                        m.title.toLowerCase().includes(preset.title.toLowerCase()) || 
-                        (m.type === 'goal_achieved' && m.goal_type === preset.type && preset.current >= preset.target)
-                      )
-                      if (existingMilestone?.unlocked && existingMilestone.date) {
-                        completedMilestones.push({
-                          ...preset,
-                          date: existingMilestone.date,
-                          isPreset: true,
-                          milestoneData: existingMilestone
-                        })
-                      }
-                    })
-
-                    // Add completed custom milestones (completed OR unlocked)
-                    milestones
-                      .filter(m => m.type === 'user_added' && ((m as any).completed === true || m.unlocked) && m.date)
-                      .forEach(m => {
-                        completedMilestones.push({
-                          id: m.id,
-                          emoji: m.emoji || '🏅',
-                          title: m.title,
-                          description: m.description,
-                          date: m.date,
-                          progressCurrent: m.progressCurrent,
-                          progressTarget: m.progressTarget,
-                          unit: m.unit,
-                          isPreset: false,
-                          milestoneData: m
-                        })
-                      })
-
-                    // Sort by date
-                    completedMilestones.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-
-                    return completedMilestones.map((milestone) => (
-                      <div key={milestone.id} className="rounded-lg border border-green-200 bg-green-50 p-4 shadow-sm">
-                        <div className="flex items-start gap-2">
-                          <div className="text-2xl">{milestone.emoji}</div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-gray-900 text-sm">{milestone.title}</div>
-                            {milestone.description && (
-                              <div className="text-xs text-gray-600 mt-1">{milestone.description}</div>
-                            )}
-                            {milestone.isPreset && milestone.type === 'mrr' && (
-                              <div className="text-xs text-gray-600 mt-1">
-                                <span className="font-semibold text-green-600">${milestone.current.toLocaleString()}/mo</span>
-                              </div>
-                            )}
-                            {milestone.isPreset && milestone.type === 'users' && (
-                              <div className="text-xs text-gray-600 mt-1">
-                                <span className="font-semibold text-blue-600">{milestone.current.toLocaleString()} users</span>
-                              </div>
-                            )}
-                            {!milestone.isPreset && milestone.progressTarget != null && (
-                              <div className="text-xs text-gray-600 mt-1">
-                                <span className="font-semibold text-indigo-600">
-                                  {Math.round(milestone.progressCurrent || 0)}{milestone.unit || ''}/{Math.round(milestone.progressTarget)}{milestone.unit || ''}
-                                </span>
-                              </div>
-                            )}
-                            <div className="text-xs text-gray-500 mt-1">
-                              {new Date(milestone.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  })()}
-
-                  {/* Pending Milestones - Grey, draggable */}
-                  {(() => {
-                    const presets = [
-                      { id: 'first-user', emoji: '👤', title: 'Got my first user', target: 1, current: currentUsers, type: 'users' },
-                      { id: 'first-10', emoji: '👥', title: 'Reached 10 users', target: 10, current: currentUsers, type: 'users' },
-                      { id: 'first-dollar', emoji: '💵', title: 'Made my first dollar', target: 1, current: currentRevenue, type: 'mrr' },
-                      { id: 'first-100-users', emoji: '🎯', title: 'Hit 100 users', target: 100, current: currentUsers, type: 'users' },
-                      { id: 'first-100-mrr', emoji: '💰', title: 'Reached $100 MRR', target: 100, current: currentRevenue, type: 'mrr' },
-                      { id: 'first-500-users', emoji: '🚀', title: 'Reached 500 users', target: 500, current: currentUsers, type: 'users' },
-                      { id: 'first-1k-mrr', emoji: '💎', title: 'Hit $1k MRR', target: 1000, current: currentRevenue, type: 'mrr' },
-                    ]
-
-                    const pendingMilestones: any[] = []
-                    
-                    // Add pending preset milestones
-                    presets.forEach(preset => {
-                      const achieved = preset.current >= preset.target
-                      const existingMilestone = milestones.find(m => 
-                        m.title.toLowerCase().includes(preset.title.toLowerCase()) || 
-                        (m.type === 'goal_achieved' && m.goal_type === preset.type)
-                      )
-                      if (!achieved && !existingMilestone?.unlocked) {
-                        pendingMilestones.push({
-                          ...preset,
-                          isPreset: true,
-                          sortOrder: existingMilestone?.sortOrder ?? 999
-                        })
-                      }
-                    })
-
-                    // Add pending custom milestones (not yet completed and not unlocked)
-                    milestones
-                      .filter(m => m.type === 'user_added' && !((m as any).completed === true) && !m.unlocked)
-                      .forEach(m => {
-                        pendingMilestones.push({
-                          id: m.id,
-                          emoji: m.emoji || '🏅',
-                          title: m.title,
-                          description: m.description,
-                          progressCurrent: m.progressCurrent,
-                          progressTarget: m.progressTarget,
-                          unit: m.unit,
-                          isPreset: false,
-                          sortOrder: (m as any).sortOrder ?? m.sort_order ?? 999,
-                          milestoneData: m
-                        })
-                      })
-
-                    // Sort by sortOrder
-                    pendingMilestones.sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999))
-
-                    return pendingMilestones.map((milestone, index) => (
-                      <div
-                        key={milestone.id}
-                        draggable
-                        onDragStart={() => setDraggedMilestone(milestone.id)}
-                        onDragEnd={() => {
-                          setDraggedMilestone(null)
-                          setDragOverIndex(null)
-                        }}
-                        onDragOver={(e) => {
-                          e.preventDefault()
-                          setDragOverIndex(index)
-                        }}
-                        onDrop={async (e) => {
-                          e.preventDefault()
-                          if (!draggedMilestone || draggedMilestone === milestone.id) return
-                          
-                          const draggedIndex = pendingMilestones.findIndex(m => m.id === draggedMilestone)
-                          if (draggedIndex === -1) return
-
-                          // Reorder in database
-                          const reordered = [...pendingMilestones]
-                          const [removed] = reordered.splice(draggedIndex, 1)
-                          reordered.splice(index, 0, removed)
-
-                          // Update sort orders
-                          for (let i = 0; i < reordered.length; i++) {
-                            const m = reordered[i]
-                            if (!m.isPreset && m.milestoneData?.id) {
-                              await supabase
-                                .from('milestones')
-                                .update({ sort_order: i })
-                                .eq('id', m.milestoneData.id)
-                            }
-                          }
-                          setDraggedMilestone(null)
-                          setDragOverIndex(null)
-                          if (onRefreshMilestones) await onRefreshMilestones()
-                        }}
-                        onClick={() => {
-                          if (!milestone.isPreset && milestone.id) {
-                            const idStr = String(milestone.id)
-                            if (idStr.startsWith('temp-')) {
-                              // Avoid completing before the row is saved server-side
-                              console.warn('Please wait, saving milestone before completing...')
-                              return
-                            }
-                            markCustomMilestoneCompleted(milestone.id)
-                          }
-                        }}
-                        className={`rounded-lg border border-gray-200 bg-gray-50 p-4 opacity-60 transition-all ${
-                          dragOverIndex === index ? 'ring-2 ring-indigo-400' : ''
-                        } ${
-                          draggedMilestone === milestone.id ? 'opacity-30' : ''
-                        } ${
-                          !milestone.isPreset ? 'cursor-pointer hover:opacity-80' : 'cursor-move'
-                        }`}
-                        title={!milestone.isPreset ? 'Click to mark as completed' : 'Drag to reorder'}
-                      >
-                        <div className="flex items-start gap-2">
-                          <GripVertical className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                          <div className="text-2xl grayscale flex-shrink-0">{milestone.emoji}</div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-gray-500 text-sm">{milestone.title}</div>
-                            {milestone.description && (
-                              <div className="text-xs text-gray-400 mt-1">{milestone.description}</div>
-                            )}
-                            {milestone.isPreset && (
-                              <div className="text-xs text-gray-400 mt-1">
-                                {milestone.type === 'mrr' 
-                                  ? `$${milestone.current?.toLocaleString() || 0}/$${milestone.target?.toLocaleString()} MRR` 
-                                  : `${milestone.current?.toLocaleString() || 0}/${milestone.target?.toLocaleString()} users`}
-                              </div>
-                            )}
-                            {!milestone.isPreset && milestone.progressTarget != null && (
-                              <div className="text-xs text-gray-400 mt-1">
-                                {Math.round(milestone.progressCurrent || 0)}{milestone.unit || ''}/{Math.round(milestone.progressTarget)}{milestone.unit || ''}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  })()}
-
-                  {/* Empty state */}
-                  {milestones.filter(m => m.unlocked).length === 0 && !user?.launchDate && (
-                    <div className="text-center py-8 text-gray-500">
-                      <div className="text-4xl mb-2">🌱</div>
-                      <div className="text-sm">Your journey starts here. Add your first milestone!</div>
-                    </div>
-                  )}
-                </div>
+           {/* MRR Card */}
+           <div className="bg-black/20 border border-white/5 backdrop-blur-sm rounded-2xl p-5 relative overflow-hidden group hover:border-white/10 transition-colors">
+              <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity scale-125 rotate-12"><Banknote size={64} /></div>
+              <div className="relative z-10">
+                 <div className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-2">Monthly Revenue</div>
+                 <div className="text-3xl font-bold text-white tracking-tight">${currentRevenue.toLocaleString()}</div>
+                 <div className="mt-4 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                    <div className="h-full bg-lime-500 w-1/2 shadow-[0_0_10px_rgba(132,204,22,0.5)]" style={{ width: `${currentRevenue > 0 ? Math.min(100, (currentRevenue / (lockedRevenueGoals[0]?.target || 100)) * 100) : 0}%` }} />
+                 </div>
+                 <div className="text-[10px] text-zinc-500 mt-2 flex justify-between font-medium">
+                    <span>Current</span>
+                    <span>Next: ${lockedRevenueGoals[0]?.target || '∞'}</span>
+                 </div>
               </div>
+           </div>
 
-              {streak >= 7 && (
-                <div className="mt-4 rounded-lg border border-green-200 bg-gradient-to-r from-green-100 to-blue-100 p-3">
-                  <div className="flex items-center space-x-2">
-                    <Target className="h-4 w-4 text-green-600" />
-                    <span className="text-sm font-medium text-green-800">🎉 Consistency Milestone!</span>
-                  </div>
-                  <p className="mt-1 text-xs text-green-700">
-                    {streak >= 30
-                      ? "Master level! You're building unstoppable momentum."
-                      : streak >= 14
-                        ? "Great consistency! You're developing strong marketing habits."
-                        : "You're building momentum! Keep this streak going."}
-                  </p>
-                </div>
+           {/* Enhanced Streak Card */}
+           <div className="bg-black/20 border border-white/5 backdrop-blur-sm rounded-2xl p-5 relative overflow-hidden group hover:border-orange-500/20 transition-all">
+              {/* Animated fire glow background */}
+              {streak > 0 && (
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 via-transparent to-red-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
               )}
-            </div>
-          </CardContent>
-      </Card>
+              
+              <div className="relative flex items-center gap-5">
+                <div className={`h-16 w-16 rounded-full flex items-center justify-center border shadow-lg transition-all group-hover:scale-110 ${
+                  streak >= 30 
+                    ? 'bg-gradient-to-br from-orange-500 to-red-600 border-orange-400 shadow-orange-500/30' 
+                    : streak >= 7 
+                      ? 'bg-orange-500/20 border-orange-500/40 text-orange-400 shadow-orange-500/20'
+                      : streak > 0
+                        ? 'bg-orange-500/10 border-orange-500/20 text-orange-500 shadow-orange-500/10'
+                        : 'bg-zinc-800/50 border-zinc-700 text-zinc-500'
+                }`}>
+                   <Flame size={streak >= 30 ? 32 : 28} className={streak >= 30 ? 'text-white' : ''} />
+                </div>
+                
+                <div className="flex-1">
+                   <div className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-1">
+                     {streak >= 30 ? '🔥 On Fire!' : streak >= 7 ? '💪 Building Momentum' : streak > 0 ? 'Keep Going!' : 'Start Your Streak'}
+                   </div>
+                   <div className="text-3xl font-bold text-white tracking-tight flex items-baseline gap-2">
+                     {streak} <span className="text-lg text-zinc-400 font-normal">day{streak !== 1 ? 's' : ''}</span>
+                   </div>
+                   
+                   {/* Motivational message based on streak */}
+                   <div className="text-xs mt-2 font-medium">
+                     {streak === 0 && (
+                       <span className="text-zinc-500">Complete a task to start your streak!</span>
+                     )}
+                     {streak > 0 && streak < 3 && (
+                       <span className="text-orange-400/80">Great start! 3 days builds a habit.</span>
+                     )}
+                     {streak >= 3 && streak < 7 && (
+                       <span className="text-orange-400">Nice! {7 - streak} more days to hit a week!</span>
+                     )}
+                     {streak >= 7 && streak < 14 && (
+                       <span className="text-orange-400">One week strong! You're building real momentum.</span>
+                     )}
+                     {streak >= 14 && streak < 30 && (
+                       <span className="text-orange-400">Two weeks! {30 - streak} days to legendary status.</span>
+                     )}
+                     {streak >= 30 && streak < 60 && (
+                       <span className="text-orange-300">🏆 Legendary! You're in the top 5% of marketers.</span>
+                     )}
+                     {streak >= 60 && (
+                       <span className="text-orange-200">👑 Marketing master! {streak} days of pure consistency.</span>
+                     )}
+                   </div>
+                   
+                   {/* Weekly progress bar */}
+                   <div className="mt-3 flex items-center gap-2">
+                     <div className="flex-1 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                       <div 
+                         className="h-full bg-gradient-to-r from-orange-500 to-orange-400 rounded-full transition-all"
+                         style={{ width: `${weekTotal > 0 ? (weekDone / weekTotal) * 100 : 0}%` }}
+                       />
+                     </div>
+                     <span className="text-xs text-zinc-500 font-medium">{weekDone}/{weekTotal}</span>
+                   </div>
+                </div>
+                
+                {/* Streak milestone badges */}
+                {streak >= 7 && (
+                  <div className="absolute top-2 right-2 flex gap-1">
+                    {streak >= 7 && <div className="h-5 w-5 rounded-full bg-orange-500/20 flex items-center justify-center text-[10px]">7</div>}
+                    {streak >= 14 && <div className="h-5 w-5 rounded-full bg-orange-500/30 flex items-center justify-center text-[10px]">14</div>}
+                    {streak >= 30 && <div className="h-5 w-5 rounded-full bg-orange-500/50 flex items-center justify-center text-[10px]">30</div>}
+                    {streak >= 60 && <div className="h-5 w-5 rounded-full bg-orange-500/70 flex items-center justify-center text-[10px]">60</div>}
+                  </div>
+                )}
+              </div>
+           </div>
+        </div>
 
-      <AddMilestoneModal
-        open={showAddMilestone}
-        value={newMilestone}
-        onChange={setNewMilestone}
-        onSubmit={() => void handleAddMilestone()}
-        onClose={() => setShowAddMilestone(false)}
+        {/* --- 2. Goal Carousels --- */}
+        <div className="space-y-8">
+           <GoalCarousel 
+              title="User Growth" 
+              icon={Users} 
+              colorClass="text-blue-500" 
+              goals={lockedUserGoals} 
+              currentVal={currentUsers} 
+              onAddGoal={() => { setGoalCategory('users'); setGoalModalOpen(true) }}
+              onCompleteGoal={handleCompleteGoal}
+           />
+           <GoalCarousel 
+              title="Revenue Growth" 
+              icon={Banknote} 
+              colorClass="text-lime-500" 
+              goals={lockedRevenueGoals} 
+              currentVal={currentRevenue}
+              onAddGoal={() => { setGoalCategory('mrr'); setGoalModalOpen(true) }}
+              onCompleteGoal={handleCompleteGoal}
+           />
+        </div>
+
+        {/* --- 3. The Story Timeline --- */}
+        <div className="border-t border-white/5 pt-10">
+           <div className="flex items-center justify-between mb-8">
+              <div>
+                <h3 className="text-2xl font-bold text-white tracking-tight">The Founder's Story</h3>
+                <p className="text-sm text-zinc-400 mt-1">A log of your wins, launches, and unlocked trophies.</p>
+              </div>
+              <Button 
+                variant="default" 
+                onClick={() => setModalOpen(true)} 
+                className="bg-white text-black hover:bg-zinc-200 border-0"
+              >
+                 <Edit2 size={14} className="mr-2" /> Log Entry
+              </Button>
+           </div>
+
+           <div className="relative max-w-3xl mx-auto">
+              
+              {/* Next Chapter (Pending Story Items) */}
+              {pendingStory.length > 0 && (
+                 <div className="mb-12">
+                    <div className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-6 pl-16">Next Chapter</div>
+                    {pendingStory.map((item, i) => (
+                      <div 
+                        key={item.id}
+                        draggable
+                        onDragStart={() => setDraggedMilestone(item.id)}
+                        onDragOver={(e) => { e.preventDefault(); setDragOverIndex(i) }}
+                        onDrop={(e) => { e.preventDefault(); handleDrop(i) }}
+                        onDragEnd={() => { setDraggedMilestone(null); setDragOverIndex(null) }}
+                        className={cn(
+                           "relative flex gap-6 py-2 group transition-all",
+                           dragOverIndex === i ? "translate-y-2" : ""
+                        )}
+                      >
+                         <div className="absolute left-[27px] top-0 bottom-0 w-0.5 border-l-2 border-dashed border-zinc-800" />
+                         <div className="relative z-10 flex-shrink-0 w-14 h-14 rounded-full bg-[#020604] border-4 border-zinc-900 flex items-center justify-center text-2xl shadow-lg group-hover:scale-110 transition-transform">
+                            {item.emoji}
+                         </div>
+                         <div className="flex-1 bg-white/[0.02] border border-white/5 rounded-xl p-4 hover:bg-white/[0.04] hover:border-white/10 transition-all cursor-move shadow-sm relative">
+                            {/* Delete Action for Pending Items */}
+                            {!item.isPreset && (
+                              <button 
+                                onClick={() => handleDeleteMilestone(item.id)}
+                                className="absolute top-2 right-2 p-2 text-zinc-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            )}
+                            
+                            <div className="flex items-start gap-3">
+                               <GripVertical className="text-zinc-600 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" size={14} />
+                               <div>
+                                 <div className="font-bold text-zinc-200 tracking-tight">{item.title}</div>
+                                 {item.description && <div className="text-sm text-zinc-500 mt-1">{item.description}</div>}
+                               </div>
+                            </div>
+                         </div>
+                      </div>
+                    ))}
+                 </div>
+              )}
+
+              {/* History (Completed) */}
+              <div>
+                 <div className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-6 pl-16">Chronicles</div>
+                 
+                 {historyStory.map((item, i) => (
+                    <div key={item.id || i} className="relative flex gap-6 py-6 group">
+                       <div className="absolute left-[27px] top-0 bottom-0 w-0.5 bg-zinc-800" />
+                       
+                       {/* Icon Node */}
+                       <div className={cn(
+                          "relative z-10 flex-shrink-0 w-14 h-14 rounded-full border-4 border-[#020604] flex items-center justify-center text-2xl shadow-lg transition-transform group-hover:scale-110",
+                          item.isPreset ? "bg-lime-500/10 text-lime-500 border-lime-500/20" : "bg-zinc-800 text-zinc-300"
+                       )}>
+                          {item.emoji}
+                       </div>
+
+                       {/* Card */}
+                       <div className="flex-1 relative">
+                          <div className="flex items-baseline justify-between mb-2">
+                             <div className="text-xs font-mono text-zinc-500">{new Date(item.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
+                             {item.isPreset && <Badge className="bg-lime-500/10 text-lime-400 border-0 text-[10px] uppercase tracking-wider px-2 font-bold shadow-[0_0_10px_rgba(163,230,53,0.2)]">Trophy Unlocked</Badge>}
+                          </div>
+                          <div className={cn(
+                             "rounded-xl border p-6 transition-all relative group/card",
+                             item.isPreset ? "bg-gradient-to-br from-lime-900/10 to-black/40 border-lime-500/20 backdrop-blur-sm" : "bg-black/20 border-white/5 backdrop-blur-sm"
+                          )}>
+                             {/* Delete for Custom History Items */}
+                             {!item.isPreset && (
+                                <button 
+                                  onClick={() => handleDeleteMilestone(item.id)}
+                                  className="absolute top-4 right-4 p-2 text-zinc-600 hover:text-red-500 opacity-0 group-hover/card:opacity-100 transition-opacity"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                             )}
+
+                             <h4 className={cn("font-bold text-lg tracking-tight", item.isPreset ? "text-white" : "text-zinc-200")}>{item.title}</h4>
+                             {item.description && <p className="text-sm text-zinc-400 mt-2 leading-relaxed">{item.description}</p>}
+                          </div>
+                       </div>
+                    </div>
+                 ))}
+                 
+                 {/* Launch Node */}
+                 {user?.launchDate && (
+                    <div className="relative flex gap-6 py-6">
+                       <div className="relative z-10 flex-shrink-0 w-14 h-14 rounded-full bg-purple-500/10 text-purple-500 border-4 border-[#020604] flex items-center justify-center text-2xl shadow-lg">🚀</div>
+                       <div className="flex-1 pt-2">
+                          <div className="text-xs font-mono text-zinc-500 mb-1">{new Date(user.launchDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
+                          <div className="text-xl font-bold text-zinc-300 tracking-tight">Launch Day</div>
+                          <div className="text-sm text-zinc-500">The journey began.</div>
+                       </div>
+                    </div>
+                 )}
+              </div>
+           </div>
+        </div>
+
+      </div>
+
+      <CreateMilestoneModal 
+         open={modalOpen} 
+         onClose={() => setModalOpen(false)} 
+         onSubmit={handleCreateMilestone}
       />
 
-      <ShareJourneyDialog
-        open={showShareModal}
-        template={shareTemplate}
-        onTemplateChange={setShareTemplate}
-        onOpenChange={setShowShareModal}
-        onDownload={() => void handleDownloadShareCard()}
-        shareCardRef={shareCardRef}
-        currentDay={currentDay}
-        currentUsers={currentUsers}
-        userGoal={userGoal}
-        currentRevenue={currentRevenue}
-        revenueGoal={revenueGoal}
-        streak={streak}
-        winsGoals={winsGoals}
-        currentWeekGoals={currentWeekGoals}
-        currentWeek={currentWeek}
-        weekDone={weekDone}
-        weekTotal={weekTotal}
-        userProductName={user?.productName}
-        achievementPresets={achievementPresets}
-        milestones={milestones}
-        launchDate={user?.launchDate}
+      <SetGoalModal 
+         open={goalModalOpen}
+         onClose={() => setGoalModalOpen(false)}
+         onSubmit={handleCreateMilestone}
+         category={goalCategory}
+      />
+      
+      <ShareJourneyDialog 
+         open={showShareModal} 
+         template={shareTemplate} 
+         onTemplateChange={setShareTemplate} 
+         onOpenChange={setShowShareModal} 
+         shareCardRef={shareCardRef} 
+         currentDay={currentDay} 
+         currentUsers={currentUsers} 
+         userGoal={lockedUserGoals[0]?.target || 0} 
+         currentRevenue={currentRevenue} 
+         revenueGoal={lockedRevenueGoals[0]?.target || 0} 
+         streak={streak} 
+         weekDone={weekDone} 
+         weekTotal={weekTotal} 
+         userProductName={user?.productName} 
+         milestones={milestones} 
+         launchDate={user?.launchDate} 
+         winsGoals={[]} 
+         currentWeekGoals={[]} 
+         achievementPresets={[]}
+         currentWeek={Math.ceil(currentDay / 7)}
+         onDownload={() => console.log("Download functionality not yet implemented")}
       />
     </>
   )

@@ -31,7 +31,7 @@ export default function WeeklyReviewDialog({ open, onOpenChange, weeklyForm, onU
         <div className="space-y-4">
           <div>
             <Label>What got traction this week?</Label>
-            <Input value={weeklyForm.tractionChannel} onChange={(e) => onUpdateField('tractionChannel', e.target.value)} placeholder="e.g., Twitter, SEO, Newsletter" />
+            <Input value={weeklyForm.tractionChannel} onChange={(e) => onUpdateField('tractionChannel', e.target.value)} placeholder="e.g., X, SEO, Newsletter" />
           </div>
           <div>
             <Label>What felt like a waste of time?</Label>
@@ -39,7 +39,7 @@ export default function WeeklyReviewDialog({ open, onOpenChange, weeklyForm, onU
           </div>
           <div>
             <Label>Focus next week (comma separated)</Label>
-            <Input value={weeklyForm.focusNextWeek.join(', ')} onChange={(e) => onUpdateField('focusNextWeek', e.target.value)} placeholder="e.g., Twitter threads, Cold outreach" />
+            <Input value={weeklyForm.focusNextWeek.join(', ')} onChange={(e) => onUpdateField('focusNextWeek', e.target.value)} placeholder="e.g., X threads, Cold outreach" />
           </div>
           <div>
             <Label>How are you feeling? (1-10)</Label>

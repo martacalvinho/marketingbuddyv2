@@ -37,7 +37,7 @@ Created `INDUSTRY_RESOURCES` object with 7 industry categories:
 #### **Crypto/Web3/Blockchain:**
 - **Directories:** CoinMarketCap, CoinGecko, DappRadar, DefiLlama
 - **Subreddits:** r/CryptoCurrency, r/Bitcoin, r/ethereum, r/defi
-- **Communities:** Crypto Twitter, Farcaster, Telegram, Discord
+- **Communities:** Crypto X, Farcaster, Telegram, Discord
 
 #### **SaaS/Software:**
 - **Directories:** Product Hunt, SaaSHub, Startupstash, G2
@@ -47,7 +47,7 @@ Created `INDUSTRY_RESOURCES` object with 7 industry categories:
 #### **AI/ML:**
 - **Directories:** Theresanaiforthat.com, Futuretools.io, Futurepedia
 - **Subreddits:** r/artificial, r/MachineLearning, r/OpenAI
-- **Communities:** AI Twitter, Hugging Face, Papers with Code
+- **Communities:** AI X, Hugging Face, Papers with Code
 
 #### **E-commerce:**
 - **Directories:** Shopify App Store, WooCommerce Extensions
@@ -131,7 +131,7 @@ Task 3: Post in r/SaaS subreddit
 Task 1: List usatom.fun on CoinMarketCap and CoinGecko
 Task 2: Submit to DappRadar and State of the Dapps
 Task 3: Post in r/CryptoCurrency about your dashboard's unique features
-Task 4: Engage on Crypto Twitter with #CryptoDashboard hashtag
+Task 4: Engage on Crypto X with #CryptoDashboard hashtag
 Task 5: Join Telegram groups for crypto traders and share value
 ```
 
@@ -149,7 +149,7 @@ Task 2: Post in r/SaaS
 ```
 Task 1: List on Theresanaiforthat.com and Futuretools.io
 Task 2: Post in r/artificial and r/OpenAI
-Task 3: Share on AI Twitter with demo video
+Task 3: Share on AI X with demo video
 Task 4: Submit to Hugging Face Spaces
 ```
 
@@ -177,7 +177,7 @@ Task 4: Share in Shopify Community forums
 
 ### **Test Case 1: Crypto Project**
 **Input:** Industry = "Cryptocurrency Dashboard"
-**Expected Output:** CoinMarketCap, r/CryptoCurrency, Crypto Twitter
+**Expected Output:** CoinMarketCap, r/CryptoCurrency, Crypto X
 **Status:** ✅ Fixed
 
 ### **Test Case 2: SaaS Project**
@@ -187,7 +187,7 @@ Task 4: Share in Shopify Community forums
 
 ### **Test Case 3: AI Tool**
 **Input:** Industry = "AI"
-**Expected Output:** Futuretools.io, r/artificial, AI Twitter
+**Expected Output:** Futuretools.io, r/artificial, AI X
 **Status:** ✅ Fixed
 
 ### **Test Case 4: Unknown Industry**

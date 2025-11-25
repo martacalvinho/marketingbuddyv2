@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import DashboardView from "@/components/dashboard-view"
+import DashboardNew from "@/components/dashboard-new"
 import { supabase } from "@/lib/supabase"
 
 // Force dynamic rendering (don't pre-render at build time)
@@ -16,7 +16,6 @@ type UserLike = {
 export default function DashboardPage() {
   const [user, setUser] = useState<UserLike | null>(null)
   const [loading, setLoading] = useState(true)
-  const [signingOut, setSigningOut] = useState(false)
   const router = useRouter()
 
   // Rebuild enriched user object from Supabase
@@ -93,8 +92,8 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
+      <div className="min-h-screen bg-[#020604] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-lime-400"></div>
       </div>
     )
   }
@@ -102,46 +101,8 @@ export default function DashboardPage() {
   if (!user) return null
 
   return (
-    <div className="min-h-screen">
-      <div className="p-4 flex justify-end">
-        <button
-          className="px-3 py-1 text-sm rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-60"
-          disabled={signingOut}
-          onClick={async () => {
-            if (signingOut) return
-            setSigningOut(true)
-            try {
-              const { error } = await supabase.auth.signOut()
-              if (error) {
-                // Best-effort fallback if signOut reports an error
-                console.warn('signOut error:', error)
-              }
-              // Navigate away regardless to clear client state
-              router.replace("/login")
-              // Hard fallback in case router is blocked by stale state
-              setTimeout(() => {
-                if (typeof window !== 'undefined') {
-                  window.location.href = '/login'
-                }
-              }, 300)
-            } catch (e) {
-              console.warn('signOut exception:', e)
-              try {
-                router.replace('/login')
-              } finally {
-                if (typeof window !== 'undefined') {
-                  window.location.href = '/login'
-                }
-              }
-            } finally {
-              setSigningOut(false)
-            }
-          }}
-        >
-          {signingOut ? 'Signing out…' : 'Sign out'}
-        </button>
-      </div>
-      <DashboardView user={user as any} onUserRefresh={refreshUser} />
+    <div className="min-h-screen bg-[#020604]">
+      <DashboardNew user={user as any} onUserRefresh={refreshUser} />
     </div>
   )
 }

@@ -34,7 +34,7 @@ export default function ChatInterface({ user, dailyTasks = [], currentDay = 1, s
       timestamp: new Date(),
       suggestions: [
         "Help me write a better value proposition",
-        "What should I post on Twitter today?",
+        "What should I post on X today?",
         "I’m feeling overwhelmed, what should I focus on?",
         "How do I get my first 10 users?",
       ],

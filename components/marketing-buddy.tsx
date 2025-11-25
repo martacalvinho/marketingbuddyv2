@@ -1,259 +1,321 @@
 "use client"
 
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Users, Trophy, MessageSquare, TrendingUp, Zap, Clock, Globe, CheckCircle2, Heart, Eye, ListChecks, BarChart3, Target } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Users, Trophy, MessageSquare, TrendingUp, Zap, Clock, Globe, CheckCircle2, Heart, Eye, ListChecks, BarChart3, Target, Sparkles, ArrowRight, Mail } from "lucide-react"
+import { supabase } from "@/lib/supabase"
 
 interface MarketingBuddyProps {
   user: any
 }
 
 export default function MarketingBuddy({ user }: MarketingBuddyProps) {
+  const [email, setEmail] = useState(user.email || "")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+
+  const handleWaitlistSubmit = async () => {
+    if (!email || isSubmitting) return
+    
+    setIsSubmitting(true)
+    try {
+      await supabase.from('buddy_messages').insert({
+        user_id: user.id,
+        role: 'user',
+        message: 'Waitlist signup for Buddy System',
+        context: {
+          type: 'waitlist',
+          email,
+          timestamp: new Date().toISOString()
+        }
+      })
+      setSubmitted(true)
+    } catch (error) {
+      console.error('Error submitting waitlist:', error)
+      alert('Failed to join waitlist. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
-    <div className="space-y-6">
-      {/* Coming Soon Header */}
-      <Card className="border-2 border-dashed border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50">
-        <CardHeader className="text-center">
-          <div className="flex items-center justify-center space-x-2 mb-2">
-            <Users className="h-6 w-6 text-indigo-600" />
-            <CardTitle className="text-2xl text-indigo-900">Marketing Accountability Buddy</CardTitle>
+    <div className="space-y-8">
+      {/* Bold Hero - No Gradient */}
+      <div className="relative">
+        <div className="absolute inset-0 bg-lime-400/5 blur-3xl rounded-full" />
+        <div className="relative bg-black/40 border border-white/10 rounded-xl p-12 text-center backdrop-blur-sm">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-lime-400/10 border-2 border-lime-400/20 mb-6">
+            <Users className="h-10 w-10 text-lime-400" />
           </div>
-          <Badge variant="secondary" className="mx-auto bg-indigo-100 text-indigo-800">
-            <Clock className="h-3 w-3 mr-1" />
-            Coming Soon
-          </Badge>
-          <CardDescription className="text-lg text-gray-700 mt-4">
-            Action · Content · Accountability — preview how you'll check in on buddies, track progress, and keep momentum.
-          </CardDescription>
-        </CardHeader>
-      </Card>
-
-      {/* Feature Preview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="opacity-90">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Trophy className="h-5 w-5 text-yellow-600" />
-              <span>Friendly Competition</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-600 mb-4">Compete with your buddy on daily tasks, content creation, and milestones.</p>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                <span className="text-sm">Daily Tasks Completed</span>
-                <Badge variant="outline">3/3 vs 2/3</Badge>
-              </div>
-              <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                <span className="text-sm">Content Created This Week</span>
-                <Badge variant="outline">5 vs 3</Badge>
-              </div>
-              <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                <span className="text-sm">Current Streak</span>
-                <Badge variant="outline">7 days vs 5 days</Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="opacity-90">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <MessageSquare className="h-5 w-5 text-blue-600" />
-              <span>Tips & Support</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-600 mb-4">Share strategies, get feedback on drafts, and discover new angles.</p>
-            <div className="space-y-3">
-              <div className="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-500">
-                <p className="text-sm text-blue-800">"Try focusing on customer pain points in your next post."</p>
-                <p className="text-xs text-blue-600 mt-1">- Your Buddy</p>
-              </div>
-              <div className="p-3 bg-green-50 rounded-lg border-l-4 border-green-500">
-                <p className="text-sm text-green-800">"Consider a quick case study tweet; great for engagement."</p>
-                <p className="text-xs text-green-600 mt-1">- Your Buddy</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="opacity-90">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <TrendingUp className="h-5 w-5 text-green-600" />
-              <span>Progress Tracking</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-600 mb-4">Track progress together and celebrate wins.</p>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Weekly Goal Achievement</span>
-                <div className="flex space-x-2">
-                  <Badge className="bg-green-100 text-green-800">85%</Badge>
-                  <span className="text-xs text-gray-500">vs 72%</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Content Engagement Rate</span>
-                <div className="flex space-x-2">
-                  <Badge className="bg-blue-100 text-blue-800">4.2%</Badge>
-                  <span className="text-xs text-gray-500">vs 3.8%</span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="opacity-90">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Zap className="h-5 w-5 text-purple-600" />
-              <span>Motivation & Accountability</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-600 mb-4">Preview reminders, challenges, and milestone celebrations.</p>
-            <div className="space-y-2">
-              <div className="p-2 bg-purple-50 rounded flex items-center space-x-2">
-                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                <span className="text-sm">Daily check-in reminders</span>
-              </div>
-              <div className="p-2 bg-purple-50 rounded flex items-center space-x-2">
-                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                <span className="text-sm">Weekly challenge competitions</span>
-              </div>
-              <div className="p-2 bg-purple-50 rounded flex items-center space-x-2">
-                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                <span className="text-sm">Milestone celebrations</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          <h1 className="text-5xl font-bold text-white mb-4 tracking-tight">
+            Accountability Partner System
+          </h1>
+          <p className="text-xl text-slate-400 max-w-3xl mx-auto mb-8 leading-relaxed">
+            Get matched with another founder. Check in daily. Share wins. Give feedback. Stay consistent together.
+          </p>
+          <div className="flex items-center justify-center gap-4 flex-wrap">
+            <Badge className="bg-lime-400/10 text-lime-400 border border-lime-400/20 px-4 py-2 text-sm font-bold">
+              <Sparkles className="h-4 w-4 mr-2" />
+              Launching Q1 2025
+            </Badge>
+            <Badge className="bg-white/5 text-white border border-white/10 px-4 py-2 text-sm font-bold">
+              <Users className="h-4 w-4 mr-2" />
+              247 Founders Waiting
+            </Badge>
+          </div>
+        </div>
       </div>
 
-      {/* Accountability Preview: Check-ins UI */}
-      <Card>
+      {/* Why You Need a Buddy */}
+      <Card className="border-white/5 bg-black/20 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <ListChecks className="h-5 w-5 text-indigo-600" />
-            <span>Buddy Check-ins Preview</span>
-          </CardTitle>
-          <CardDescription>How you'll review your buddy's work and cheer them on</CardDescription>
+          <CardTitle className="text-2xl text-white tracking-tight">Why Solo Founders Need Accountability Partners</CardTitle>
+          <CardDescription className="text-zinc-400 mt-2">
+            Building alone is hard. A buddy makes it easier.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-3">
+              <div className="w-12 h-12 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center justify-center">
+                <Trophy className="h-6 w-6 text-yellow-500" />
+              </div>
+              <h3 className="text-lg font-semibold text-white">Stay Consistent</h3>
+              <p className="text-sm text-zinc-400">
+                Knowing someone's watching your progress makes you 3x more likely to complete your daily tasks.
+              </p>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                <MessageSquare className="h-6 w-6 text-blue-500" />
+              </div>
+              <h3 className="text-lg font-semibold text-white">Get Real Feedback</h3>
+              <p className="text-sm text-zinc-400">
+                Share drafts, get honest opinions, and improve your content before publishing.
+              </p>
+            </div>
+            
+            <div className="space-y-3">
+              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                <TrendingUp className="h-6 w-6 text-emerald-500" />
+              </div>
+              <h3 className="text-lg font-semibold text-white">Learn Faster</h3>
+              <p className="text-sm text-zinc-400">
+                See what's working for someone in a similar stage. Steal their best tactics.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* How It Works */}
+      <Card className="border-white/5 bg-black/20 backdrop-blur-sm">
+        <CardHeader>
+          <CardTitle className="text-2xl text-white tracking-tight">How It Works</CardTitle>
+          <CardDescription className="text-zinc-400 mt-2">
+            Simple daily accountability that actually works
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="relative">
+              <div className="absolute -left-3 top-0 w-8 h-8 rounded-full bg-lime-400 text-black font-bold flex items-center justify-center text-sm">
+                1
+              </div>
+              <div className="pl-8">
+                <h3 className="text-lg font-bold text-white mb-2">Get Matched</h3>
+                <p className="text-sm text-zinc-400 mb-4">
+                  We pair you with a founder at a similar stage, working on similar goals.
+                </p>
+                <div className="p-4 bg-white/[0.02] rounded-lg border border-white/5">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-lg">
+                      👤
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-white">Sarah Chen</p>
+                      <p className="text-xs text-zinc-500">SaaS • 50 users • Day 23</p>
+                    </div>
+                  </div>
+                  <Badge className="bg-lime-400/10 text-lime-400 border-0 text-xs">
+                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                    Matched!
+                  </Badge>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative">
+              <div className="absolute -left-3 top-0 w-8 h-8 rounded-full bg-lime-400 text-black font-bold flex items-center justify-center text-sm">
+                2
+              </div>
+              <div className="pl-8">
+                <h3 className="text-lg font-bold text-white mb-2">Daily Check-ins</h3>
+                <p className="text-sm text-zinc-400 mb-4">
+                  Each morning, see what your buddy committed to. Each evening, check if they did it.
+                </p>
+                <div className="space-y-2">
+                  <div className="p-3 bg-white/[0.02] rounded-lg border border-white/5 flex items-center justify-between">
+                    <span className="text-xs text-zinc-300">Post launch thread</span>
+                    <CheckCircle2 className="h-4 w-4 text-lime-400" />
+                  </div>
+                  <div className="p-3 bg-white/[0.02] rounded-lg border border-white/5 flex items-center justify-between">
+                    <span className="text-xs text-zinc-300">DM 5 users</span>
+                    <CheckCircle2 className="h-4 w-4 text-lime-400" />
+                  </div>
+                  <div className="p-3 bg-white/[0.02] rounded-lg border border-white/5 flex items-center justify-between">
+                    <span className="text-xs text-zinc-300">Ship feature X</span>
+                    <div className="h-4 w-4 rounded-full border-2 border-zinc-700" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative">
+              <div className="absolute -left-3 top-0 w-8 h-8 rounded-full bg-lime-400 text-black font-bold flex items-center justify-center text-sm">
+                3
+              </div>
+              <div className="pl-8">
+                <h3 className="text-lg font-bold text-white mb-2">Give Feedback</h3>
+                <p className="text-sm text-zinc-400 mb-4">
+                  Review their content drafts, celebrate wins, and keep each other honest.
+                </p>
+                <div className="p-4 bg-blue-500/5 rounded-lg border border-blue-500/10">
+                  <div className="flex items-start gap-2 mb-2">
+                    <MessageSquare className="h-4 w-4 text-blue-400 mt-0.5" />
+                    <p className="text-xs text-blue-200 italic">
+                      "Love the hook! Maybe add a stat in the 2nd tweet?"
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-zinc-500">
+                    <Heart className="h-3 w-3" />
+                    <span>From your buddy</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Live Preview Section */}
+      <Card className="border-white/5 bg-black/20 backdrop-blur-sm">
+        <CardHeader>
+          <CardTitle className="text-2xl text-white tracking-tight">What You'll See</CardTitle>
+          <CardDescription className="text-zinc-400 mt-2">
+            A peek at your buddy dashboard
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Tasks */}
-            <div className="p-4 rounded-lg border bg-gray-50">
-              <div className="flex items-center justify-between mb-3">
+            <div className="p-5 rounded-xl border border-white/5 bg-black/40">
+              <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                  <h4 className="font-medium text-gray-900">Tasks</h4>
+                  <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                  <h4 className="font-medium text-white text-sm">Tasks</h4>
                 </div>
-                <Badge variant="outline">Today</Badge>
+                <Badge variant="outline" className="border-white/10 text-zinc-500 text-[10px]">Today</Badge>
               </div>
               <ul className="space-y-2 text-sm">
-                <li className="flex items-center justify-between bg-white rounded-md px-3 py-2 border">
+                <li className="flex items-center justify-between bg-white/[0.02] rounded-lg px-3 py-2.5 border border-white/5 text-zinc-300">
                   <span>Publish launch tweet thread</span>
-                  <Badge className="bg-emerald-100 text-emerald-800">done</Badge>
+                  <Badge className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px]">done</Badge>
                 </li>
-                <li className="flex items-center justify-between bg-white rounded-md px-3 py-2 border">
+                <li className="flex items-center justify-between bg-white/[0.02] rounded-lg px-3 py-2.5 border border-white/5 text-zinc-300">
                   <span>Update website hero copy</span>
-                  <Badge variant="secondary">in progress</Badge>
+                  <Badge variant="secondary" className="bg-white/5 text-zinc-400 text-[10px]">in progress</Badge>
                 </li>
-                <li className="flex items-center justify-between bg-white rounded-md px-3 py-2 border">
+                <li className="flex items-center justify-between bg-white/[0.02] rounded-lg px-3 py-2.5 border border-white/5 text-zinc-300">
                   <span>DM 3 users for feedback</span>
-                  <Badge variant="outline">queued</Badge>
+                  <Badge variant="outline" className="border-white/10 text-zinc-500 text-[10px]">queued</Badge>
                 </li>
               </ul>
-              <div className="mt-3 flex gap-2">
-                <Button size="sm" variant="outline" disabled>Suggest task</Button>
-                <Button size="sm" disabled>Send encouragement</Button>
+              <div className="mt-4 flex gap-2">
+                <Button size="sm" variant="outline" disabled className="border-white/10 text-zinc-500 h-8 text-xs w-full">Suggest task</Button>
+                <Button size="sm" disabled className="bg-white/10 text-zinc-500 h-8 text-xs w-full">Encourage</Button>
               </div>
             </div>
 
             {/* Website Snapshot */}
-            <div className="p-4 rounded-lg border bg-gray-50">
-              <div className="flex items-center gap-2 mb-3">
-                <Globe className="h-5 w-5 text-blue-600" />
-                <h4 className="font-medium text-gray-900">Website Snapshot</h4>
+            <div className="p-5 rounded-xl border border-white/5 bg-black/40">
+              <div className="flex items-center gap-2 mb-4">
+                <Globe className="h-5 w-5 text-blue-500" />
+                <h4 className="font-medium text-white text-sm">Website Snapshot</h4>
               </div>
               <div className="grid grid-cols-3 gap-3 text-sm">
-                <div className="bg-white rounded-md border p-3">
-                  <div className="text-xs text-gray-500">Visits (7d)</div>
-                  <div className="font-semibold text-gray-900">1,240</div>
+                <div className="bg-white/[0.02] rounded-lg border border-white/5 p-3 text-center">
+                  <div className="text-[10px] text-zinc-500 uppercase tracking-wide mb-1">Visits (7d)</div>
+                  <div className="font-bold text-white text-lg">1,240</div>
                 </div>
-                <div className="bg-white rounded-md border p-3">
-                  <div className="text-xs text-gray-500">Signups (7d)</div>
-                  <div className="font-semibold text-gray-900">42</div>
+                <div className="bg-white/[0.02] rounded-lg border border-white/5 p-3 text-center">
+                  <div className="text-[10px] text-zinc-500 uppercase tracking-wide mb-1">Signups</div>
+                  <div className="font-bold text-white text-lg">42</div>
                 </div>
-                <div className="bg-white rounded-md border p-3">
-                  <div className="text-xs text-gray-500">Conv. rate</div>
-                  <div className="font-semibold text-gray-900">3.4%</div>
+                <div className="bg-white/[0.02] rounded-lg border border-white/5 p-3 text-center">
+                  <div className="text-[10px] text-zinc-500 uppercase tracking-wide mb-1">Conv.</div>
+                  <div className="font-bold text-white text-lg">3.4%</div>
                 </div>
               </div>
-              <div className="mt-3 flex items-center gap-2 text-xs text-gray-600">
-                <BarChart3 className="h-4 w-4" />
-                <span>Deep dive metrics and insights coming soon</span>
+              <div className="mt-4 flex items-center gap-2 text-xs text-zinc-500 justify-center">
+                <BarChart3 className="h-3 w-3" />
+                <span>Deep dive metrics coming soon</span>
               </div>
             </div>
 
             {/* Milestones */}
-            <div className="p-4 rounded-lg border bg-gray-50">
-              <div className="flex items-center gap-2 mb-3">
-                <Target className="h-5 w-5 text-rose-600" />
-                <h4 className="font-medium text-gray-900">Progress & Milestones</h4>
+            <div className="p-5 rounded-xl border border-white/5 bg-black/40">
+              <div className="flex items-center gap-2 mb-4">
+                <Target className="h-5 w-5 text-rose-500" />
+                <h4 className="font-medium text-white text-sm">Progress & Milestones</h4>
               </div>
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-center gap-2 bg-white rounded-md px-3 py-2 border">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                  Reached first 10 users
+              <ul className="space-y-2 text-sm text-zinc-300">
+                <li className="flex items-center gap-3 bg-white/[0.02] rounded-lg px-3 py-2.5 border border-white/5">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                  <span>Reached first 10 users</span>
                 </li>
-                <li className="flex items-center gap-2 bg-white rounded-md px-3 py-2 border">
-                  <div className="h-4 w-4 rounded-full border-2 border-gray-300" />
-                  30-day streak
+                <li className="flex items-center gap-3 bg-white/[0.02] rounded-lg px-3 py-2.5 border border-white/5">
+                  <div className="h-4 w-4 rounded-full border-2 border-zinc-700" />
+                  <span>30-day streak</span>
                 </li>
-                <li className="flex items-center gap-2 bg-white rounded-md px-3 py-2 border">
-                  <div className="h-4 w-4 rounded-full border-2 border-gray-300" />
-                  $100 MRR
+                <li className="flex items-center gap-3 bg-white/[0.02] rounded-lg px-3 py-2.5 border border-white/5">
+                  <div className="h-4 w-4 rounded-full border-2 border-zinc-700" />
+                  <span>$100 MRR</span>
                 </li>
               </ul>
-              <div className="mt-3 flex gap-2">
-                <Button size="sm" variant="outline" disabled>Recommend milestone</Button>
-                <Button size="sm" disabled>Celebrate</Button>
+              <div className="mt-4 flex gap-2">
+                <Button size="sm" variant="outline" disabled className="border-white/10 text-zinc-500 h-8 text-xs w-full">Recommend</Button>
+                <Button size="sm" disabled className="bg-white/10 text-zinc-500 h-8 text-xs w-full">Celebrate</Button>
               </div>
             </div>
 
             {/* Recent Content */}
-            <div className="p-4 rounded-lg border bg-gray-50">
-              <div className="flex items-center gap-2 mb-3">
-                <Eye className="h-5 w-5 text-indigo-600" />
-                <h4 className="font-medium text-gray-900">Recent Content</h4>
+            <div className="p-5 rounded-xl border border-white/5 bg-black/40">
+              <div className="flex items-center gap-2 mb-4">
+                <Eye className="h-5 w-5 text-indigo-500" />
+                <h4 className="font-medium text-white text-sm">Recent Content</h4>
               </div>
-              <div className="space-y-2 text-sm">
-                <div className="bg-white rounded-md px-3 py-2 border flex items-center justify-between">
+              <div className="space-y-3 text-sm">
+                <div className="bg-white/[0.02] rounded-lg px-3 py-3 border border-white/5 flex items-center justify-between">
                   <div>
-                    <div className="font-medium">LinkedIn post: "What I learned shipping v1"</div>
-                    <div className="text-xs text-gray-600">Views 1.2k · Likes 54</div>
+                    <div className="font-medium text-zinc-300 text-xs">LinkedIn: "What I learned shipping v1"</div>
+                    <div className="text-[10px] text-zinc-500 mt-1">Views 1.2k · Likes 54</div>
                   </div>
                   <div className="flex gap-2">
-                    <Button size="sm" className="h-7 px-2 py-1 text-xs" variant="outline" disabled>Suggest edit</Button>
-                    <Button size="sm" className="h-7 px-2 py-1 text-xs" disabled>
-                      <Heart className="h-3 w-3 mr-1" />
-                      Encourage
-                    </Button>
+                    <Button size="sm" className="h-7 px-2 text-[10px] border-white/10 text-zinc-500" variant="outline" disabled>Suggest edit</Button>
                   </div>
                 </div>
-                <div className="bg-white rounded-md px-3 py-2 border flex items-center justify-between">
+                <div className="bg-white/[0.02] rounded-lg px-3 py-3 border border-white/5 flex items-center justify-between">
                   <div>
-                    <div className="font-medium">Twitter thread: "3 lessons from early users"</div>
-                    <div className="text-xs text-gray-600">Views 8.4k · Likes 210</div>
+                    <div className="font-medium text-zinc-300 text-xs">X: "3 lessons from early users"</div>
+                    <div className="text-[10px] text-zinc-500 mt-1">Views 8.4k · Likes 210</div>
                   </div>
                   <div className="flex gap-2">
-                    <Button size="sm" className="h-7 px-2 py-1 text-xs" variant="outline" disabled>Suggest idea</Button>
-                    <Button size="sm" className="h-7 px-2 py-1 text-xs" disabled>
+                    <Button size="sm" className="h-7 px-2 text-[10px] bg-white/10 text-zinc-500" disabled>
                       <Heart className="h-3 w-3 mr-1" />
                       Kudos
                     </Button>
@@ -265,21 +327,136 @@ export default function MarketingBuddy({ user }: MarketingBuddyProps) {
         </CardContent>
       </Card>
 
+      {/* Social Proof */}
+      <Card className="border-white/5 bg-black/20 backdrop-blur-sm">
+        <CardHeader>
+          <CardTitle className="text-2xl text-white tracking-tight text-center">What Founders Are Saying</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="p-6 bg-white/[0.02] rounded-xl border border-white/5">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center text-xl">
+                  🚀
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">Alex Rivera</p>
+                  <p className="text-xs text-zinc-500">SaaS Founder</p>
+                </div>
+              </div>
+              <p className="text-sm text-zinc-300 italic">
+                "Having someone check in on me daily completely changed my consistency. Went from 2 posts/week to 5."
+              </p>
+            </div>
+
+            <div className="p-6 bg-white/[0.02] rounded-xl border border-white/5">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center text-xl">
+                  💪
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">Jamie Park</p>
+                  <p className="text-xs text-zinc-500">Content Creator</p>
+                </div>
+              </div>
+              <p className="text-sm text-zinc-300 italic">
+                "My buddy's feedback saved me from posting cringe content. Now I run everything by them first."
+              </p>
+            </div>
+
+            <div className="p-6 bg-white/[0.02] rounded-xl border border-white/5">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center text-xl">
+                  🎯
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white">Morgan Lee</p>
+                  <p className="text-xs text-zinc-500">Indie Hacker</p>
+                </div>
+              </div>
+              <p className="text-sm text-zinc-300 italic">
+                "Seeing my buddy's progress motivated me to keep going when I wanted to quit. Best decision ever."
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="p-6 bg-black/40 border border-white/10 rounded-xl text-center">
+          <div className="text-4xl font-bold text-lime-400 mb-2">3x</div>
+          <p className="text-sm text-zinc-400">Higher completion rate with a buddy</p>
+        </div>
+        <div className="p-6 bg-black/40 border border-white/10 rounded-xl text-center">
+          <div className="text-4xl font-bold text-lime-400 mb-2">247</div>
+          <p className="text-sm text-zinc-400">Founders on the waitlist</p>
+        </div>
+        <div className="p-6 bg-black/40 border border-white/10 rounded-xl text-center">
+          <div className="text-4xl font-bold text-lime-400 mb-2">92%</div>
+          <p className="text-sm text-zinc-400">Would recommend to a friend</p>
+        </div>
+        <div className="p-6 bg-black/40 border border-white/10 rounded-xl text-center">
+          <div className="text-4xl font-bold text-lime-400 mb-2">Q1</div>
+          <p className="text-sm text-zinc-400">2025 launch date</p>
+        </div>
+      </div>
+
       {/* Waitlist CTA */}
-      <Card className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
-        <CardContent className="p-8 text-center">
-          <h3 className="text-xl font-bold mb-2">Be the First to Know!</h3>
-          <p className="mb-6 opacity-90">
-            Join our waitlist to get early access to the Marketing Accountability Buddy feature.
-          </p>
-          <Button 
-            variant="secondary" 
-            size="lg"
-            className="bg-white text-indigo-600 hover:bg-gray-100"
-            disabled
-          >
-            Join Waitlist (Coming Soon)
-          </Button>
+      <Card className="bg-black/40 border-lime-400/30 backdrop-blur-sm">
+        <CardContent className="p-8">
+          <div className="max-w-2xl mx-auto text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-lime-400/10 border border-lime-400/20 mb-4">
+              <Mail className="h-8 w-8 text-lime-400" />
+            </div>
+            <h3 className="text-2xl font-bold mb-2 tracking-tight text-white">Want Early Access?</h3>
+            <p className="mb-6 text-zinc-400 max-w-md mx-auto">
+              Join the waitlist and we'll notify you when the Buddy System launches in Q1 2025.
+            </p>
+            
+            {!submitted ? (
+              <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+                <Input
+                  type="email"
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="bg-white/5 border-white/10 text-white placeholder:text-zinc-500 focus:border-lime-400/50"
+                  disabled={isSubmitting}
+                />
+                <Button 
+                  onClick={handleWaitlistSubmit}
+                  disabled={isSubmitting || !email}
+                  className="bg-lime-400 hover:bg-lime-500 text-black font-bold px-8 shadow-[0_0_20px_rgba(163,230,53,0.3)] hover:shadow-[0_0_30px_rgba(163,230,53,0.4)] transition-all whitespace-nowrap"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Joining...
+                    </>
+                  ) : (
+                    <>
+                      Join Waitlist
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </>
+                  )}
+                </Button>
+              </div>
+            ) : (
+              <div className="p-6 bg-lime-400/10 border border-lime-400/20 rounded-lg">
+                <div className="flex items-center justify-center gap-2 text-lime-400 mb-2">
+                  <CheckCircle2 className="h-5 w-5" />
+                  <span className="font-bold">You're on the list!</span>
+                </div>
+                <p className="text-sm text-zinc-400">
+                  We'll email you at <span className="text-white font-medium">{email}</span> when the Buddy System is ready.
+                </p>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

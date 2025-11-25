@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useEffect, useMemo, useRef } from "react"
+import { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Calendar, CheckCircle2, Users } from "lucide-react"
 import TaskPanel from "@/components/habits/TaskPanel"
 import JourneyPanel from "@/components/habits/JourneyPanel"
 import ContentGenerator from "@/components/content-generator"
+import ContentSchedule, { ContentScheduleRef } from "@/components/content-schedule"
 import MarketingBuddy from "@/components/marketing-buddy"
 import { supabase } from "@/lib/supabase"
 import { Milestone, useMilestones } from "@/hooks/use-milestones"
@@ -53,6 +54,12 @@ export default function DashboardView({ user, onUserRefresh }: DashboardViewProp
   const [weekLockMessage, setWeekLockMessage] = useState<string | null>(null)
   const [contentHint, setContentHint] = useState<{ platformId: string; task: any } | null>(null)
   const [isRegenerating, setIsRegenerating] = useState(false)
+  const contentScheduleRef = useRef<ContentScheduleRef>(null)
+
+  // Callback to refresh content schedule after saving
+  const handleContentSaved = useCallback(() => {
+    contentScheduleRef.current?.refresh()
+  }, [])
 
   const regenerateWeek1Tasks = async () => {
     if (isRegenerating) return
@@ -729,10 +736,10 @@ export default function DashboardView({ user, onUserRefresh }: DashboardViewProp
         }
         setTasksByDay((prev) => ({ ...prev, [currentDay + 1]: [...(prev[currentDay + 1] || []), followUp] }))
       }
-      if (title.includes('twitter thread')) {
+      if (title.includes('x thread')) {
         const followUp = {
           id: `${currentDay + 1}-${Date.now()}-repurpose`,
-          title: 'Turn your Twitter thread into a blog post',
+          title: 'Turn your X thread into a blog post',
           description: 'Repurpose the thread into a concise blog for SEO and longer-form readers.',
           xp: 10,
           completed: false,
@@ -774,184 +781,216 @@ export default function DashboardView({ user, onUserRefresh }: DashboardViewProp
   const xpProgress = useMemo(() => ((xp % xpToNextLevel) / xpToNextLevel) * 100, [xp])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50/30 via-purple-50/20 to-pink-50/30">
-      <DashboardHeader
-        productName={user.productName}
-        streak={streak}
-        xp={xp}
-        xpToNextLevel={xpToNextLevel}
-        currentLevel={currentLevel}
-        xpProgress={xpProgress}
-        onOpenLeaderboard={() => setShowLeaderboardModal(true)}
-        onOpenProfile={() => setShowProfileModal(true)}
-      />
+    <div className="min-h-screen bg-[#020604] text-slate-200 selection:bg-lime-400/30 selection:text-lime-200">
+      {/* Fixed Background Effects */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 mix-blend-overlay" />
+        <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-lime-900/20 blur-[120px] rounded-full mix-blend-screen" />
+        <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-emerald-900/10 blur-[120px] rounded-full mix-blend-screen" />
+      </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Regenerate Button */}
-        <div className="mb-4 flex justify-end">
-          <button
-            onClick={regenerateWeek1Tasks}
-            disabled={isRegenerating}
-            className="px-4 py-2 bg-lime-500 hover:bg-lime-600 disabled:bg-gray-400 text-white rounded-lg font-medium text-sm shadow-sm transition-colors flex items-center gap-2"
-          >
-            {isRegenerating ? (
-              <>
-                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Regenerating...
-              </>
-            ) : (
-              <>
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Regenerate Week 1
-              </>
-            )}
-          </button>
-        </div>
-        
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          {/* Simplified MVP Navigation */}
-          <TabsList className="grid w-full grid-cols-4 max-w-3xl mx-auto bg-white rounded-3xl p-1.5 shadow-sm border border-gray-100">
-            <TabsTrigger value="today" className="flex items-center space-x-2">
-              <CheckCircle2 className="h-4 w-4" />
-              <span>Today's Tasks</span>
-            </TabsTrigger>
-            <TabsTrigger value="journey" className="flex items-center space-x-2">
-              <Calendar className="h-4 w-4" />
-              <span>My Journey</span>
-            </TabsTrigger>
-            <TabsTrigger value="create" className="flex items-center space-x-2">
-              <Calendar className="h-4 w-4" />
-              <span>Create Content</span>
-            </TabsTrigger>
-            <TabsTrigger value="buddy" className="flex items-center space-x-2">
-              <Users className="h-4 w-4" />
-              <span>My Buddy</span>
-            </TabsTrigger>
-          </TabsList>
+      <div className="relative z-10">
+        <DashboardHeader
+          productName={user.productName}
+          streak={streak}
+          xp={xp}
+          xpToNextLevel={xpToNextLevel}
+          currentLevel={currentLevel}
+          xpProgress={xpProgress}
+          onOpenLeaderboard={() => setShowLeaderboardModal(true)}
+          onOpenProfile={() => setShowProfileModal(true)}
+        />
 
-          {/* MVP Tab 1: Today's Tasks - Core daily habit system */}
-          <TabsContent value="today">
-            <div className="space-y-6">
-              {/* Enhanced header with clear value proposition */}
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-gray-900 mb-3">Your Daily Marketing System</h2>
-                <div className="max-w-2xl mx-auto">
-                  <p className="text-gray-600 mb-4">Complete your daily tasks to build consistent marketing habits that grow your business.</p>
+        {/* Main Content */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Regenerate Button */}
+          <div className="mb-6 flex justify-end">
+            <button
+              onClick={regenerateWeek1Tasks}
+              disabled={isRegenerating}
+              className="px-5 py-2.5 bg-lime-400 hover:bg-lime-300 disabled:bg-slate-800 disabled:text-slate-500 text-black rounded-sm font-bold text-sm shadow-[0_0_15px_rgba(163,230,53,0.2)] transition-all hover:scale-[1.02] flex items-center gap-2 uppercase tracking-wide"
+            >
+              {isRegenerating ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Regenerating...
+                </>
+              ) : (
+                <>
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Regenerate Week 1
+                </>
+              )}
+            </button>
+          </div>
+          
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+            {/* Simplified MVP Navigation */}
+            <TabsList className="grid w-full grid-cols-4 max-w-3xl mx-auto bg-white/5 p-1 rounded-lg border border-white/10">
+              <TabsTrigger 
+                value="today" 
+                className="flex items-center space-x-2 data-[state=active]:bg-lime-400 data-[state=active]:text-black data-[state=active]:font-bold rounded-md transition-all text-slate-400 hover:text-white"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                <span>Today's Tasks</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="journey" 
+                className="flex items-center space-x-2 data-[state=active]:bg-lime-400 data-[state=active]:text-black data-[state=active]:font-bold rounded-md transition-all text-slate-400 hover:text-white"
+              >
+                <Calendar className="h-4 w-4" />
+                <span>My Journey</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="create" 
+                className="flex items-center space-x-2 data-[state=active]:bg-lime-400 data-[state=active]:text-black data-[state=active]:font-bold rounded-md transition-all text-slate-400 hover:text-white"
+              >
+                <Calendar className="h-4 w-4" />
+                <span>Create Content</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="buddy" 
+                className="flex items-center space-x-2 data-[state=active]:bg-lime-400 data-[state=active]:text-black data-[state=active]:font-bold rounded-md transition-all text-slate-400 hover:text-white"
+              >
+                <Users className="h-4 w-4" />
+                <span>My Buddy</span>
+              </TabsTrigger>
+            </TabsList>
+
+            {/* MVP Tab 1: Today's Tasks - Core daily habit system */}
+            <TabsContent value="today">
+              <div className="space-y-6">
+                {/* Enhanced header with clear value proposition */}
+                <div className="text-center mb-10">
+                  <h2 className="text-4xl font-bold text-white mb-3 tracking-tight">Your Daily Marketing System</h2>
+                  <div className="max-w-2xl mx-auto">
+                    <p className="text-slate-400 text-lg">Complete your daily tasks to build consistent marketing habits that grow your business.</p>
+                  </div>
+                </div>
+                
+                {/* Growth Goals Tracking */}
+                {(user.goals?.primary?.type && user.goals?.primary?.target) || (user.goalType && user.goalAmount) && (
+                  <GoalsCard user={user} currentDay={currentDay} milestones={milestones} onAddClick={() => setShowAddMilestone(true)} />
+                )}
+                
+                {/* Week Lock Notice */}
+                {weekLockMessage && (
+                  <WeekLockNotice
+                    message={weekLockMessage}
+                    onOpenWeeklyReview={() => setShowWeeklyReview(true)}
+                    onRetry={() => loadTasksForDay(currentDay)}
+                  />
+                )}
+
+                <TaskPanel
+                  tasks={todaysTasks}
+                  currentDay={currentDay}
+                  streak={streak}
+                  onDayChange={setCurrentDay}
+                  onCompleteTask={completeTask}
+                  onDeleteTask={deleteTask}
+                  onAddTask={addTask}
+                  onUpdateTask={updateTask}
+                  onReorderTasks={reorderTasks}
+                  onAddTaskNote={addTaskNote}
+                  onSkipTask={skipTask}
+                  onSuggestContent={(platformId, task) => {
+                    setContentHint({ platformId, task })
+                    setActiveTab('create')
+                  }}
+                  onTaskUpdate={() => {}}
+                />
+                
+
+              </div>
+            </TabsContent>
+
+            {/* MVP Tab 1.5: My Journey - moved from under tasks */}
+            <TabsContent value="journey">
+              <div className="space-y-6">
+                <div className="text-center mb-8">
+                  <h2 className="text-3xl font-bold text-white mb-2 tracking-tight">Your Marketing Journey</h2>
+                </div>
+                <JourneyPanel
+                  streak={streak}
+                  xp={xp}
+                  currentDay={currentDay}
+                  user={user}
+                  weekStats={weekStats}
+                  milestones={milestones}
+                  applyMilestonesChange={setMilestones}
+                  onRefreshMilestones={refreshMilestones}
+                  completedTasks={todaysTasks.filter(t => t.completed).length}
+                  totalTasks={todaysTasks.length}
+                />
+              </div>
+            </TabsContent>
+
+            {/* MVP Tab 2: Create Content - Direct connection to daily tasks */}
+            <TabsContent value="create">
+              <div className="space-y-6">
+                <div className="text-center mb-8">
+                  <h2 className="text-3xl font-bold text-white mb-2 tracking-tight">Create Content from Your Tasks</h2>
+                  <p className="text-slate-400 max-w-2xl mx-auto">
+                    Turn your completed daily tasks into high-converting content across multiple platforms.
+                  </p>
+                </div>
+                
+                <ContentGenerator 
+                  user={user} 
+                  dailyTasks={todaysTasks}
+                  onTaskUpdate={() => {
+                    loadTasksForDay(currentDay)
+                  }}
+                  onContentSaved={handleContentSaved}
+                  initialPlatformId={contentHint?.platformId}
+                  initialSelectedTask={contentHint?.task}
+                />
+                
+                {/* Content Schedule & Library */}
+                <div className="mt-8">
+                  <ContentSchedule 
+                    ref={contentScheduleRef}
+                    user={user}
+                    onContentUpdate={() => loadTasksForDay(currentDay)}
+                  />
+                </div>
+                
+                {/* Integrated learning tips */}
+                <div className="mt-8 p-6 bg-blue-900/20 rounded-lg border border-blue-500/30">
+                  <h3 className="font-semibold text-blue-400 mb-2">💡 Content Tip</h3>
+                  <p className="text-blue-300 text-sm">
+                    Your most engaging content comes from documenting your daily marketing journey. 
+                    Share what you're learning, testing, and discovering.
+                  </p>
                 </div>
               </div>
-              
-              {/* Growth Goals Tracking */}
-              {(user.goals?.primary?.type && user.goals?.primary?.target) || (user.goalType && user.goalAmount) && (
-                <GoalsCard user={user} currentDay={currentDay} milestones={milestones} onAddClick={() => setShowAddMilestone(true)} />
-              )}
-              
-              {/* Week Lock Notice */}
-              {weekLockMessage && (
-                <WeekLockNotice
-                  message={weekLockMessage}
-                  onOpenWeeklyReview={() => setShowWeeklyReview(true)}
-                  onRetry={() => loadTasksForDay(currentDay)}
-                />
-              )}
+            </TabsContent>
 
-              <TaskPanel
-                tasks={todaysTasks}
-                currentDay={currentDay}
-                streak={streak}
-                onDayChange={setCurrentDay}
-                onCompleteTask={completeTask}
-                onDeleteTask={deleteTask}
-                onAddTask={addTask}
-                onUpdateTask={updateTask}
-                onReorderTasks={reorderTasks}
-                onAddTaskNote={addTaskNote}
-                onSkipTask={skipTask}
-                onSuggestContent={(platformId, task) => {
-                  setContentHint({ platformId, task })
-                  setActiveTab('create')
-                }}
-                onTaskUpdate={() => {}}
-              />
-              
+            {/* MVP Tab 3: Marketing Buddy - Accountability coming soon preview */}
+            <TabsContent value="buddy">
+              <div className="space-y-6">
+                <div className="text-center mb-8">
+                  <h2 className="text-3xl font-bold text-white mb-2 tracking-tight">Your Marketing Buddy</h2>
+                  <p className="text-slate-400 max-w-2xl mx-auto">
+                    Accountability coming soon. Preview how you'll check in on your buddy's tasks, website, progress, milestones, and content.
+                  </p>
+                </div>
 
-            </div>
-          </TabsContent>
-
-          {/* MVP Tab 1.5: My Journey - moved from under tasks */}
-          <TabsContent value="journey">
-            <div className="space-y-6">
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Your Marketing Journey</h2>
+                <MarketingBuddy user={user} />
               </div>
-              <JourneyPanel
-                streak={streak}
-                xp={xp}
-                currentDay={currentDay}
-                user={user}
-                weekStats={weekStats}
-                milestones={milestones}
-                applyMilestonesChange={setMilestones}
-                onRefreshMilestones={refreshMilestones}
-                completedTasks={todaysTasks.filter(t => t.completed).length}
-                totalTasks={todaysTasks.length}
-              />
-            </div>
-          </TabsContent>
-
-          {/* MVP Tab 2: Create Content - Direct connection to daily tasks */}
-          <TabsContent value="create">
-            <div className="space-y-6">
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Create Content from Your Tasks</h2>
-                <p className="text-gray-600 max-w-2xl mx-auto">
-                  Turn your completed daily tasks into high-converting content across multiple platforms.
-                </p>
-              </div>
-              
-              <ContentGenerator 
-                user={user} 
-                dailyTasks={todaysTasks}
-                onTaskUpdate={() => {
-                  loadTasksForDay(currentDay)
-                }}
-                initialPlatformId={contentHint?.platformId}
-                initialSelectedTask={contentHint?.task}
-              />
-              
-              {/* Integrated learning tips */}
-              <div className="mt-8 p-6 bg-blue-50 rounded-lg border border-blue-200">
-                <h3 className="font-semibold text-blue-900 mb-2">💡 Content Tip</h3>
-                <p className="text-blue-800 text-sm">
-                  Your most engaging content comes from documenting your daily marketing journey. 
-                  Share what you're learning, testing, and discovering.
-                </p>
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* MVP Tab 3: Marketing Buddy - Accountability coming soon preview */}
-          <TabsContent value="buddy">
-            <div className="space-y-6">
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">Your Marketing Buddy</h2>
-                <p className="text-gray-600 max-w-2xl mx-auto">
-                  Accountability coming soon. Preview how you'll check in on your buddy's tasks, website, progress, milestones, and content.
-                </p>
-              </div>
-
-              <MarketingBuddy user={user} />
-            </div>
-          </TabsContent>
-        </Tabs>
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
 
       <ProfileModal
+
         open={showProfileModal}
         onClose={() => setShowProfileModal(false)}
         user={user}

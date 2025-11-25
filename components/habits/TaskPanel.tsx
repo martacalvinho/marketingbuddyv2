@@ -1,13 +1,39 @@
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
+import { 
+  Calendar, 
+  CheckCircle2, 
+  ChevronLeft, 
+  ChevronRight, 
+  Circle, 
+  Zap, 
+  MoreVertical, 
+  PenLine, 
+  Trash2, 
+  SkipForward, 
+  StickyNote, 
+  Plus,
+  X,
+  Sparkles,
+  GripVertical
+} from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Calendar, CheckCircle2, ChevronLeft, ChevronRight, Circle, Zap } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
+import { Progress } from "@/components/ui/progress"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 import type { HabitTask } from "./types"
 import { detectPlatformId, getCategoryColor, getPlatformIcon } from "./task-utils"
+import { cn } from "@/lib/utils"
 
 interface TaskPanelProps {
   tasks: HabitTask[]
@@ -25,6 +51,214 @@ interface TaskPanelProps {
   onTaskUpdate?: () => void
 }
 
+// --- Sub-component: Individual Task Card ---
+const TaskItem = ({ 
+  task, 
+  index, 
+  isEditing, 
+  isNoteEditing, 
+  noteDraft,
+  onEditStart, 
+  onNoteStart, 
+  onSaveEdit, 
+  onCancelEdit, 
+  onSaveNote, 
+  onCancelNote,
+  onNoteChange,
+  editTitle,
+  editDesc,
+  setEditTitle,
+  setEditDesc,
+  actions 
+}: any) => {
+  const platformId = detectPlatformId(task)
+  const PlatformIcon: any = platformId ? getPlatformIcon(platformId) : null
+  
+  // Drag handlers
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData("taskId", String(task.id))
+    actions.onDragStart(e, task)
+  }
+
+  return (
+    <div
+      draggable={!isEditing && !isNoteEditing}
+      onDragStart={handleDragStart}
+      onDragOver={actions.onDragOver}
+      onDrop={(e) => actions.onDrop(e, task)}
+      className={cn(
+        "group relative flex gap-4 rounded-xl border p-4 transition-all duration-300",
+        task.completed ? "border-zinc-800/50 bg-zinc-900/20 opacity-60 hover:opacity-100" 
+        : task.skipped ? "border-dashed border-zinc-800 bg-zinc-950/20 opacity-50"
+        : "border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/10 shadow-sm hover:shadow-md hover:translate-x-0.5"
+      )}
+    >
+      {/* 1. Drag Handle (Hover only) */}
+      {!task.completed && !isEditing && (
+        <div className="absolute left-1 top-1/2 -translate-y-1/2 p-1 cursor-grab text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity hover:text-zinc-400">
+          <GripVertical size={14} />
+        </div>
+      )}
+
+      {/* 2. Checkbox / Status */}
+      <div className="pt-1 flex-shrink-0 relative z-10 pl-2">
+        <button
+          onClick={() => !task.completed && !task.skipped && actions.handleCompleteTask(task.id)}
+          disabled={task.completed || task.skipped}
+          className={cn(
+            "flex h-6 w-6 items-center justify-center rounded-full border transition-all duration-300",
+            task.completed ? "border-lime-500 bg-lime-500 text-black shadow-[0_0_10px_rgba(163,230,53,0.4)]" 
+            : task.skipped ? "border-zinc-700 bg-transparent text-zinc-700"
+            : "border-zinc-700 bg-transparent text-transparent hover:border-lime-400 hover:text-lime-400/20"
+          )}
+        >
+          {task.completed ? <CheckCircle2 size={16} /> : task.skipped ? <SkipForward size={14} /> : <Circle size={16} />}
+        </button>
+      </div>
+
+      {/* 3. Main Content */}
+      <div className="flex-1 min-w-0">
+        {isEditing ? (
+          <div className="space-y-3 animate-in fade-in zoom-in-95">
+            <Input
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              className="bg-black/40 border-zinc-800 text-white font-medium focus:border-lime-500/50"
+              placeholder="Task title"
+              autoFocus
+            />
+            <Input
+              value={editDesc}
+              onChange={(e) => setEditDesc(e.target.value)}
+              className="bg-black/40 border-zinc-800 text-zinc-400 text-sm focus:border-lime-500/50"
+              placeholder="Description"
+            />
+            <div className="flex gap-2">
+              <Button size="sm" onClick={onSaveEdit} className="h-7 bg-lime-400 text-black hover:bg-lime-300 font-medium">Save</Button>
+              <Button size="sm" variant="ghost" onClick={onCancelEdit} className="h-7 text-zinc-400 hover:text-white">Cancel</Button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-1">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h4 className={cn(
+                  "font-medium leading-tight transition-all",
+                  task.completed ? "text-zinc-500 line-through decoration-zinc-700" : "text-zinc-200"
+                )}>
+                  {task.title}
+                </h4>
+                {task.description && (
+                  <p className="text-sm text-zinc-500 mt-1.5 line-clamp-2 leading-relaxed">{task.description}</p>
+                )}
+              </div>
+              
+              {/* Reward Badge (Right Side) */}
+              {!task.completed && !task.skipped && (
+                 <div className="flex flex-col items-end gap-1.5">
+                    <Badge variant="outline" className="border-yellow-500/20 bg-yellow-500/5 text-yellow-500 text-[10px] px-1.5 py-0.5 h-5 gap-1 font-mono">
+                      <Zap size={10} /> {task.xp || 10}XP
+                    </Badge>
+                    <Badge variant="outline" className="border-zinc-800 bg-zinc-900 text-zinc-500 text-[10px] px-1.5 py-0.5 h-5">
+                      {task.estimatedTime || "15m"}
+                    </Badge>
+                 </div>
+              )}
+            </div>
+            
+            {/* Tags & Notes */}
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              {(task.platform || platformId) && (
+                <Badge variant="secondary" className="bg-white/5 border border-white/5 text-zinc-400 hover:bg-white/10 text-[10px] h-5 px-1.5">
+                  {PlatformIcon && <PlatformIcon size={10} className="mr-1" />}
+                  {String(task.platform || platformId).split(" ")[0]}
+                </Badge>
+              )}
+              {task.category && (
+                <Badge className={cn("text-[10px] h-5 px-1.5 border-0 font-normal", getCategoryColor(task.category))}>
+                  {task.category}
+                </Badge>
+              )}
+              {task.note && !isNoteEditing && (
+                <div className="flex items-center gap-1.5 text-xs text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
+                   <StickyNote size={10} />
+                   <span className="truncate max-w-[200px]">{task.note}</span>
+                </div>
+              )}
+            </div>
+            
+            {/* Note Editor */}
+            {isNoteEditing && (
+               <div className="mt-3 bg-black/40 p-3 rounded-lg border border-zinc-800 animate-in slide-in-from-top-2">
+                 <Textarea 
+                    value={noteDraft}
+                    onChange={(e) => onNoteChange(e.target.value)}
+                    className="bg-transparent border-0 p-0 text-sm focus-visible:ring-0 min-h-[60px] resize-none text-zinc-200 placeholder:text-zinc-600"
+                    placeholder="Jot down some thoughts..."
+                    autoFocus
+                 />
+                 <div className="flex justify-end gap-2 mt-2">
+                    <Button size="sm" variant="ghost" onClick={onCancelNote} className="h-6 text-xs text-zinc-500 hover:text-white">Cancel</Button>
+                    <Button size="sm" onClick={onSaveNote} className="h-6 text-xs bg-white text-black hover:bg-zinc-200">Save Note</Button>
+                 </div>
+               </div>
+            )}
+
+            {/* Action Bar (Only visible if active) */}
+            {!task.completed && !task.skipped && !isEditing && !isNoteEditing && (
+              <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/5 opacity-0 group-hover:opacity-100 transition-opacity">
+                {/* Primary Action */}
+                {actions.onSuggestContent && (
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => actions.onSuggestContent(platformId || "freestyle", task)}
+                    className="h-7 text-xs border-lime-500/20 text-lime-400 hover:bg-lime-500/10 hover:text-lime-300 bg-transparent hover:border-lime-500/30 transition-colors"
+                  >
+                    <Sparkles size={12} className="mr-1.5" />
+                    Create Content
+                  </Button>
+                )}
+
+                <div className="flex-1" />
+
+                {/* Secondary Actions Menu */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-zinc-500 hover:text-white hover:bg-white/10 rounded-lg">
+                      <MoreVertical size={14} />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800 text-zinc-200 p-1">
+                    <DropdownMenuItem onClick={onEditStart} className="text-xs cursor-pointer focus:bg-zinc-800 focus:text-white rounded-md">
+                      <PenLine size={14} className="mr-2" /> Edit Task
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={onNoteStart} className="text-xs cursor-pointer focus:bg-zinc-800 focus:text-white rounded-md">
+                      <StickyNote size={14} className="mr-2" /> {task.note ? "Edit Note" : "Add Note"}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => actions.handleSkipTask(task.id)} className="text-xs cursor-pointer focus:bg-zinc-800 focus:text-white rounded-md">
+                      <SkipForward size={14} className="mr-2" /> Skip for Now
+                    </DropdownMenuItem>
+                    {actions.onDeleteTask && (
+                      <>
+                        <DropdownMenuSeparator className="bg-zinc-800 my-1" />
+                        <DropdownMenuItem onClick={() => actions.handleDeleteTask(task.id)} className="text-xs cursor-pointer text-red-400 focus:bg-red-900/20 focus:text-red-300 rounded-md">
+                          <Trash2 size={14} className="mr-2" /> Delete
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+
 const TaskPanel = ({
   tasks,
   currentDay,
@@ -40,410 +274,249 @@ const TaskPanel = ({
   onSuggestContent,
   onTaskUpdate,
 }: TaskPanelProps) => {
+  const [addingTask, setAddingTask] = useState(false)
   const [newTitle, setNewTitle] = useState("")
   const [newDesc, setNewDesc] = useState("")
+  
+  // Edit States
   const [editingTaskId, setEditingTaskId] = useState<string | number | null>(null)
-  const [editingTaskTitle, setEditingTaskTitle] = useState("")
-  const [editingTaskDescription, setEditingTaskDescription] = useState("")
+  const [editTitle, setEditTitle] = useState("")
+  const [editDesc, setEditDesc] = useState("")
+  
+  // Note States
   const [noteEditingTaskId, setNoteEditingTaskId] = useState<string | number | null>(null)
-  const [taskNote, setTaskNote] = useState("")
+  const [noteDraft, setNoteDraft] = useState("")
+  
+  // Drag State
   const [draggedTask, setDraggedTask] = useState<HabitTask | null>(null)
 
-  const completedTasks = tasks.filter((task) => task.completed).length
-  const totalTasks = tasks.length
+  const completedCount = tasks.filter((t) => t.completed).length
+  const totalCount = tasks.length
+  const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0
 
-  const handleCompleteTask = (taskId: string | number) => {
-    onCompleteTask(taskId)
+  // --- Handlers ---
+
+  const handleCompleteTask = (id: string | number) => {
+    onCompleteTask(id)
     onTaskUpdate?.()
   }
 
-  const handleDeleteTask = (taskId: string | number) => {
-    onDeleteTask?.(taskId)
+  const handleDeleteTask = (id: string | number) => {
+    onDeleteTask?.(id)
     onTaskUpdate?.()
   }
 
-  const handleAddTask = () => {
-    if (!onAddTask) return
-    if (!newTitle.trim()) return
-
+  const handleAddTaskSubmit = () => {
+    if (!newTitle.trim() || !onAddTask) return
     onAddTask(newTitle.trim(), newDesc.trim())
     setNewTitle("")
     setNewDesc("")
+    setAddingTask(false)
     onTaskUpdate?.()
   }
 
-  const startEditTaskDetails = (task: HabitTask) => {
-    setEditingTaskId(task.id)
-    setEditingTaskTitle(task.title)
-    setEditingTaskDescription(task.description)
-  }
-
-  const saveTaskEdits = () => {
+  const handleSaveEdit = () => {
     if (!editingTaskId || !onUpdateTask) return
-
-    onUpdateTask(editingTaskId, {
-      title: editingTaskTitle,
-      description: editingTaskDescription,
-    })
+    onUpdateTask(editingTaskId, { title: editTitle, description: editDesc })
     setEditingTaskId(null)
-    setEditingTaskTitle("")
-    setEditingTaskDescription("")
     onTaskUpdate?.()
   }
 
-  const cancelTaskEdits = () => {
-    setEditingTaskId(null)
-    setEditingTaskTitle("")
-    setEditingTaskDescription("")
-  }
-
-  const startAddNote = (task: HabitTask) => {
-    if (!onAddTaskNote) return
-    setNoteEditingTaskId(task.id)
-    setTaskNote((task.note as string) || "")
-  }
-
-  const saveTaskNote = () => {
+  const handleSaveNote = () => {
     if (!noteEditingTaskId || !onAddTaskNote) return
-    onAddTaskNote(noteEditingTaskId, taskNote)
+    onAddTaskNote(noteEditingTaskId, noteDraft)
     setNoteEditingTaskId(null)
-    setTaskNote("")
     onTaskUpdate?.()
   }
 
-  const cancelAddNote = () => {
-    setNoteEditingTaskId(null)
-    setTaskNote("")
-  }
-
-  const handleDragStart = (event: React.DragEvent, task: HabitTask) => {
+  // Drag Handlers
+  const handleDragStart = (e: React.DragEvent, task: HabitTask) => {
     setDraggedTask(task)
-    event.dataTransfer.effectAllowed = "move"
+    e.dataTransfer.effectAllowed = "move"
   }
-
-  const handleDragOver = (event: React.DragEvent) => {
-    event.preventDefault()
-    event.dataTransfer.dropEffect = "move"
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = "move"
   }
-
-  const handleDrop = (event: React.DragEvent, targetTask: HabitTask) => {
-    event.preventDefault()
-    if (!draggedTask || !onReorderTasks || draggedTask.id === targetTask.id) return
-
+  const handleDrop = (e: React.DragEvent, target: HabitTask) => {
+    e.preventDefault()
+    if (!draggedTask || !onReorderTasks || draggedTask.id === target.id) return
     const newOrder = [...tasks]
-    const draggedIndex = newOrder.findIndex((task) => task.id === draggedTask.id)
-    const targetIndex = newOrder.findIndex((task) => task.id === targetTask.id)
-    if (draggedIndex === -1 || targetIndex === -1) return
-
-    const [removed] = newOrder.splice(draggedIndex, 1)
-    newOrder.splice(targetIndex, 0, removed)
+    const dIdx = newOrder.findIndex(t => t.id === draggedTask.id)
+    const tIdx = newOrder.findIndex(t => t.id === target.id)
+    if (dIdx === -1 || tIdx === -1) return
+    const [removed] = newOrder.splice(dIdx, 1)
+    newOrder.splice(tIdx, 0, removed)
     onReorderTasks(newOrder)
     setDraggedTask(null)
   }
 
-  const handleSkipTask = (taskId: string | number) => {
-    onSkipTask?.(taskId)
+  const handleSkipTask = (id: string | number) => {
+    onSkipTask?.(id)
     onTaskUpdate?.()
   }
 
+  // Grouped Actions for Child Component
+  const taskActions = {
+    handleCompleteTask,
+    handleDeleteTask,
+    handleSkipTask,
+    onSuggestContent,
+    onDeleteTask,
+    onDragStart: handleDragStart,
+    onDragOver: handleDragOver,
+    onDrop: handleDrop
+  }
+
   return (
-    <Card className="rounded-2xl border-gray-200 bg-white shadow-sm">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onDayChange && onDayChange(Math.max(1, currentDay - 1))}
-              disabled={currentDay <= 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <div className="flex items-center space-x-2">
-              <Calendar className="h-4 w-4 text-gray-500" />
-              <span className="font-medium">Day {currentDay}</span>
+    <Card className="border-white/5 bg-black/20 shadow-lg backdrop-blur-sm">
+      {/* Header Section */}
+      <CardHeader className="pb-4 border-b border-white/5 mb-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1 bg-white/5 rounded-lg p-1 border border-white/5">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onDayChange?.(Math.max(1, currentDay - 1))}
+                disabled={currentDay <= 1}
+                className="h-8 w-8 text-zinc-500 hover:text-white hover:bg-white/5"
+              >
+                <ChevronLeft size={16} />
+              </Button>
+              <div className="px-3 flex flex-col items-center min-w-[3rem]">
+                 <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Day</span>
+                 <span className="text-sm font-bold text-white leading-none">{currentDay}</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onDayChange?.(currentDay + 1)}
+                className="h-8 w-8 text-zinc-500 hover:text-white hover:bg-white/5"
+              >
+                <ChevronRight size={16} />
+              </Button>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onDayChange && onDayChange(currentDay + 1)}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+            
+            <div>
+               <CardTitle className="text-lg text-white tracking-tight">Daily Quests</CardTitle>
+               <p className="text-xs text-zinc-400">Complete tasks to earn XP & streak.</p>
+            </div>
           </div>
-          <Badge variant={completedTasks === totalTasks ? "default" : "secondary"}>
-            {completedTasks}/{totalTasks} Complete
-          </Badge>
+
+          <div className="text-right">
+             <div className="text-2xl font-bold text-white tracking-tight">{Math.round(progress)}%</div>
+          </div>
         </div>
-        <CardDescription className="text-gray-600">
-          Today's marketing tasks. Each task takes ≈ 15 minutes.
-        </CardDescription>
+
+        {/* Progress Bar */}
+        <div className="h-1 bg-zinc-800/50 rounded-full overflow-hidden">
+           <div className="h-full bg-gradient-to-r from-blue-500 to-lime-500 shadow-[0_0_10px_rgba(163,230,53,0.4)] transition-all duration-700 ease-out" style={{ width: `${progress}%` }} />
+        </div>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="space-y-6 pt-0">
+        
+        {/* Task List */}
         <div className="space-y-3">
           {tasks.length === 0 ? (
-            <div className="py-8 text-center text-gray-500">
-              <Calendar className="mb-3 h-12 w-12 text-gray-300" />
-              <p className="font-medium">No tasks for today yet</p>
-              <p className="text-sm">AI-powered tasks will be generated based on your marketing strategy</p>
+            <div className="py-16 flex flex-col items-center justify-center text-center border border-dashed border-zinc-800 rounded-xl bg-zinc-900/20">
+              <div className="h-14 w-14 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-600 mb-4">
+                <Calendar size={24} />
+              </div>
+              <h3 className="text-zinc-300 font-medium">All Clear</h3>
+              <p className="text-sm text-zinc-500 max-w-[200px] mt-1">No tasks scheduled for today. Enjoy the break or add a custom task.</p>
             </div>
           ) : (
-            tasks.map((task, index) => {
-              const platformId = detectPlatformId(task)
-              const PlatformIcon: any = platformId ? getPlatformIcon(platformId) : null
-              return (
-                <div
-                  key={task.id}
-                  className={`group relative mb-3 rounded-xl border p-4 transition-all duration-200 ${
-                    task.completed
-                      ? "border-green-200 bg-green-50/30"
-                      : task.skipped
-                        ? "border-gray-200 bg-gray-50 opacity-60"
-                        : "border-gray-200 bg-white hover:border-indigo-200 hover:shadow-sm"
-                  }`}
-                  draggable
-                  onDragStart={(event) => handleDragStart(event, task)}
-                  onDragOver={handleDragOver}
-                  onDrop={(event) => handleDrop(event, task)}
-                >
-                  <div
-                    className={`absolute -left-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold shadow-sm ${
-                      task.completed ? "bg-green-500 text-white" : "bg-[#1e1b4b] text-white"
-                    }`}
-                  >
-                    {index + 1}
-                  </div>
-
-                  <div className="flex items-start space-x-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => !task.completed && !task.skipped && handleCompleteTask(task.id)}
-                      className={`h-auto p-2 transition-all duration-200 ${
-                        task.completed
-                          ? "bg-green-100 hover:bg-green-200"
-                          : task.skipped
-                            ? "bg-gray-100"
-                            : "hover:bg-blue-50 hover:scale-110"
-                      }`}
-                      disabled={task.completed || task.skipped}
-                    >
-                      {task.completed ? (
-                        <CheckCircle2 className="h-6 w-6 text-green-600" />
-                      ) : (
-                        <Circle className="h-6 w-6 text-gray-300 transition-colors group-hover:text-indigo-500" />
-                      )}
-                    </Button>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
-                        <div className="min-w-0 flex-1">
-                          {editingTaskId === task.id ? (
-                            <div className="space-y-2">
-                              <Input
-                                value={editingTaskTitle}
-                                onChange={(event) => setEditingTaskTitle(event.target.value)}
-                                className="text-sm font-medium"
-                                placeholder="Task title"
-                                autoFocus
-                              />
-                              <Input
-                                value={editingTaskDescription}
-                                onChange={(event) => setEditingTaskDescription(event.target.value)}
-                                className="text-sm"
-                                placeholder="Task description"
-                              />
-                              <div className="flex space-x-2">
-                                <Button size="sm" onClick={saveTaskEdits}>
-                                  Save
-                                </Button>
-                                <Button size="sm" variant="outline" onClick={cancelTaskEdits}>
-                                  Cancel
-                                </Button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div>
-                              <h3
-                                className={`cursor-pointer font-semibold transition-colors ${
-                                  task.completed
-                                    ? "text-green-800 line-through"
-                                    : task.skipped
-                                      ? "text-gray-500 line-through"
-                                      : "text-gray-900 hover:text-indigo-600"
-                                }`}
-                                onClick={() => !task.completed && startEditTaskDetails(task)}
-                              >
-                                {task.title}
-                              </h3>
-                              <p
-                                className={`text-sm leading-relaxed ${
-                                  task.completed ? "text-green-700" : task.skipped ? "text-gray-500" : "text-gray-600"
-                                }`}
-                              >
-                                {task.description}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="ml-2 flex items-center space-x-2">
-                          <Badge variant="secondary" className="text-xs">
-                            {task.estimatedTime || "15 min"}
-                          </Badge>
-                          <Badge variant="outline" className="flex items-center space-x-1 text-xs">
-                            <Zap className="h-3 w-3" />
-                            <span>+{task.xp || 10} XP</span>
-                          </Badge>
-                          {(task.platform || platformId) && (
-                            <Badge variant="outline" className="text-xs">
-                              {String(task.platform || platformId)
-                                .split(" ")
-                                .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-                                .join(" ")}
-                            </Badge>
-                          )}
-                          {onDeleteTask && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-red-500 opacity-0 transition-opacity hover:text-red-700 group-hover:opacity-100"
-                              onClick={() => handleDeleteTask(task.id)}
-                            >
-                              Delete
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-
-                      {editingTaskId !== task.id && (
-                        <div className="mt-2 flex space-x-2">
-                          {onSuggestContent && !task.completed && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
-                              onClick={() => onSuggestContent(platformId || "freestyle", task)}
-                              title="Create content for this task"
-                            >
-                              {PlatformIcon ? <PlatformIcon className="mr-2 h-4 w-4" /> : null}
-                              Create content
-                            </Button>
-                          )}
-                          <Button size="sm" variant="outline" onClick={() => startEditTaskDetails(task)}>
-                            Edit
-                          </Button>
-                          {onSkipTask && !task.completed && !task.skipped && (
-                            <Button size="sm" variant="outline" onClick={() => handleSkipTask(task.id)}>
-                              Skip
-                            </Button>
-                          )}
-                          {onAddTaskNote && (
-                            <Button size="sm" variant="outline" onClick={() => startAddNote(task)}>
-                              {task.note ? "Edit Note" : "Add Note"}
-                            </Button>
-                          )}
-                        </div>
-                      )}
-
-                      {noteEditingTaskId === task.id ? (
-                        <div className="mt-3">
-                          <textarea
-                            value={taskNote}
-                            onChange={(event) => setTaskNote(event.target.value)}
-                            className="w-full rounded border border-gray-300 p-2 text-sm"
-                            rows={3}
-                            placeholder="Add a note to this task..."
-                          />
-                          <div className="mt-2 flex space-x-2">
-                            <Button size="sm" onClick={saveTaskNote}>
-                              Save Note
-                            </Button>
-                            <Button size="sm" variant="outline" onClick={cancelAddNote}>
-                              Cancel
-                            </Button>
-                          </div>
-                        </div>
-                      ) : task.note ? (
-                        <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-3">
-                          <p className="text-sm text-blue-800">
-                            <span className="font-medium">Note:</span> {task.note}
-                          </p>
-                        </div>
-                      ) : null}
-
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {task.skipped && (
-                          <Badge variant="outline" className="bg-gray-100 text-xs text-gray-700">
-                            Skipped
-                          </Badge>
-                        )}
-                        {task.completed && (
-                          <Badge variant="outline" className="bg-green-100 text-xs text-green-700">
-                            Done
-                          </Badge>
-                        )}
-                        {task.category && (
-                          <Badge className={`text-xs ${getCategoryColor(task.category)}`}>
-                            {`${task.category.charAt(0).toUpperCase()}${task.category.slice(1)}`}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )
-            })
+            tasks.map((task, index) => (
+              <TaskItem
+                key={task.id}
+                index={index}
+                task={task}
+                isEditing={editingTaskId === task.id}
+                isNoteEditing={noteEditingTaskId === task.id}
+                noteDraft={noteDraft}
+                editTitle={editTitle}
+                editDesc={editDesc}
+                setEditTitle={setEditTitle}
+                setEditDesc={setEditDesc}
+                onNoteChange={setNoteDraft}
+                onEditStart={() => {
+                  setEditingTaskId(task.id)
+                  setEditTitle(task.title)
+                  setEditDesc(task.description)
+                  setNoteEditingTaskId(null)
+                }}
+                onNoteStart={() => {
+                   setNoteEditingTaskId(task.id)
+                   setNoteDraft((task.note as string) || "")
+                   setEditingTaskId(null)
+                }}
+                onSaveEdit={handleSaveEdit}
+                onCancelEdit={() => setEditingTaskId(null)}
+                onSaveNote={handleSaveNote}
+                onCancelNote={() => setNoteEditingTaskId(null)}
+                actions={taskActions}
+              />
+            ))
           )}
         </div>
 
+        {/* Add Task Area */}
         {onAddTask && (
-          <div className="mt-6 space-y-2">
-            <h4 className="font-medium text-gray-900">Add Custom Task</h4>
-            <div className="flex flex-col gap-2 md:flex-row md:items-center">
-              <Input
-                placeholder="Title"
-                value={newTitle}
-                onChange={(event) => setNewTitle(event.target.value)}
-                className="flex-1"
-              />
-              <Input
-                placeholder="Description (optional)"
-                value={newDesc}
-                onChange={(event) => setNewDesc(event.target.value)}
-                className="flex-1"
-              />
-              <Button size="sm" onClick={handleAddTask}>
-                Add
+          <div className="pt-2">
+            {!addingTask ? (
+              <Button 
+                variant="ghost" 
+                onClick={() => setAddingTask(true)}
+                className="w-full border border-dashed border-zinc-800 text-zinc-500 hover:text-white hover:bg-white/5 hover:border-zinc-700 h-12 transition-all"
+              >
+                <Plus size={16} className="mr-2" /> Add Custom Task
               </Button>
-            </div>
-          </div>
-        )}
-
-        {completedTasks === totalTasks && totalTasks > 0 && (
-          <div className="mt-6 rounded-lg border border-green-200 bg-green-50 p-4">
-            <div className="flex items-center space-x-2">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
-              <span className="font-medium text-green-800">Awesome! You've completed all tasks for today 🎉</span>
-            </div>
-            <p className="mt-1 text-sm text-green-700">
-              Your streak is now {streak + 1} days. Keep building towards your first 1000 users!
-            </p>
-            {streak >= 6 && (
-              <div className="mt-2 rounded border border-yellow-200 bg-yellow-50 p-2">
-                <p className="text-sm font-medium text-yellow-800">🏆 Milestone Unlocked!</p>
-                <p className="text-xs text-yellow-700">
-                  {streak >= 30
-                    ? "Master Marketer! You've unlocked advanced AI insights and community leaderboard access."
-                    : streak >= 14
-                      ? "Consistent Creator! You've unlocked premium content templates."
-                      : "Marketing Momentum! You've unlocked AI-powered content suggestions."}
-                </p>
+            ) : (
+              <div className="bg-black/40 border border-white/10 p-4 rounded-xl space-y-3 animate-in fade-in slide-in-from-bottom-2 backdrop-blur-sm">
+                 <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">New Task</span>
+                    <button onClick={() => setAddingTask(false)} className="text-zinc-500 hover:text-white transition-colors"><X size={14}/></button>
+                 </div>
+                 <Input 
+                   autoFocus
+                   placeholder="What needs to be done?"
+                   value={newTitle}
+                   onChange={(e) => setNewTitle(e.target.value)}
+                   className="bg-white/5 border-white/10 text-white placeholder:text-zinc-600 focus:border-lime-500/50"
+                 />
+                 <Textarea 
+                   placeholder="Add details (optional)..."
+                   value={newDesc}
+                   onChange={(e) => setNewDesc(e.target.value)}
+                   className="bg-white/5 border-white/10 text-sm min-h-[60px] text-zinc-300 placeholder:text-zinc-600 focus:border-lime-500/50"
+                 />
+                 <div className="flex justify-end gap-2">
+                    <Button size="sm" variant="ghost" onClick={() => setAddingTask(false)} className="text-zinc-400 hover:text-white">Cancel</Button>
+                    <Button size="sm" onClick={handleAddTaskSubmit} className="bg-white text-black hover:bg-zinc-200 font-medium">Add Task</Button>
+                 </div>
               </div>
             )}
           </div>
         )}
+
+        {/* Success State */}
+        {completedCount === totalCount && totalCount > 0 && (
+          <div className="relative overflow-hidden rounded-xl border border-lime-500/20 bg-lime-500/5 p-6 text-center">
+             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-lime-500/50 to-transparent opacity-50" />
+             <div className="flex justify-center mb-3">
+                <div className="h-12 w-12 bg-lime-500 rounded-full flex items-center justify-center text-black shadow-[0_0_20px_rgba(132,204,22,0.4)]">
+                   <CheckCircle2 size={24} />
+                </div>
+             </div>
+             <h3 className="text-lg font-bold text-white mb-1 tracking-tight">Mission Complete!</h3>
+             <p className="text-sm text-zinc-400">
+               All tasks finished. Your streak is safe at <span className="text-lime-400 font-bold">{streak} days</span>.
+             </p>
+          </div>
+        )}
+
       </CardContent>
     </Card>
   )

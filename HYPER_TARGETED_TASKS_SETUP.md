@@ -97,7 +97,7 @@ You should see:
 ## Example of Good vs Bad Tasks
 
 ### ❌ Before (Generic)
-- Title: `Twitter/X thread #3 on Real-time, self-reported MRR leaderboard`
+- Title: `X thread #3 on Real-time, self-reported MRR leaderboard`
 - Description: Draft a 4-tweet thread breaking down Real-time, self-reported MRR leaderboard...
 
 ### ✅ After (Hyper-Targeted)

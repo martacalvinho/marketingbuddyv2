@@ -445,7 +445,7 @@ const ShareJourneyDialog = ({
                       <div className="text-xs font-medium text-gray-700 mb-2">📝 Content created:</div>
                       <div className="flex flex-wrap gap-1.5">
                         <div className="text-xs bg-white border border-gray-200 rounded px-2 py-1">
-                          <span className="font-semibold">3</span> Twitter posts
+                          <span className="font-semibold">3</span> X posts
                         </div>
                         <div className="text-xs bg-white border border-gray-200 rounded px-2 py-1">
                           <span className="font-semibold">2</span> LinkedIn posts

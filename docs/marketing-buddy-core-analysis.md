@@ -55,7 +55,7 @@ biggest [Challenge] right now?" to drive replies.
 2. **No experiment framework** - Can't A/B test hooks, formats, times
 3. **Limited tracking** - Views/likes only, no conversion tracking
 4. **No content library** - Can't see all content in one place with performance
-5. **No suggestions based on performance** - "Your LinkedIn posts get 3x more engagement than Twitter - do more LinkedIn"
+5. **No suggestions based on performance** - "Your LinkedIn posts get 3x more engagement than X - do more LinkedIn"
 
 **What's Missing:**
 ```
@@ -180,7 +180,7 @@ generateContent({
 4. ??? No feedback on what worked
 
 **What's missing:**
-- "Your Twitter thread got 1,000 views - want to do another?"
+- "Your X thread got 1,000 views - want to do another?"
 - "You've skipped 5 LinkedIn tasks - is LinkedIn not working for you?"
 - "Your best content was about [Topic] - here are 3 more angles"
 - "You post at 9am but your audience is most active at 7pm"
@@ -196,8 +196,8 @@ Weekly review system:
     content: "...",
     performance: { views: 500, engagement: 12% }
   },
-  insight: "Your LinkedIn posts get 3x more engagement than Twitter",
-  suggestion: "Next week, try 2 LinkedIn posts and 1 Twitter thread",
+  insight: "Your LinkedIn posts get 3x more engagement than X",
+  suggestion: "Next week, try 2 LinkedIn posts and 1 X thread",
   encouragement: "You're building momentum! 3 other founders started this week and you're ahead of 2 of them."
 }
 ```
@@ -335,8 +335,8 @@ await supabase.from('tasks').update({
     <Content>{bestContent}</Content>
     <Stats>500 views, 12 likes, 3 comments</Stats>
   </TopPerformer>
-  <Insight>Your LinkedIn posts get 3x more engagement than Twitter</Insight>
-  <Suggestion>Next week: 2 LinkedIn posts, 1 Twitter thread</Suggestion>
+  <Insight>Your LinkedIn posts get 3x more engagement than X</Insight>
+  <Suggestion>Next week: 2 LinkedIn posts, 1 X thread</Suggestion>
   <Encouragement>You're building momentum! Keep going.</Encouragement>
 </WeeklyReview>
 ```
