@@ -115,6 +115,38 @@ const contentTypes = [
     color: "text-indigo-700",
     platformKey: "indiehackers"
   },
+  {
+    id: "youtube-script",
+    name: "YouTube Script",
+    icon: Video,
+    description: "Long-form video script",
+    color: "text-red-600",
+    platformKey: "youtube"
+  },
+  {
+    id: "email-newsletter",
+    name: "Email Newsletter",
+    icon: FileText,
+    description: "Engaging email content",
+    color: "text-yellow-500",
+    platformKey: "email"
+  },
+  {
+    id: "facebook-post",
+    name: "Facebook Post",
+    icon: MessageSquare,
+    description: "Community engagement post",
+    color: "text-blue-600",
+    platformKey: "facebook"
+  },
+  {
+    id: "pinterest-pin",
+    name: "Pinterest Pin",
+    icon: Instagram,
+    description: "Visual discovery content",
+    color: "text-red-500",
+    platformKey: "pinterest"
+  },
 ]
 
 export default function ContentGenerator({ user, dailyTasks = [], onTaskUpdate, onContentSaved, initialPlatformId, initialSelectedTask }: ContentGeneratorProps) {
@@ -327,11 +359,21 @@ export default function ContentGenerator({ user, dailyTasks = [], onTaskUpdate, 
     // Map detected platforms to content type IDs
     const platformToContentTypes: { [key: string]: string[] } = {
       'linkedin': ['linkedin-post'],
-      'twitter': ['x-post', 'twitter-thread'],
-      'instagram': ['instagram-post', 'instagram-story'],
+      'twitter': ['x-post', 'twitter-thread', 'build-in-public'],
+      'x': ['x-post', 'twitter-thread', 'build-in-public'],
+      'instagram': ['instagram-post', 'instagram-carousel', 'instagram-story'],
       'reddit': ['reddit-post'],
       'tiktok': ['tiktok-script'],
-      'blog': ['seo-blog', 'build-in-public']
+      'blog': ['seo-blog', 'build-in-public'],
+      'content': ['seo-blog', 'build-in-public'],
+      'youtube': ['youtube-script', 'tiktok-script'],
+      'email': ['email-newsletter'],
+      'facebook': ['facebook-post'],
+      'pinterest': ['pinterest-pin'],
+      'producthunt': ['product-hunt-post'],
+      'indiehackers': ['indie-hackers-post'],
+      'indie hackers': ['indie-hackers-post'],
+      'product hunt': ['product-hunt-post']
     }
     
     const relevantTypeIds = detectedPlatforms.flatMap(platform => 
@@ -353,7 +395,8 @@ export default function ContentGenerator({ user, dailyTasks = [], onTaskUpdate, 
     const normalizePlatform = (id: string) => {
       switch (id) {
         case 'x-post':
-        case 'twitter-thread': return 'x'
+        case 'twitter-thread':
+        case 'build-in-public': return 'x'
         case 'linkedin-post': return 'linkedin'
         case 'reddit-post': return 'reddit'
         case 'instagram-post':
@@ -363,6 +406,10 @@ export default function ContentGenerator({ user, dailyTasks = [], onTaskUpdate, 
         case 'seo-blog': return 'blog'
         case 'product-hunt-post': return 'producthunt'
         case 'indie-hackers-post': return 'indiehackers'
+        case 'youtube-script': return 'youtube'
+        case 'email-newsletter': return 'email'
+        case 'facebook-post': return 'facebook'
+        case 'pinterest-pin': return 'pinterest'
         default: return id
       }
     }
@@ -499,7 +546,8 @@ export default function ContentGenerator({ user, dailyTasks = [], onTaskUpdate, 
     const normalizePlatform = (id: string) => {
       switch (id) {
         case 'x-post':
-        case 'twitter-thread': return 'x'
+        case 'twitter-thread':
+        case 'build-in-public': return 'x'
         case 'linkedin-post': return 'linkedin'
         case 'reddit-post': return 'reddit'
         case 'instagram-post':
@@ -509,6 +557,10 @@ export default function ContentGenerator({ user, dailyTasks = [], onTaskUpdate, 
         case 'seo-blog': return 'blog'
         case 'product-hunt-post': return 'producthunt'
         case 'indie-hackers-post': return 'indiehackers'
+        case 'youtube-script': return 'youtube'
+        case 'email-newsletter': return 'email'
+        case 'facebook-post': return 'facebook'
+        case 'pinterest-pin': return 'pinterest'
         default: return id
       }
     }

@@ -150,12 +150,130 @@ Topics that work well for carousels:
 - Step-by-step tutorials
 
 Write as the founder of ${product} sharing valuable insights. Use details from the business context but never invent metrics.`,
-      "instagram-story": `Create Instagram story text overlay content (short, punchy phrases) for behind-the-scenes content about building ${product}. Keep each text block under 15 words. Include a "Hashtags:" line with 4-8 hashtags. ALSO include a line starting with "IMAGE:" describing the background visual that should accompany this story.`,
+      "instagram-story": `Create a complete Instagram Story sequence (3-5 story frames) for ${product}.
+
+Best practices for Instagram Stories:
+- Stories are vertical, full-screen, and disappear in 24 hours
+- Each frame should have ONE clear message (under 15 words of text)
+- Use a mix of: polls, questions, behind-the-scenes, tips, or CTAs
+- Stories should feel casual, authentic, and in-the-moment
+- Include interactive elements (poll options, question prompts, emoji sliders)
+
+Format your response as:
+STORY 1: [Text overlay - max 15 words]
+TYPE: [Photo/Video/Poll/Question/Quiz]
+VISUAL: [Description of background image/video]
+STICKER: [Any interactive element - poll options, question box, emoji slider, etc.]
+
+STORY 2: [Text overlay]
+TYPE: [Photo/Video/Poll/Question/Quiz]
+VISUAL: [Description]
+STICKER: [Interactive element if any]
+
+...continue for 3-5 stories...
+
+CAPTION FOR HIGHLIGHTS: [If saving to highlights, a 2-3 word title]
+Hashtags: [4-8 relevant hashtags for story visibility]
+
+Create stories that feel like a founder sharing their day building ${product}. Make it personal and engaging.`,
       "tiktok-script": `Write a 30-second TikTok/Reels script about ${product}. Structure: Hook (0-3s), Value/Story (3-25s), CTA (25-30s). Write specific actions and dialogue, not scene descriptions.`,
       "build-in-public": `Create a "build in public" X post sharing a specific milestone, challenge, or lesson from building ${product}. Include exact numbers, metrics, or concrete details without inventing. 180-260 characters, transparent and relatable, with a CTA.`,
       "seo-blog": `Write a complete SEO-optimized blog post about ${product}. ${targetKeywords ? `Target these keywords naturally: ${targetKeywords}.` : ''} Structure: Title, Introduction (2-3 paragraphs), 3-4 H2 sections with detailed content, and conclusion. Write the FULL blog post, not just an outline. Make it comprehensive (800+ words) and valuable.`,
       "product-hunt-post": `Write a Product Hunt launch post for ${product}. Include: a clear one-line value prop, 3-5 bullet highlights, founder story in 2-3 lines, and a friendly call to check it out and share feedback. Keep it authentic and specific.`,
       "indie-hackers-post": `Write an Indie Hackers post sharing a learning or milestone about ${product}. Tone: transparent, numbers-driven, helpful. Include specific metrics (even small ones), what worked/failed, and one actionable takeaway for fellow indie makers.`,
+      "youtube-script": `Write a YouTube video script (5-8 minutes) for ${product}.
+
+Structure:
+1. HOOK (0-30s): Start with a compelling question, surprising fact, or relatable problem
+2. INTRO (30s-1min): Briefly introduce yourself and what viewers will learn
+3. MAIN CONTENT (1-6min): 3-4 key points with examples and actionable tips
+4. CTA (last 30s): Subscribe, comment, and check out ${product}
+
+Format:
+[HOOK]
+(Script text here)
+
+[INTRO]
+(Script text here)
+
+[POINT 1: Title]
+(Script text here)
+
+...continue for all sections...
+
+[OUTRO/CTA]
+(Script text here)
+
+THUMBNAIL IDEA: [Describe an eye-catching thumbnail concept]
+TITLE OPTIONS: [3 clickable title options]
+
+Write conversationally as if talking to a friend. Include B-roll suggestions in parentheses.`,
+      "email-newsletter": `Write an engaging email newsletter for ${product}.
+
+Best practices for email:
+- Subject line is EVERYTHING - make it curiosity-inducing or benefit-driven
+- Preview text (first line) should complement the subject
+- Keep paragraphs short (2-3 sentences max)
+- One clear CTA per email
+- Personal tone - write like you're emailing a friend
+- Add value before asking for anything
+
+Format:
+SUBJECT LINE: [Compelling subject - under 50 characters]
+PREVIEW TEXT: [First line that shows in inbox - under 90 characters]
+
+---
+
+[Email body - 200-400 words]
+
+[Clear CTA button text]
+
+---
+
+P.S. [Optional personal note or secondary CTA]
+
+Write as the founder of ${product} sharing valuable insights with subscribers.`,
+      "facebook-post": `Write a Facebook post for ${product}.
+
+Best practices for Facebook:
+- First 2 lines are crucial (before "See more" truncation)
+- Ask questions to drive comments
+- Use line breaks for readability
+- Stories and personal experiences perform well
+- Native video/images get more reach than links
+- Optimal length: 100-250 words
+
+Write a post that:
+- Starts with a hook that stops the scroll
+- Shares a relatable story or insight
+- Ends with a question or discussion prompt
+- Feels authentic and conversational
+
+At the end, include:
+IMAGE/VIDEO IDEA: [Description of visual content to pair with post]
+
+Write as the founder of ${product} engaging with your community.`,
+      "pinterest-pin": `Create a Pinterest pin for ${product}.
+
+Best practices for Pinterest:
+- Pinterest is a visual search engine - think SEO
+- Vertical images (2:3 ratio) perform best
+- Text overlay should be readable on mobile
+- Rich, keyword-optimized descriptions
+- Save to relevant boards
+
+Format:
+PIN TITLE: [Keyword-rich title - under 100 characters]
+
+PIN DESCRIPTION: [150-300 characters with relevant keywords, hashtags optional]
+
+TEXT OVERLAY: [What text should appear on the pin image - max 6-8 words]
+
+IMAGE CONCEPT: [Detailed description of the pin visual - colors, style, composition]
+
+BOARD SUGGESTION: [What board category this fits]
+
+Create a pin that would make someone want to save it for later. Focus on aspirational or educational content.`,
     }
 
     const fallbackContent = () => {
