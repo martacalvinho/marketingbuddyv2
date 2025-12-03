@@ -20,35 +20,65 @@ export default function DashboardPage() {
 
   // Rebuild enriched user object from Supabase
   const refreshUser = useCallback(async () => {
-    const { data: { user: authUser } } = await supabase.auth.getUser()
-    if (!authUser) {
-      router.replace("/login")
-      return
-    }
-    const { data: onboarding, error } = await supabase
-      .from("onboarding")
-      .select("*")
-      .eq("user_id", authUser.id)
-      .maybeSingle()
+    console.log('[Dashboard] Starting refreshUser...')
+    
+    try {
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
+      console.log('[Dashboard] Auth check:', authUser?.id ? 'User found' : 'No user', authError?.message || '')
+      
+      if (!authUser) {
+        console.log('[Dashboard] No auth user, redirecting to login')
+        router.replace("/login")
+        return
+      }
 
-    if (error || !onboarding || onboarding.onboarding_completed !== true) {
-      router.replace("/onboarding?redirect=/dashboard")
-      return
-    }
+      console.log('[Dashboard] Fetching onboarding data...')
+      const { data: onboarding, error: onboardingError } = await supabase
+        .from("onboarding")
+        .select("*")
+        .eq("user_id", authUser.id)
+        .maybeSingle()
 
-    // Fetch streak data
-    const { data: streakData } = await supabase
-      .from('streaks')
-      .select('current_streak, total_tasks_completed')
-      .eq('user_id', authUser.id)
-      .maybeSingle()
+      console.log('[Dashboard] Onboarding result:', onboarding ? 'Found' : 'Not found', onboardingError?.message || '')
 
-    // Fetch subscription data
-    const { data: subscription } = await supabase
-      .from('subscriptions')
-      .select('status, plan, current_period_end')
-      .eq('user_id', authUser.id)
-      .maybeSingle()
+      if (onboardingError) {
+        console.error('[Dashboard] Onboarding error:', onboardingError)
+      }
+
+      if (!onboarding || onboarding.onboarding_completed !== true) {
+        console.log('[Dashboard] Onboarding incomplete, redirecting')
+        router.replace("/onboarding?redirect=/dashboard")
+        return
+      }
+
+      // Fetch streak data
+      console.log('[Dashboard] Fetching streak data...')
+      const { data: streakData, error: streakError } = await supabase
+        .from('streaks')
+        .select('current_streak, total_tasks_completed')
+        .eq('user_id', authUser.id)
+        .maybeSingle()
+      
+      if (streakError) {
+        console.log('[Dashboard] Streak error (non-blocking):', streakError.message)
+      }
+
+      // Fetch subscription data (with error handling - table may not exist yet)
+      console.log('[Dashboard] Fetching subscription data...')
+      let subscription = null
+      const { data: subData, error: subError } = await supabase
+        .from('subscriptions')
+        .select('status, plan, current_period_end')
+        .eq('user_id', authUser.id)
+        .maybeSingle()
+      
+      if (subError) {
+        console.log('[Dashboard] Subscription error (non-blocking):', subError.message)
+      } else {
+        subscription = subData
+      }
+
+      console.log('[Dashboard] Building enriched user object...')
 
     const enrichedUser: any = {
       id: authUser.id,
@@ -83,7 +113,11 @@ export default function DashboardPage() {
       subscription: subscription || null,
     }
 
+    console.log('[Dashboard] User object built, setting state')
     setUser(enrichedUser)
+    } catch (error) {
+      console.error('[Dashboard] Error in refreshUser:', error)
+    }
   }, [router])
 
   useEffect(() => {

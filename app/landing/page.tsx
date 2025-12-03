@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import Script from "next/script"
+import { supabase } from "@/lib/supabase"
 import { 
   ArrowRight, 
   Zap, 
@@ -224,6 +225,23 @@ const CalendarVisual = () => {
 
 export default function LandingPage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+  useEffect(() => {
+    // Check if user is logged in
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      setIsLoggedIn(!!session?.user)
+    }
+    checkAuth()
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session?.user)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
 
   return (
     <div className="min-h-screen bg-[#020604] text-slate-200 font-sans selection:bg-lime-400/30 selection:text-lime-200 overflow-x-hidden">
@@ -251,12 +269,22 @@ export default function LandingPage() {
             <a href="#how-it-works" className="text-sm font-bold text-slate-400 hover:text-white transition-colors">How it Works</a>
             <a href="#features" className="text-sm font-bold text-slate-400 hover:text-white transition-colors">Features</a>
             <a href="#pricing" className="text-sm font-bold text-slate-400 hover:text-white transition-colors">Pricing</a>
-            <Link href="/login" className="text-sm font-bold text-white hover:text-lime-400 transition-colors">Login</Link>
-            <Link href="/onboarding">
-              <Button className="bg-white text-black hover:bg-lime-400 hover:text-black rounded-sm font-bold text-sm px-6 transition-all duration-300 border border-transparent shadow-lg">
-                Start Now
-              </Button>
-            </Link>
+            {isLoggedIn ? (
+              <Link href="/dashboard">
+                <Button className="bg-lime-400 text-black hover:bg-lime-500 rounded-sm font-bold text-sm px-6 transition-all duration-300 border border-transparent shadow-lg">
+                  Go to Dashboard
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" className="text-sm font-bold text-white hover:text-lime-400 transition-colors">Login</Link>
+                <Link href="/onboarding">
+                  <Button className="bg-white text-black hover:bg-lime-400 hover:text-black rounded-sm font-bold text-sm px-6 transition-all duration-300 border border-transparent shadow-lg">
+                    Start Now
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
           <button className="md:hidden text-white" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
@@ -277,12 +305,22 @@ export default function LandingPage() {
                 <a href="#how-it-works" className="text-lg font-medium text-slate-300" onClick={() => setIsMobileMenuOpen(false)}>How it Works</a>
                 <a href="#features" className="text-lg font-medium text-slate-300" onClick={() => setIsMobileMenuOpen(false)}>Features</a>
                 <a href="#pricing" className="text-lg font-medium text-slate-300" onClick={() => setIsMobileMenuOpen(false)}>Pricing</a>
-                <Link href="/login" className="text-lg font-medium text-slate-300" onClick={() => setIsMobileMenuOpen(false)}>Login</Link>
-                <Link href="/onboarding" className="w-full" onClick={() => setIsMobileMenuOpen(false)}>
-                  <Button className="w-full bg-lime-400 text-black hover:bg-lime-500 font-bold rounded-sm">
-                    Get Started
-                  </Button>
-                </Link>
+                {isLoggedIn ? (
+                  <Link href="/dashboard" className="w-full" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button className="w-full bg-lime-400 text-black hover:bg-lime-500 font-bold rounded-sm">
+                      Go to Dashboard
+                    </Button>
+                  </Link>
+                ) : (
+                  <>
+                    <Link href="/login" className="text-lg font-medium text-slate-300" onClick={() => setIsMobileMenuOpen(false)}>Login</Link>
+                    <Link href="/onboarding" className="w-full" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Button className="w-full bg-lime-400 text-black hover:bg-lime-500 font-bold rounded-sm">
+                        Get Started
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </div>
             </motion.div>
           )}
