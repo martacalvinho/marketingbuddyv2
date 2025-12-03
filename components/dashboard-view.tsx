@@ -995,7 +995,27 @@ export default function DashboardView({ user, onUserRefresh }: DashboardViewProp
         onClose={() => setShowProfileModal(false)}
         user={user}
         onSignOut={() => {
+          // Clear localStorage but preserve achievements
+          const keysToPreserve = []
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i)
+            if (key && key.startsWith('achievements_')) {
+              keysToPreserve.push(key)
+            }
+          }
+          
+          const preservedData: Record<string, string> = {}
+          keysToPreserve.forEach(key => {
+            preservedData[key] = localStorage.getItem(key) || ''
+          })
+          
           localStorage.clear()
+          
+          // Restore achievement data
+          Object.entries(preservedData).forEach(([key, value]) => {
+            localStorage.setItem(key, value)
+          })
+          
           window.location.href = '/landing'
         }}
         onUpdateProfile={async (updates: any) => {

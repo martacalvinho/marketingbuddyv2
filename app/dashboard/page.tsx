@@ -36,6 +36,20 @@ export default function DashboardPage() {
       return
     }
 
+    // Fetch streak data
+    const { data: streakData } = await supabase
+      .from('streaks')
+      .select('current_streak, total_tasks_completed')
+      .eq('user_id', authUser.id)
+      .maybeSingle()
+
+    // Fetch subscription data
+    const { data: subscription } = await supabase
+      .from('subscriptions')
+      .select('status, plan, current_period_end')
+      .eq('user_id', authUser.id)
+      .maybeSingle()
+
     const enrichedUser: any = {
       id: authUser.id,
       email: authUser.email ?? undefined,
@@ -63,6 +77,10 @@ export default function DashboardPage() {
       plan: typeof onboarding.plan === 'string' ? onboarding.plan : (onboarding.plan?.markdown ?? null),
       goals: onboarding.goals ?? null,
       milestones: onboarding.milestones ?? [],
+      createdAt: onboarding.created_at ?? null, // User signup date for calculating current day
+      streak: streakData?.current_streak ?? 0,
+      xp: onboarding.data?.xp ?? 0,
+      subscription: subscription || null,
     }
 
     setUser(enrichedUser)

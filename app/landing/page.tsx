@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
+import Script from "next/script"
 import { 
   ArrowRight, 
   Zap, 
@@ -249,6 +250,7 @@ export default function LandingPage() {
           <div className="hidden md:flex items-center gap-8">
             <a href="#how-it-works" className="text-sm font-bold text-slate-400 hover:text-white transition-colors">How it Works</a>
             <a href="#features" className="text-sm font-bold text-slate-400 hover:text-white transition-colors">Features</a>
+            <a href="#pricing" className="text-sm font-bold text-slate-400 hover:text-white transition-colors">Pricing</a>
             <Link href="/login" className="text-sm font-bold text-white hover:text-lime-400 transition-colors">Login</Link>
             <Link href="/onboarding">
               <Button className="bg-white text-black hover:bg-lime-400 hover:text-black rounded-sm font-bold text-sm px-6 transition-all duration-300 border border-transparent shadow-lg">
@@ -274,6 +276,7 @@ export default function LandingPage() {
               <div className="p-6 space-y-6 flex flex-col items-center">
                 <a href="#how-it-works" className="text-lg font-medium text-slate-300" onClick={() => setIsMobileMenuOpen(false)}>How it Works</a>
                 <a href="#features" className="text-lg font-medium text-slate-300" onClick={() => setIsMobileMenuOpen(false)}>Features</a>
+                <a href="#pricing" className="text-lg font-medium text-slate-300" onClick={() => setIsMobileMenuOpen(false)}>Pricing</a>
                 <Link href="/login" className="text-lg font-medium text-slate-300" onClick={() => setIsMobileMenuOpen(false)}>Login</Link>
                 <Link href="/onboarding" className="w-full" onClick={() => setIsMobileMenuOpen(false)}>
                   <Button className="w-full bg-lime-400 text-black hover:bg-lime-500 font-bold rounded-sm">
@@ -358,7 +361,7 @@ export default function LandingPage() {
       </div>
 
       {/* --- Problem/Solution Section --- */}
-      <section className="py-32 px-6 bg-[#050a07]">
+      <section id="features" className="py-32 px-6 bg-[#050a07]">
          <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 tracking-tight">
                Marketing is hard because <br /> it never ends.
@@ -500,6 +503,64 @@ export default function LandingPage() {
          </div>
       </section>
 
+      {/* --- Pricing Section --- */}
+      <section id="pricing" className="py-32 px-6 bg-[#050a07] relative border-t border-white/5">
+         <div className="max-w-7xl mx-auto">
+            <div className="text-center max-w-3xl mx-auto mb-16">
+               <h2 className="text-4xl md:text-6xl font-bold text-white mb-6 tracking-tighter"> Beta Pricing</h2>
+               <p className="text-xl text-slate-400 leading-relaxed">
+                  We're in early beta. Lock in this price forever while we build the future of automated marketing.
+               </p>
+            </div>
+
+            <div className="max-w-lg mx-auto">
+               <div className="relative bg-[#0A0F0C] border border-lime-500/30 rounded-2xl overflow-hidden shadow-[0_0_40px_-10px_rgba(132,204,22,0.2)] group hover:border-lime-500/50 transition-all duration-300">
+                  {/* Beta Badge */}
+                  <div className="absolute top-0 right-0 bg-lime-500 text-black text-xs font-bold px-3 py-1 rounded-bl-lg z-10">
+                     BETA ACCESS
+                  </div>
+
+                  <div className="p-8 border-b border-white/5">
+                     <div className="flex items-baseline gap-2 mb-2">
+                        <span className="text-5xl font-bold text-white">$9</span>
+                        <span className="text-slate-400 font-medium">/month</span>
+                     </div>
+                     <p className="text-slate-400 text-sm">Early bird pricing (Regularly $19/mo)</p>
+                     
+                     <Link href="/onboarding">
+                        <Button className="w-full mt-6 bg-lime-400 text-black hover:bg-lime-300 font-bold h-12 text-lg shadow-[0_0_20px_rgba(132,204,22,0.3)] group-hover:shadow-[0_0_30px_rgba(132,204,22,0.5)] transition-all">
+                           Start 14-Day Free Trial
+                        </Button>
+                     </Link>
+                     <p className="text-center text-xs text-slate-500 mt-3">No credit card required for trial</p>
+                  </div>
+
+                  <div className="p-8 bg-white/[0.02]">
+                     <p className="text-sm font-bold text-white uppercase tracking-wider mb-6">Everything included:</p>
+                     <ul className="space-y-4">
+                        {[
+                           "AI Brand Voice Analysis",
+                           "Weekly Content Strategy Plan",
+                           "AI Content Generation",
+                           "Multi-platform Support",
+                           "Streak Tracking & Gamification",
+                           "Website Audit & Recommendations",
+                           "Priority Beta Support",
+                        ].map((feature, i) => (
+                           <li key={i} className="flex items-center gap-3 text-slate-300 text-sm">
+                              <div className="w-5 h-5 rounded-full bg-lime-500/20 flex items-center justify-center shrink-0">
+                                 <CheckCircle2 className="w-3 h-3 text-lime-400" />
+                              </div>
+                              {feature}
+                           </li>
+                        ))}
+                     </ul>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </section>
+
       {/* --- FAQ Section --- */}
       <section className="py-32 px-6 border-t border-white/5 bg-[#020604]">
         <div className="max-w-3xl mx-auto">
@@ -567,6 +628,14 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+      
+      {/* Umami Analytics */}
+      <Script
+        defer
+        src="https://cloud.umami.is/script.js"
+        data-website-id="e069ef8d-d729-433b-beaf-ee588c6c5f6d"
+        strategy="afterInteractive"
+      />
     </div>
   )
 }

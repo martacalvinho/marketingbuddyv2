@@ -250,6 +250,47 @@ CREATE TRIGGER trg_tasks_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION set_updated_at();
 
+-- ============================================
+-- 8. APP_FEEDBACK TABLE
+-- ============================================
+-- Stores general app feedback from users
+CREATE TABLE IF NOT EXISTS public.app_feedback (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  user_id uuid NOT NULL,
+  rating integer NULL, -- 1-5 star rating
+  category text NULL, -- 'bug', 'feature', 'general'
+  message text NOT NULL,
+  created_at timestamp with time zone NULL DEFAULT now(),
+  CONSTRAINT app_feedback_pkey PRIMARY KEY (id),
+  CONSTRAINT app_feedback_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users (id) ON DELETE CASCADE
+);
+
+-- Index for feedback
+CREATE INDEX IF NOT EXISTS idx_app_feedback_user_id ON public.app_feedback USING btree (user_id);
+CREATE INDEX IF NOT EXISTS idx_app_feedback_created_at ON public.app_feedback USING btree (created_at DESC);
+
+-- ============================================
+-- 9. SUBSCRIPTIONS TABLE
+-- ============================================
+-- Stores user subscription information linked to Stripe
+CREATE TABLE IF NOT EXISTS public.subscriptions (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  user_id uuid NOT NULL UNIQUE,
+  stripe_customer_id text NULL,
+  stripe_subscription_id text NULL,
+  plan text NOT NULL DEFAULT 'free', -- 'free', 'pro', 'enterprise'
+  status text NOT NULL DEFAULT 'active', -- 'active', 'canceled', 'past_due', 'trialing'
+  current_period_end timestamp with time zone NULL,
+  created_at timestamp with time zone NULL DEFAULT now(),
+  updated_at timestamp with time zone NULL DEFAULT now(),
+  CONSTRAINT subscriptions_pkey PRIMARY KEY (id),
+  CONSTRAINT subscriptions_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users (id) ON DELETE CASCADE
+);
+
+-- Indexes for subscriptions
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON public.subscriptions USING btree (user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe_customer_id ON public.subscriptions USING btree (stripe_customer_id);
+
 DROP TRIGGER IF EXISTS trg_content_updated_at ON public.content;
 CREATE TRIGGER trg_content_updated_at
   BEFORE UPDATE ON public.content
@@ -275,6 +316,7 @@ ALTER TABLE public.buddy_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.analytics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.streaks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.weekly_reviews ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
 
 -- Buddy pairs table: simple manual matching
 CREATE TABLE IF NOT EXISTS public.buddy_pairs (
@@ -458,4 +500,18 @@ CREATE POLICY "Users can update own streaks" ON public.streaks
 
 DROP POLICY IF EXISTS "Users can insert own streaks" ON public.streaks;
 CREATE POLICY "Users can insert own streaks" ON public.streaks
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Subscriptions policies (users can only view their own, updates via webhook/service role)
+DROP POLICY IF EXISTS "Users can view own subscription" ON public.subscriptions;
+CREATE POLICY "Users can view own subscription" ON public.subscriptions
+  FOR SELECT USING (auth.uid() = user_id);
+
+-- App feedback policies
+DROP POLICY IF EXISTS "Users can view own feedback" ON public.app_feedback;
+CREATE POLICY "Users can view own feedback" ON public.app_feedback
+  FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert own feedback" ON public.app_feedback;
+CREATE POLICY "Users can insert own feedback" ON public.app_feedback
   FOR INSERT WITH CHECK (auth.uid() = user_id);

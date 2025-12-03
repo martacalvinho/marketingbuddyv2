@@ -104,8 +104,8 @@ const getCreatorLevel = (xp: number) => {
   return { ...levels[0], xpForNext: 100, progress: 0, nextTitle: levels[1].title }
 }
 
-// Daily challenges
-const getDailyChallenge = (currentDay: number) => {
+// Daily challenges - based on actual calendar date so it changes every day
+const getDailyChallenge = () => {
   const challenges = [
     { title: "Share a win", description: "Post about something that went well today", xp: 25, icon: Trophy, platform: "linkedin" },
     { title: "Teach something", description: "Create educational content for your audience", xp: 30, icon: Sparkles, platform: "x" },
@@ -115,7 +115,12 @@ const getDailyChallenge = (currentDay: number) => {
     { title: "Celebrate others", description: "Highlight someone else's work", xp: 20, icon: Star, platform: "x" },
     { title: "Quick tip", description: "Share a bite-sized piece of advice", xp: 25, icon: Zap, platform: "x" },
   ]
-  return challenges[currentDay % challenges.length]
+  // Use day of year to ensure challenge changes daily
+  const now = new Date()
+  const start = new Date(now.getFullYear(), 0, 0)
+  const diff = now.getTime() - start.getTime()
+  const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24))
+  return challenges[dayOfYear % challenges.length]
 }
 
 export default function CreatorScore({ user, streak, xp, currentDay, onNavigate }: CreatorScoreProps) {
@@ -127,7 +132,99 @@ export default function CreatorScore({ user, streak, xp, currentDay, onNavigate 
     recentContent: [] as any[],
   })
   const [unlockedAchievements, setUnlockedAchievements] = useState<string[]>([])
+  const [seenAchievements, setSeenAchievements] = useState<string[]>([])
   const [showAchievementPopup, setShowAchievementPopup] = useState<typeof ACHIEVEMENTS[0] | null>(null)
+  const [achievementsLoaded, setAchievementsLoaded] = useState(false)
+
+  // Load seen achievements from Supabase on mount (persists across devices)
+  useEffect(() => {
+    const loadSeenAchievements = async () => {
+      if (!user?.id) return
+      
+      try {
+        // First try to load from Supabase
+        const { data, error } = await supabase
+          .from('onboarding')
+          .select('data')
+          .eq('user_id', user.id)
+          .single()
+        
+        if (!error && data?.data?.seen_achievements) {
+          setSeenAchievements(data.data.seen_achievements)
+          // Also update localStorage as cache
+          localStorage.setItem(`achievements_${user.id}`, JSON.stringify(data.data.seen_achievements))
+        } else {
+          // Fallback to localStorage if Supabase doesn't have it
+          const savedAchievements = localStorage.getItem(`achievements_${user.id}`)
+          if (savedAchievements) {
+            try {
+              const parsed = JSON.parse(savedAchievements)
+              setSeenAchievements(parsed)
+              // Sync localStorage data to Supabase
+              await saveSeenAchievementsToSupabase(user.id, parsed)
+            } catch (e) {
+              console.error('Failed to parse saved achievements:', e)
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load seen achievements:', e)
+      } finally {
+        setAchievementsLoaded(true)
+      }
+    }
+    
+    loadSeenAchievements()
+  }, [user?.id])
+
+  // Save seen achievements to Supabase
+  const saveSeenAchievementsToSupabase = async (userId: string, achievements: string[]) => {
+    try {
+      // Get current data first
+      const { data: currentData } = await supabase
+        .from('onboarding')
+        .select('data')
+        .eq('user_id', userId)
+        .single()
+      
+      const existingData = currentData?.data || {}
+      
+      // Update with seen_achievements
+      const { error } = await supabase
+        .from('onboarding')
+        .update({ 
+          data: { ...existingData, seen_achievements: achievements }
+        })
+        .eq('user_id', userId)
+      
+      if (error) {
+        console.error('Failed to save seen achievements to Supabase:', error)
+      }
+    } catch (e) {
+      console.error('Error saving seen achievements:', e)
+    }
+  }
+
+  // Handle dismissing achievement popup - saves to both localStorage and Supabase
+  const handleDismissAchievement = async () => {
+    if (!showAchievementPopup || !user?.id) {
+      setShowAchievementPopup(null)
+      return
+    }
+    
+    const achievementId = showAchievementPopup.id
+    const newSeenAchievements = [...seenAchievements, achievementId]
+    
+    // Update state
+    setSeenAchievements(newSeenAchievements)
+    setShowAchievementPopup(null)
+    
+    // Save to localStorage (immediate cache)
+    localStorage.setItem(`achievements_${user.id}`, JSON.stringify(newSeenAchievements))
+    
+    // Save to Supabase (persists across devices)
+    await saveSeenAchievementsToSupabase(user.id, newSeenAchievements)
+  }
 
   // Load content stats
   useEffect(() => {
@@ -180,28 +277,37 @@ export default function CreatorScore({ user, streak, xp, currentDay, onNavigate 
     loadStats()
   }, [user?.id])
 
-  // Check for new achievements
+  // Check for new achievements (only after seen achievements are loaded)
   useEffect(() => {
+    if (!achievementsLoaded) return
+    
     const stats = { ...contentStats, streak }
     const newUnlocked: string[] = []
     
     ACHIEVEMENTS.forEach(achievement => {
-      if (achievement.condition(stats) && !unlockedAchievements.includes(achievement.id)) {
+      const isUnlocked = achievement.condition(stats)
+      const hasBeenSeen = seenAchievements.includes(achievement.id)
+      const alreadyTracked = unlockedAchievements.includes(achievement.id)
+      
+      if (isUnlocked && !alreadyTracked) {
         newUnlocked.push(achievement.id)
       }
     })
 
     if (newUnlocked.length > 0) {
       setUnlockedAchievements(prev => [...prev, ...newUnlocked])
-      // Show popup for first new achievement
-      const firstNew = ACHIEVEMENTS.find(a => a.id === newUnlocked[0])
-      if (firstNew) setShowAchievementPopup(firstNew)
+      // Show popup only for achievements that haven't been seen yet
+      const firstUnseen = newUnlocked.find(id => !seenAchievements.includes(id))
+      if (firstUnseen) {
+        const achievement = ACHIEVEMENTS.find(a => a.id === firstUnseen)
+        if (achievement) setShowAchievementPopup(achievement)
+      }
     }
-  }, [contentStats, streak])
+  }, [contentStats, streak, achievementsLoaded, seenAchievements])
 
   const levelInfo = getCreatorLevel(xp)
   const motivation = getMotivationalMessage(streak, contentStats.totalContent)
-  const dailyChallenge = getDailyChallenge(currentDay)
+  const dailyChallenge = getDailyChallenge()
   const DailyChallengeIcon = dailyChallenge.icon
 
   return (
@@ -220,7 +326,7 @@ export default function CreatorScore({ user, streak, xp, currentDay, onNavigate 
               <Badge className="bg-amber-500 text-black font-bold">+{showAchievementPopup.xp} XP</Badge>
               <Button 
                 className="w-full mt-4 bg-amber-500 text-black hover:bg-amber-400"
-                onClick={() => setShowAchievementPopup(null)}
+                onClick={handleDismissAchievement}
               >
                 Awesome!
               </Button>

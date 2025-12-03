@@ -28,8 +28,10 @@ import {
   MessageSquare,
   TrendingUp,
   DollarSign,
-  Zap
+  Zap,
+  CreditCard
 } from "lucide-react"
+import SubscriptionTab from "@/components/dashboard/SubscriptionTab"
 
 interface UserProfileProps {
   user: any
@@ -37,7 +39,7 @@ interface UserProfileProps {
   onUpdateProfile?: (updates: any) => void
 }
 
-type SettingsTab = 'account' | 'website' | 'audience' | 'goals' | 'strategy'
+type SettingsTab = 'account' | 'website' | 'audience' | 'goals' | 'strategy' | 'subscription'
 
 const tabs = [
   { id: 'account' as SettingsTab, label: 'Account', icon: User },
@@ -45,6 +47,7 @@ const tabs = [
   { id: 'audience' as SettingsTab, label: 'Target Audience', icon: Users },
   { id: 'goals' as SettingsTab, label: 'Goals', icon: Target },
   { id: 'strategy' as SettingsTab, label: 'Strategy', icon: Rocket },
+  { id: 'subscription' as SettingsTab, label: 'Plan & Billing', icon: CreditCard },
 ]
 
 export default function UserProfile({ user, onSignOut, onUpdateProfile }: UserProfileProps) {
@@ -57,7 +60,10 @@ export default function UserProfile({ user, onSignOut, onUpdateProfile }: UserPr
     northStarGoal: user.northStarGoal || "",
     marketingExperience: user.marketingExperience || user.experienceLevel || "",
     preferredPlatforms: user.preferredPlatforms || [],
-    currentChallenges: user.currentChallenges || user.challenges || ""
+    currentChallenges: user.currentChallenges || user.challenges || "",
+    goalType: user.goalType || "",
+    goalAmount: user.goalAmount || "",
+    goalTimeline: user.goalTimeline || "6"
   })
   const [isSaving, setIsSaving] = useState(false)
 
@@ -79,7 +85,27 @@ export default function UserProfile({ user, onSignOut, onUpdateProfile }: UserPr
     if (onSignOut) {
       onSignOut()
     } else {
+      // Clear localStorage but preserve achievements
+      const keysToPreserve = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && key.startsWith('achievements_')) {
+          keysToPreserve.push(key)
+        }
+      }
+      
+      const preservedData: Record<string, string> = {}
+      keysToPreserve.forEach(key => {
+        preservedData[key] = localStorage.getItem(key) || ''
+      })
+      
       localStorage.clear()
+      
+      // Restore achievement data
+      Object.entries(preservedData).forEach(([key, value]) => {
+        localStorage.setItem(key, value)
+      })
+      
       window.location.href = '/landing'
     }
   }
@@ -210,7 +236,7 @@ export default function UserProfile({ user, onSignOut, onUpdateProfile }: UserPr
                   variant="outline"
                   size="sm"
                   onClick={() => setIsEditing(true)}
-                  className="border-white/20 text-slate-300 hover:bg-white/10 hover:text-white"
+                  className="border-zinc-700 bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white"
                 >
                   <Edit3 className="h-4 w-4 mr-2" />
                   Edit
@@ -221,7 +247,7 @@ export default function UserProfile({ user, onSignOut, onUpdateProfile }: UserPr
                     <Save className="h-4 w-4 mr-2" />
                     Save
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => setIsEditing(false)} className="border-white/20 text-slate-300">
+                  <Button variant="outline" size="sm" onClick={() => setIsEditing(false)} className="border-zinc-700 bg-zinc-800 text-zinc-300 hover:bg-zinc-700">
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
@@ -279,22 +305,63 @@ export default function UserProfile({ user, onSignOut, onUpdateProfile }: UserPr
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-slate-300">Experience Level</Label>
-                  <div className="p-3 bg-white/5 rounded border border-white/10 mt-1">
-                    <Badge className="bg-lime-500/20 text-lime-300 border-lime-500/30">
-                      {user.marketingExperience || user.experienceLevel || "Not specified"}
-                    </Badge>
-                  </div>
+                  {isEditing ? (
+                    <select
+                      value={formData.marketingExperience}
+                      onChange={(e) => setFormData({ ...formData, marketingExperience: e.target.value })}
+                      className="w-full mt-1 p-3 bg-zinc-900 border border-white/10 rounded text-white text-sm"
+                    >
+                      <option value="">Select level</option>
+                      <option value="beginner">Beginner</option>
+                      <option value="intermediate">Intermediate</option>
+                      <option value="advanced">Advanced</option>
+                    </select>
+                  ) : (
+                    <div className="p-3 bg-white/5 rounded border border-white/10 mt-1">
+                      <Badge className="bg-lime-500/20 text-lime-300 border-lime-500/30">
+                        {user.marketingExperience || user.experienceLevel || "Not specified"}
+                      </Badge>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label className="text-slate-300">Preferred Platforms</Label>
-                  <div className="p-3 bg-white/5 rounded border border-white/10 mt-1 flex flex-wrap gap-1">
-                    {(user.preferredPlatforms || []).map((p: string, i: number) => (
-                      <Badge key={i} variant="outline" className="border-white/20 text-slate-300">{p}</Badge>
-                    ))}
-                    {(!user.preferredPlatforms || user.preferredPlatforms.length === 0) && (
-                      <span className="text-slate-500 text-sm">Not specified</span>
-                    )}
-                  </div>
+                  {isEditing ? (
+                    <div className="mt-1 space-y-2">
+                      <div className="flex flex-wrap gap-2">
+                        {['Twitter', 'LinkedIn', 'Instagram', 'TikTok', 'YouTube', 'Facebook', 'Blog', 'Newsletter'].map((platform) => (
+                          <button
+                            key={platform}
+                            type="button"
+                            onClick={() => {
+                              const current = formData.preferredPlatforms || []
+                              if (current.includes(platform)) {
+                                setFormData({ ...formData, preferredPlatforms: current.filter((p: string) => p !== platform) })
+                              } else {
+                                setFormData({ ...formData, preferredPlatforms: [...current, platform] })
+                              }
+                            }}
+                            className={`px-3 py-1.5 rounded-full text-sm transition-all ${
+                              (formData.preferredPlatforms || []).includes(platform)
+                                ? 'bg-lime-500 text-black font-medium'
+                                : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white'
+                            }`}
+                          >
+                            {platform}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-white/5 rounded border border-white/10 mt-1 flex flex-wrap gap-1">
+                      {(user.preferredPlatforms || []).map((p: string, i: number) => (
+                        <Badge key={i} variant="outline" className="border-white/20 text-slate-300">{p}</Badge>
+                      ))}
+                      {(!user.preferredPlatforms || user.preferredPlatforms.length === 0) && (
+                        <span className="text-slate-500 text-sm">Not specified</span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -311,7 +378,7 @@ export default function UserProfile({ user, onSignOut, onUpdateProfile }: UserPr
                 size="sm"
                 onClick={reAnalyzeWebsite}
                 disabled={isSaving}
-                className="border-white/20 text-slate-300 hover:bg-white/10 hover:text-white"
+                className="border-zinc-700 bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white"
               >
                 <RefreshCw className={`h-4 w-4 mr-2 ${isSaving ? 'animate-spin' : ''}`} />
                 Re-analyze
@@ -508,35 +575,117 @@ export default function UserProfile({ user, onSignOut, onUpdateProfile }: UserPr
         {/* Goals Tab */}
         {activeTab === 'goals' && (
           <div className="space-y-6">
-            <h3 className="text-lg font-bold text-white">Marketing Goals</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-white">Marketing Goals</h3>
+              {!isEditing ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditing(true)}
+                  className="border-zinc-700 bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white"
+                >
+                  <Edit3 className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+              ) : (
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={handleSave} disabled={isSaving} className="bg-lime-500 hover:bg-lime-400 text-black">
+                    <Save className="h-4 w-4 mr-2" />
+                    Save
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setIsEditing(false)} className="border-zinc-700 bg-zinc-800 text-zinc-300 hover:bg-zinc-700">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
 
             <div className="p-4 bg-lime-500/10 rounded-lg border border-lime-500/20">
               <div className="flex items-center gap-2 mb-2">
                 <Target className="h-4 w-4 text-lime-400" />
                 <span className="text-sm text-lime-400 font-medium">North Star Goal</span>
               </div>
-              <p className="text-lg font-medium text-lime-300">
-                {user.northStarGoal || "Not specified"}
-              </p>
+              {isEditing ? (
+                <Textarea
+                  value={formData.northStarGoal}
+                  onChange={(e) => setFormData({ ...formData, northStarGoal: e.target.value })}
+                  rows={2}
+                  className="bg-zinc-900 border-lime-500/30 text-lime-200 mt-1"
+                  placeholder="What's your main goal?"
+                />
+              ) : (
+                <p className="text-lg font-medium text-lime-300">
+                  {user.northStarGoal || "Not specified"}
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-white/5 rounded-lg border border-white/10">
-                <span className="text-slate-500 text-sm">Goal Type</span>
-                <p className="text-white font-medium mt-1">{user.goalType || 'N/A'}</p>
+              <div className="p-4 bg-zinc-900/50 rounded-lg border border-zinc-800">
+                <span className="text-zinc-400 text-sm">Goal Type</span>
+                {isEditing ? (
+                  <select
+                    value={formData.goalType}
+                    onChange={(e) => setFormData({ ...formData, goalType: e.target.value })}
+                    className="w-full mt-1 p-2 bg-zinc-800 border border-zinc-700 rounded text-white text-sm"
+                  >
+                    <option value="">Select type</option>
+                    <option value="revenue">Revenue (MRR)</option>
+                    <option value="users">User Growth</option>
+                    <option value="awareness">Brand Awareness</option>
+                    <option value="engagement">Engagement</option>
+                  </select>
+                ) : (
+                  <p className="text-white font-medium mt-1">{user.goalType || 'N/A'}</p>
+                )}
               </div>
-              <div className="p-4 bg-white/5 rounded-lg border border-white/10">
-                <span className="text-slate-500 text-sm">Timeline</span>
-                <p className="text-white font-medium mt-1">{user.goalTimeline || '6'} months</p>
+              <div className="p-4 bg-zinc-900/50 rounded-lg border border-zinc-800">
+                <span className="text-zinc-400 text-sm">Timeline</span>
+                {isEditing ? (
+                  <select
+                    value={formData.goalTimeline}
+                    onChange={(e) => setFormData({ ...formData, goalTimeline: e.target.value })}
+                    className="w-full mt-1 p-2 bg-zinc-800 border border-zinc-700 rounded text-white text-sm"
+                  >
+                    <option value="3">3 months</option>
+                    <option value="6">6 months</option>
+                    <option value="12">12 months</option>
+                  </select>
+                ) : (
+                  <p className="text-white font-medium mt-1">{user.goalTimeline || '6'} months</p>
+                )}
               </div>
             </div>
 
-            {user.currentChallenges && (
-              <div className="p-4 bg-white/5 rounded-lg border border-white/10">
-                <span className="text-slate-500 text-sm">Current Challenges</span>
-                <p className="text-slate-200 mt-2">{user.currentChallenges}</p>
-              </div>
-            )}
+            <div className="p-4 bg-zinc-900/50 rounded-lg border border-zinc-800">
+              <span className="text-zinc-400 text-sm">Target Amount</span>
+              {isEditing ? (
+                <Input
+                  type="text"
+                  value={formData.goalAmount}
+                  onChange={(e) => setFormData({ ...formData, goalAmount: e.target.value })}
+                  className="bg-zinc-800 border-zinc-700 text-white mt-1"
+                  placeholder="e.g., 5000 or 1000 users"
+                />
+              ) : (
+                <p className="text-white font-medium mt-1">{user.goalAmount || 'Not set'}</p>
+              )}
+            </div>
+
+            <div className="p-4 bg-zinc-900/50 rounded-lg border border-zinc-800">
+              <span className="text-zinc-400 text-sm">Current Challenges</span>
+              {isEditing ? (
+                <Textarea
+                  value={formData.currentChallenges}
+                  onChange={(e) => setFormData({ ...formData, currentChallenges: e.target.value })}
+                  rows={3}
+                  className="bg-zinc-800 border-zinc-700 text-white mt-1"
+                  placeholder="What challenges are you facing?"
+                />
+              ) : (
+                <p className="text-zinc-200 mt-2">{user.currentChallenges || user.challenges || 'None specified'}</p>
+              )}
+            </div>
           </div>
         )}
 
@@ -550,7 +699,7 @@ export default function UserProfile({ user, onSignOut, onUpdateProfile }: UserPr
                 size="sm"
                 onClick={regenerateStrategy}
                 disabled={isSaving}
-                className="border-white/20 text-slate-300 hover:bg-white/10 hover:text-white"
+                className="border-zinc-700 bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white"
               >
                 <RefreshCw className={`h-4 w-4 mr-2 ${isSaving ? 'animate-spin' : ''}`} />
                 Regenerate
@@ -594,6 +743,10 @@ export default function UserProfile({ user, onSignOut, onUpdateProfile }: UserPr
               </div>
             )}
           </div>
+        )}
+        {/* Subscription Tab */}
+        {activeTab === 'subscription' && (
+          <SubscriptionTab user={user} />
         )}
       </div>
     </div>

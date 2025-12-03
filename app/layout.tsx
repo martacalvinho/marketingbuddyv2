@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Space_Grotesk, Outfit } from 'next/font/google'
+import { Toaster } from "@/components/ui/sonner"
 import './globals.css'
 
 const spaceGrotesk = Space_Grotesk({ 
@@ -27,7 +28,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${spaceGrotesk.variable} ${outfit.variable}`}>
-      <body className="antialiased font-body">{children}</body>
+      <body className="antialiased font-body">
+        {children}
+        <Toaster />
+      </body>
     </html>
   )
 }
