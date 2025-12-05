@@ -559,11 +559,12 @@ export default function LandingPage() {
                   </div>
 
                   <div className="p-8 border-b border-white/5">
-                     <div className="flex items-baseline gap-2 mb-2">
+                     <div className="flex items-baseline gap-3 mb-3">
+                        <span className="text-3xl text-slate-500 line-through">$19</span>
                         <span className="text-5xl font-bold text-white">$9</span>
                         <span className="text-slate-400 font-medium">/month</span>
                      </div>
-                     <p className="text-slate-400 text-sm">Early bird pricing (Regularly $19/mo)</p>
+                     <p className="text-amber-300 text-sm font-semibold">Limited-time beta pricing — lock it in before it returns to $19/mo.</p>
                      
                      <Link href="/onboarding">
                         <Button className="w-full mt-6 bg-lime-400 text-black hover:bg-lime-300 font-bold h-12 text-lg shadow-[0_0_20px_rgba(132,204,22,0.3)] group-hover:shadow-[0_0_30px_rgba(132,204,22,0.5)] transition-all">
