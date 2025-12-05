@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { supabaseServer } from "@/lib/supabase-server"
+import { createClient } from "@supabase/supabase-js"
 
 export async function POST(req: Request) {
   try {
@@ -12,14 +12,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { data: userData, error: userErr } = await supabaseServer.auth.getUser(token)
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+
+    const { data: userData, error: userErr } = await supabaseAdmin.auth.getUser(token)
     if (userErr || !userData?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const userId = userData.user.id
 
-    const { error: updateErr } = await supabaseServer
+    const { error: updateErr } = await supabaseAdmin
       .from("subscriptions")
       .update({
         status: "canceled",
