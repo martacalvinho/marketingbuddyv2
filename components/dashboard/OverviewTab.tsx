@@ -16,7 +16,7 @@ interface WeekSummary {
   content?: { platform: string; count: number; views?: number; likes?: number }[]
 }
 
-interface OverviewTabProps {
+export interface OverviewTabProps {
   user: any
   streak: number
   xp: number
@@ -26,6 +26,7 @@ interface OverviewTabProps {
   onGenerateContent: () => void
   weekStats?: WeekSummary[]
   milestones?: Milestone[]
+  onCompleteTask?: (taskId: string | number) => void
 }
 
 const numberFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 })
@@ -56,7 +57,8 @@ export default function OverviewTab({
   onNavigate,
   onGenerateContent,
   weekStats = [],
-  milestones = []
+  milestones = [],
+  onCompleteTask,
 }: OverviewTabProps) {
   const completedToday = todaysTasks.filter((t) => t.completed).length
   const totalToday = todaysTasks.length
@@ -277,35 +279,43 @@ export default function OverviewTab({
                 </div>
 
                 <div className="space-y-3">
-                  {todaysTasks.slice(0, 3).map((task: any) => (
-                    <div
-                      key={task.id}
-                      className="flex items-start space-x-4 p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/10 transition-all group"
-                    >
-                      <div
-                        className={`mt-0.5 h-5 w-5 rounded-full border-2 flex items-center justify-center transition-colors ${
-                          task.completed
-                            ? "bg-lime-400 border-lime-400 text-black"
-                            : "border-zinc-700 group-hover:border-lime-400/50"
-                        }`}
+                  {todaysTasks.slice(0, 3).map((task: any) => {
+                    const handleComplete = () => {
+                      if (task.completed) return
+                      onCompleteTask?.(task.id)
+                    }
+                    return (
+                      <button
+                        type="button"
+                        key={task.id}
+                        onClick={handleComplete}
+                        className="w-full text-left flex items-start space-x-4 p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-white/10 transition-all group"
                       >
-                        {task.completed && <CheckCircle2 className="h-3.5 w-3.5" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className={`font-medium text-sm ${task.completed ? "text-zinc-500 line-through decoration-zinc-700" : "text-zinc-200"}`}>
-                          {task.title}
-                        </h4>
-                        {task.description && <p className="text-xs text-zinc-500 mt-1 line-clamp-1">{task.description}</p>}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {task.platform && (
-                          <Badge variant="outline" className="bg-white/5 border-white/10 text-[10px] text-zinc-500 uppercase tracking-wider">
-                            {task.platform}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                        <div
+                          className={`mt-0.5 h-5 w-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                            task.completed
+                              ? "bg-lime-400 border-lime-400 text-black"
+                              : "border-zinc-700 group-hover:border-lime-400/50"
+                          }`}
+                        >
+                          {task.completed && <CheckCircle2 className="h-3.5 w-3.5" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className={`font-medium text-sm ${task.completed ? "text-zinc-500 line-through decoration-zinc-700" : "text-zinc-200"}`}>
+                            {task.title}
+                          </h4>
+                          {task.description && <p className="text-xs text-zinc-500 mt-1 line-clamp-1">{task.description}</p>}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {task.platform && (
+                            <Badge variant="outline" className="bg-white/5 border-white/10 text-[10px] text-zinc-500 uppercase tracking-wider">
+                              {task.platform}
+                            </Badge>
+                          )}
+                        </div>
+                      </button>
+                    )
+                  })}
                   {todaysTasks.length > 3 && (
                      <div className="text-center pt-2">
                         <button onClick={() => onNavigate("plan")} className="text-xs text-zinc-500 hover:text-lime-400 transition-colors">

@@ -55,6 +55,41 @@ function OnboardingContent() {
       router.replace('/signup?redirect=/onboarding')
       return
     }
+
+    // Fire marketing strategy generation in background (non-blocking)
+    const generateStrategy = async () => {
+      try {
+        const resp = await fetch('/api/generate-plan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...userData,
+            websiteAnalysis: userData.websiteAnalysis ?? null,
+            targetAudience: userData.targetAudience ?? null,
+            preferredPlatforms: userData.preferredPlatforms ?? [],
+            goalType: userData.goalType ?? null,
+            goalAmount: userData.goalAmount ?? null,
+            goalTimeline: userData.goalTimeline ?? null,
+            northStarGoal: userData.northStarGoal ?? null,
+            focusArea: userData.focusArea ?? null,
+            currentUsers: userData.currentUsers ?? null,
+            currentMrr: userData.currentMrr ?? null,
+          }),
+        })
+        const json = await resp.json()
+        const markdown = json?.plan || null
+        if (markdown) {
+          await supabase
+            .from('onboarding')
+            .update({ plan: { markdown } })
+            .eq('user_id', user.id)
+        }
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('Strategy generation skipped:', e)
+      }
+    }
+
     try {
       const toInt = (v: any) => {
         const n = parseInt(String(v ?? '').trim(), 10)
@@ -89,6 +124,9 @@ function OnboardingContent() {
         console.error('Supabase minimal upsert error:', minimalErr)
         throw minimalErr
       }
+
+      // Kick off strategy generation without blocking user navigation
+      generateStrategy()
 
       // 2) Best-effort extended update (ignore if columns missing)
       try {

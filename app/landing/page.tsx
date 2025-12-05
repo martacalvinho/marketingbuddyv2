@@ -155,9 +155,10 @@ const BrandReportVisual = () => {
 
         {/* Action Button */}
         <div className="pt-2">
-            <div className="w-full py-2 bg-lime-400 text-black font-bold text-center text-sm rounded-md shadow-[0_0_15px_rgba(163,230,53,0.3)]">
-                Generate Strategy &rarr;
-            </div>
+          <Button size="lg" className="bg-lime-400 hover:bg-lime-300 text-black font-bold px-6 sm:px-8 h-12 rounded-full shadow-[0_0_25px_rgba(163,230,53,0.35)] flex items-center gap-2">
+            Run free website analysis
+            <ArrowRight className="w-4 h-4 text-black" />
+          </Button>
         </div>
       </div>
     </div>

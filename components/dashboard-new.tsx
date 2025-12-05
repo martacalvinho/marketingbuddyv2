@@ -107,6 +107,7 @@ export default function DashboardNew({ user, onUserRefresh }: DashboardViewProps
   const [isRegenerating, setIsRegenerating] = useState(false)
   const contentScheduleRef = useRef<ContentScheduleRef>(null)
   const [dailyChallengeTask, setDailyChallengeTask] = useState<any>(null)
+  const [showStrategyBanner, setShowStrategyBanner] = useState(false)
   
   // Check for daily challenge in sessionStorage when switching to studio tab
   useEffect(() => {
@@ -127,6 +128,20 @@ export default function DashboardNew({ user, onUserRefresh }: DashboardViewProps
   const handleContentSaved = useCallback(() => {
     contentScheduleRef.current?.refresh()
   }, [])
+
+  // Strategy banner visibility (once per device)
+  useEffect(() => {
+    const planText = typeof user.plan === 'string' ? user.plan : (user.plan?.markdown || '')
+    if (!planText) return
+    try {
+      const seen = typeof window !== 'undefined' ? localStorage.getItem('strategy_seen_v1') : '1'
+      if (!seen) {
+        setShowStrategyBanner(true)
+      }
+    } catch (e) {
+      console.warn('strategy banner storage skipped', e)
+    }
+  }, [user.plan])
 
   // --- LOGIC PORTED ---
 
@@ -1008,6 +1023,45 @@ export default function DashboardNew({ user, onUserRefresh }: DashboardViewProps
            </div>
         )}
 
+        {/* Marketing Strategy Banner */}
+        {showStrategyBanner && (
+          <div className="mx-4 lg:mx-8 mt-4 p-4 bg-white/5 border border-white/10 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="h-10 w-10 rounded-full bg-emerald-500/15 flex items-center justify-center shrink-0">
+                <BookOpen className="h-5 w-5 text-emerald-400" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white">Your marketing strategy is ready</h3>
+                <p className="text-xs text-zinc-400">We generated a personalized strategy from your onboarding data. View it in Settings.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                className="bg-emerald-400 text-black hover:bg-emerald-300 font-semibold"
+                onClick={() => {
+                  try { localStorage.setItem('strategy_seen_v1', '1') } catch {}
+                  setShowStrategyBanner(false)
+                  setShowProfileModal(true)
+                }}
+              >
+                View in Settings
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="text-zinc-500 hover:text-white"
+                onClick={() => {
+                  try { localStorage.setItem('strategy_seen_v1', '1') } catch {}
+                  setShowStrategyBanner(false)
+                }}
+              >
+                ✕
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Tab Content */}
         <div className="flex-1 overflow-y-auto scrollbar-hide p-4 lg:p-8 relative">
            <div className="max-w-7xl mx-auto min-h-full pb-12">
@@ -1085,6 +1139,7 @@ export default function DashboardNew({ user, onUserRefresh }: DashboardViewProps
                     milestones={milestones}
                     onNavigate={setActiveTab}
                     onGenerateContent={() => setActiveTab('studio')}
+                    onCompleteTask={completeTask}
                   />
                 )}
 

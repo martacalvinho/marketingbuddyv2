@@ -32,6 +32,7 @@ import {
   CreditCard
 } from "lucide-react"
 import SubscriptionTab from "@/components/dashboard/SubscriptionTab"
+import { supabase } from "@/lib/supabase"
 
 interface UserProfileProps {
   user: any
@@ -66,6 +67,9 @@ export default function UserProfile({ user, onSignOut, onUpdateProfile }: UserPr
     goalTimeline: user.goalTimeline || "6"
   })
   const [isSaving, setIsSaving] = useState(false)
+  const [isResettingPassword, setIsResettingPassword] = useState(false)
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false)
+  const [isCancelingSub, setIsCancelingSub] = useState(false)
 
   const handleSave = async () => {
     setIsSaving(true)
@@ -180,6 +184,74 @@ export default function UserProfile({ user, onSignOut, onUpdateProfile }: UserPr
 
   const cleanContent = (content: string) => {
     return content.replace(/\*\*/g, '').replace(/\*/g, '').replace(/#/g, '').replace(/^\s*\n/gm, '')
+  }
+
+  const getAccessToken = async () => {
+    const { data } = await supabase.auth.getSession()
+    const token = data.session?.access_token
+    if (!token) throw new Error('Not authenticated')
+    return token
+  }
+
+  const handleResetPassword = async () => {
+    try {
+      setIsResettingPassword(true)
+      const email = user.email
+      if (!email) throw new Error('No email on account')
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      })
+      if (error) throw error
+      alert('Password reset email sent. Check your inbox.')
+    } catch (e: any) {
+      alert(e?.message || 'Failed to send reset email')
+    } finally {
+      setIsResettingPassword(false)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    const confirmed = window.confirm('Delete your account and data? This cannot be undone.')
+    if (!confirmed) return
+    try {
+      setIsDeletingAccount(true)
+      const token = await getAccessToken()
+      const resp = await fetch('/api/account/delete', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const json = await resp.json()
+      if (!resp.ok) throw new Error(json.error || 'Delete failed')
+      alert('Account deleted. Goodbye!')
+      handleSignOut()
+    } catch (e: any) {
+      alert(e?.message || 'Failed to delete account')
+    } finally {
+      setIsDeletingAccount(false)
+    }
+  }
+
+  const handleCancelSubscription = async () => {
+    const confirmed = window.confirm('Cancel your subscription? You will lose Pro features at the end of the period.')
+    if (!confirmed) return
+    try {
+      setIsCancelingSub(true)
+      const token = await getAccessToken()
+      const resp = await fetch('/api/account/cancel-subscription', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const json = await resp.json()
+      if (!resp.ok) throw new Error(json.error || 'Cancel failed')
+      alert('Subscription canceled.')
+      if (onUpdateProfile) {
+        await onUpdateProfile({}) // trigger refresh upstream
+      }
+    } catch (e: any) {
+      alert(e?.message || 'Failed to cancel subscription')
+    } finally {
+      setIsCancelingSub(false)
+    }
   }
 
   return (
@@ -363,6 +435,45 @@ export default function UserProfile({ user, onSignOut, onUpdateProfile }: UserPr
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+
+            {/* Account Safety */}
+            <div className="space-y-3 border border-white/10 rounded-lg p-4 bg-white/5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-bold text-white">Account safety</h4>
+                  <p className="text-xs text-slate-400">Manage your access and data.</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleResetPassword}
+                  disabled={isResettingPassword}
+                  className="border-zinc-700 bg-zinc-900 text-zinc-200 hover:bg-zinc-800"
+                >
+                  {isResettingPassword ? 'Sending...' : 'Reset password'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCancelSubscription}
+                  disabled={isCancelingSub}
+                  className="border-amber-500/40 text-amber-300 hover:bg-amber-500/10"
+                >
+                  {isCancelingSub ? 'Canceling...' : 'Cancel subscription'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDeleteAccount}
+                  disabled={isDeletingAccount}
+                  className="border-red-500/50 text-red-300 hover:bg-red-500/10"
+                >
+                  {isDeletingAccount ? 'Deleting...' : 'Delete account'}
+                </Button>
               </div>
             </div>
           </div>

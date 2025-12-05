@@ -36,21 +36,25 @@ function LoginPageContent() {
   }
 
   const handleGoogleLogin = async () => {
-    await supabase.auth.signInWithOAuth({
+    const redirect = searchParams.get("redirect") || "/dashboard"
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${location.origin}/auth/callback`,
+        redirectTo: `${location.origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`,
       },
     })
+    if (error) setMessage(error.message)
   }
 
   const handleXLogin = async () => {
-    await supabase.auth.signInWithOAuth({
+    const redirect = searchParams.get("redirect") || "/dashboard"
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'twitter',
       options: {
-        redirectTo: `${location.origin}/auth/callback`,
+        redirectTo: `${location.origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`,
       },
     })
+    if (error) setMessage(error.message)
   }
 
   return (

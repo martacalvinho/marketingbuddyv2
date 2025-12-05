@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server"
+import { supabaseServer } from "@/lib/supabase-server"
+import { supabase } from "@/lib/supabase"
 
 export const maxDuration = 60
 
 export async function POST(req: Request) {
+  let websiteInput: string | null = null
   try {
-    const { website } = await req.json()
+    const parsed = await req.json()
+    const website = parsed?.website as string
+    websiteInput = website ?? null
 
     if (!website) {
       return NextResponse.json({ error: "Website URL is required" }, { status: 400 })
@@ -173,6 +178,25 @@ export async function POST(req: Request) {
         throw new Error("The AI model failed to generate valid JSON. Please try again.");
     }
 
+    const { data: sessionData } = await supabase.auth.getSession()
+
+    // Store audit success
+    try {
+      await supabaseServer.from("website_audits").insert({
+        user_id: sessionData.session?.user.id ?? null,
+        website,
+        success: true,
+        status: "ok",
+        content_length: cleanedContent.length,
+        extracted_at: new Date().toISOString(),
+        metadata: {
+          model: "openai/gpt-oss-20b:free",
+        },
+      })
+    } catch (auditErr) {
+      console.warn("Failed to log website audit (success):", auditErr)
+    }
+
     return NextResponse.json({
       success: true,
       url: website,
@@ -183,6 +207,22 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     console.error("Analysis failed:", error)
+
+    // Best-effort failure logging
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      await supabaseServer.from("website_audits").insert({
+        user_id: sessionData.session?.user.id ?? null,
+        website: websiteInput,
+        success: false,
+        status: "error",
+        error: error?.message || "Unknown error",
+        extracted_at: new Date().toISOString(),
+      })
+    } catch (auditErr) {
+      console.warn("Failed to log website audit (error):", auditErr)
+    }
+
     return NextResponse.json({ success: false, error: error.message }, { status: 500 })
   }
 }
